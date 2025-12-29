@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Chat (Stream Test)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .markdown-body p { margin-bottom: 0.5rem; }
+        .markdown-body pre { background-color: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        .markdown-body code { font-family: monospace; background-color: #f3f4f6; padding: 0.2rem 0.4rem; border-radius: 0.25rem; }
+        
+        /* Typing indicator animation */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* Character animations */
+        .character-container {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            z-index: 20;
+            background: white;
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+
+        .character {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .character-eyes {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 18px;
+        }
+
+        .eye {
+            width: 8px;
+            height: 8px;
+            background: black;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .character-mouth {
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 15px;
+            border: 3px solid black;
+            border-top: none;
+            border-radius: 0 0 30px 30px;
+            transition: all 0.2s ease;
+        }
+
+        .character.speaking .character-mouth {
+            animation: mouth-speak 0.3s ease-in-out infinite alternate;
+        }
+
+        .character.thinking .eye {
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        @keyframes mouth-speak {
+            0% {
+                width: 20px;
+                height: 10px;
+                border-radius: 0 0 20px 20px;
+            }
+            100% {
+                width: 35px;
+                height: 20px;
+                border-radius: 0 0 35px 35px;
+            }
+        }
+
+        @keyframes blink {
+            0%, 90%, 100% { height: 8px; }
+            95% { height: 1px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col">
+
+    <!-- API Key Modal (Overlay) -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-robot text-4xl text-blue-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800">OpenAI API Setup</h2>
+                <p class="text-gray-600 mt-2 text-sm">테스트를 위해 OpenAI API Key가 필요합니다.<br>키는 브라우저 내부에만 저장되며 서버로 전송되지 않습니다.</p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="apiKeyInput">API Key (sk-...)</label>
+                <input type="password" id="apiKeyInput" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="sk-..." autofocus>
+                <p id="apiKeyError" class="text-red-500 text-xs italic mt-1 hidden">API Key를 입력해주세요.</p>
+            </div>
+            
+            <button id="saveApiKeyBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200">
+                Start Chatting
+            </button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm px-6 py-4 flex justify-between items-center z-10">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-100 p-2 rounded-full">
+                <i class="fa-solid fa-comments text-blue-600"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">English Tutor AI (Bilingual)</h1>
+                <p class="text-xs text-gray-500">English & Korean Support</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <label for="levelSelect" class="text-sm text-gray-600"><i class="fa-solid fa-gauge-high"></i> Level:</label>
+                <select id="levelSelect" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5">
+                    <option value="beginner">Beginner (Slow)</option>
+                    <option value="intermediate" selected>Intermediate</option>
+                    <option value="advanced">Advanced (Fast)</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <label for="voiceSelect" class="text-sm text-gray-600"><i class="fa-solid fa-music"></i> Voice:</label>
+                <select id="voiceSelect" class="bg-gray-50 border border-gray-300 text-gray-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-1.5">
+                    <option value="alloy">Alloy</option>
+                    <option value="ash">Ash</option>
+                    <option value="ballad">Ballad</option>
+                    <option value="coral">Coral</option>
+                    <option value="echo">Echo</option>
+                    <option value="sage">Sage</option>
+                    <option value="shimmer">Shimmer</option>
+                    <option value="verse" selected>Verse</option>
+                </select>
+            </div>
+            <button id="resetKeyBtn" class="text-gray-500 hover:text-blue-600 text-sm transition">
+                <i class="fa-solid fa-key mr-1"></i> Reset Key
+            </button>
+        </div>
+    </header>
+
+    <!-- Chat Container -->
+    <main id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide scroll-smooth">
+        <!-- Welcome Message -->
+        <div class="flex justify-start">
+            <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm max-w-[85%] sm:max-w-[75%]">
+                <p class="text-gray-800">Hello! I'm your English conversation partner. I can also understand Korean and explain in Korean.<br><br>안녕하세요! 영어 대화 파트너입니다. 한국어로 말씀하셔도 영어로 바꿔서 대화해 드려요.</p>
+            </div>
+        </div>
+        <!-- Messages will be injected here via JS -->
+    </main>
+
+    <!-- Smile Character -->
+    <div id="characterContainer" class="character-container">
+        <div id="aiCharacter" class="character">
+            <div class="character-eyes">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+            <div class="character-mouth"></div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <footer class="bg-white border-t border-gray-200 p-4">
+        <div class="max-w-4xl mx-auto relative">
+            <form id="chatForm" class="flex gap-2">
+                <button type="button" id="realtimeBtn" class="bg-green-100 hover:bg-green-200 text-green-600 rounded-full w-12 h-12 flex items-center justify-center transition mr-1" title="실시간 음성 대화 (Realtime API)">
+                    <i class="fa-solid fa-headset"></i>
+                </button>
+                <button type="button" id="micBtn" class="hidden bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full w-12 h-12 items-center justify-center transition mr-1" title="음성으로 입력하기">
+                    <i class="fa-solid fa-microphone"></i>
+                </button>
+                <input type="text" id="userInput"
+                    class="flex-1 bg-gray-100 text-gray-800 rounded-full px-6 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 border-transparent transition" 
+                    placeholder="Type in English or Korean..." autocomplete="off">
+                <button type="submit" id="sendBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+            <p class="text-center text-xs text-gray-400 mt-2">AI can make mistakes. Consider checking important information.</p>
+        </div>
+    </footer>
+
+        <script>
+        // State Management
+        let apiKey = '';
+        let messages = [
+            { role: "system", content: "You are a bilingual English tutor. Your goal is to help the user practice English. \n\nInstructions:\n1. If the user speaks Korean, translate it to English first, then respond in English.\n2. ALWAYS provide your response in English first.\n3. After the English response, add a separator (---) and provide the Korean translation and explanation.\n4. Keep the tone friendly and encouraging.\n\nExample Format:\n[English Response]\n\n---\n\n(한국어 해석 및 설명)" }
+        ];
+
+        // DOM Elements
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const apiKeyError = document.getElementById('apiKeyError');
+        const resetKeyBtn = document.getElementById('resetKeyBtn');
+        const chatContainer = document.getElementById('chatContainer');
+        const chatForm = document.getElementById('chatForm');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const micBtn = document.getElementById('micBtn');
+        const realtimeBtn = document.getElementById('realtimeBtn');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const levelSelect = document.getElementById('levelSelect');
+        const aiCharacter = document.getElementById('aiCharacter');
+
+        // Realtime API State
+        let peerConnection = null;
+        let dataChannel = null;
+        let localStream = null;
+        let remoteAudioEl = null;
+        let isRealtimeActive = false;
+        let realtimeAiDiv = null;
+        let realtimeAiText = '';
+        let lastUserTs = Date.now();
+        const IDLE_MS = 25000;
+        let idleTimer = null;
+
+        // Initialize
+        function init() {
+            // Check localStorage for existing key
+            const storedKey = localStorage.getItem('openai_api_key');
+            if (storedKey) {
+                apiKey = storedKey;
+                apiKeyModal.classList.add('hidden');
+            }
+
+            // Load saved preferences
+            const savedVoice = localStorage.getItem('openai_voice_preference');
+            if (savedVoice) voiceSelect.value = savedVoice;
+
+            const savedLevel = localStorage.getItem('openai_level_preference');
+            if (savedLevel) levelSelect.value = savedLevel;
+
+            // Event Listeners
+            saveApiKeyBtn.addEventListener('click', handleSaveApiKey);
+            resetKeyBtn.addEventListener('click', handleResetKey);
+            chatForm.addEventListener('submit', handleSendMessage);
+            realtimeBtn.addEventListener('click', toggleRealtimeChat);
+
+            // Save preferences on change
+            voiceSelect.addEventListener('change', () => {
+                localStorage.setItem('openai_voice_preference', voiceSelect.value);
+            });
+            levelSelect.addEventListener('change', () => {
+                localStorage.setItem('openai_level_preference', levelSelect.value);
+            });
+
+            // Allow Enter key in modal
+            apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSaveApiKey();
+            });
+
+            // Setup Speech Recognition
+            setupSpeechRecognition();
+            startIdleWatcher();
+        }
+
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.log("Web Speech API not supported");
+                return;
+            }
+
+            micBtn.classList.remove('hidden');
+            micBtn.classList.add('flex');
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR'; // 한국어 위주 (영어 발음도 어느정도 인식)
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                micBtn.classList.remove('bg-gray-100', 'text-gray-600');
+                micBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+                micBtn.classList.add('bg-gray-100', 'text-gray-600');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (transcript) {
+                    lastUserTs = Date.now();
+                    userInput.value = transcript;
+                    // 음성 인식 후 바로 전송 (사용자 경험 향상)
+                    chatForm.dispatchEvent(new Event('submit'));
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                micBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+                micBtn.classList.add('bg-gray-100', 'text-gray-600');
+            };
+
+            micBtn.addEventListener('click', () => {
+                recognition.start();
+            });
+        }
+
+        // Realtime API Implementation
+        async function toggleRealtimeChat() {
+            if (isRealtimeActive) {
+                stopRealtimeChat();
+            } else {
+                await startRealtimeChat();
+            }
+        }
+
+        async function startRealtimeChat() {
+            if (!apiKey) {
+                alert('Please enter your OpenAI API Key first.');
+                apiKeyModal.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                updateRealtimeUI(true, 'Connecting...');
+
+                // Determine instructions based on level
+                const level = levelSelect.value;
+                let speedInstruction = "";
+                if (level === 'beginner') {
+                    speedInstruction = "Speak very slowly and clearly. Use simple vocabulary suitable for beginners. Pause frequently.";
+                } else if (level === 'intermediate') {
+                    speedInstruction = "Speak at a moderate, clear pace. Use standard vocabulary.";
+                } else {
+                    speedInstruction = "Speak at a natural, fast native pace. Use advanced vocabulary and idioms.";
+                }
+
+                const baseInstruction = "You are an enthusiastic English teacher. You should always speak in English to help the user practice. Keep your responses concise and helpful. If the user speaks Korean, understand it but reply in English.";
+
+                // 1. Get Ephemeral Token
+                const tokenResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-realtime-preview-2024-12-17",
+                        voice: voiceSelect.value,
+                        instructions: `${baseInstruction} ${speedInstruction}`
+                    }),
+                });
+
+                if (!tokenResponse.ok) {
+                    throw new Error(`Failed to get token: ${tokenResponse.statusText}`);
+                }
+                const data = await tokenResponse.json();
+                const ephemeralKey = data.client_secret.value;
+
+                // 2. Setup WebRTC
+                peerConnection = new RTCPeerConnection();
+
+                // Setup Remote Audio
+                remoteAudioEl = document.createElement("audio");
+                remoteAudioEl.autoplay = true;
+                peerConnection.ontrack = (e) => {
+                    remoteAudioEl.srcObject = e.streams[0];
+                };
+
+                // Add Local Audio
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                peerConnection.addTrack(localStream.getTracks()[0]);
+
+                // Setup Data Channel
+                dataChannel = peerConnection.createDataChannel("oai-events");
+                dataChannel.onmessage = (e) => {
+                    try {
+                        const event = JSON.parse(e.data);
+                        handleRealtimeEvent(event);
+                    } catch (err) {
+                        console.error("Error parsing data channel message", err);
+                    }
+                };
+
+                // 3. Create Offer & Exchange SDP
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                const sdpResponse = await fetch(`https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17`, {
+                    method: "POST",
+                    body: offer.sdp,
+                    headers: {
+                        "Authorization": `Bearer ${ephemeralKey}`,
+                        "Content-Type": "application/sdp"
+                    },
+                });
+
+                if (!sdpResponse.ok) {
+                    throw new Error(`SDP exchange failed: ${sdpResponse.statusText}`);
+                }
+
+                const answerSdp = await sdpResponse.text();
+                await peerConnection.setRemoteDescription({
+                    type: "answer",
+                    sdp: answerSdp,
+                });
+
+                isRealtimeActive = true;
+                updateRealtimeUI(true, 'Connected');
+                addMessageToUI('system', 'Realtime Voice Chat Started. Speak now!');
+
+            } catch (error) {
+                console.error("Realtime Chat Error:", error);
+                alert(`Failed to start Realtime Chat: ${error.message}`);
+                stopRealtimeChat();
+            }
+        }
+
+        function stopRealtimeChat() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            if (remoteAudioEl) {
+                remoteAudioEl.srcObject = null;
+                remoteAudioEl = null;
+            }
+            isRealtimeActive = false;
+            updateRealtimeUI(false);
+            addMessageToUI('system', 'Realtime Voice Chat Ended.');
+        }
+
+        function updateRealtimeUI(active, statusText) {
+            if (active) {
+                realtimeBtn.classList.remove('bg-green-100', 'text-green-600');
+                realtimeBtn.classList.add('bg-red-500', 'text-white', 'animate-pulse');
+                realtimeBtn.innerHTML = '<i class="fa-solid fa-phone-slash"></i>';
+                realtimeBtn.title = "Stop Realtime Chat";
+
+                userInput.placeholder = statusText || "Listening...";
+                userInput.disabled = true;
+                micBtn.disabled = true;
+                sendBtn.disabled = true;
+            } else {
+                realtimeBtn.classList.remove('bg-red-500', 'text-white', 'animate-pulse');
+                realtimeBtn.classList.add('bg-green-100', 'text-green-600');
+                realtimeBtn.innerHTML = '<i class="fa-solid fa-headset"></i>';
+                realtimeBtn.title = "Start Realtime Chat";
+
+                userInput.placeholder = "Type in English or Korean...";
+                userInput.disabled = false;
+                micBtn.disabled = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        async function handleRealtimeEvent(event) {
+            // Handle server events
+            if (event.type === 'response.audio_transcript.delta') {
+                realtimeAiText += event.transcript_delta || '';
+                updateRealtimeTyping(realtimeAiText);
+                setCharacterState('speaking');
+            }
+            if (event.type === 'response.audio_transcript.done') {
+                 const text = event.transcript;
+                 const msgDiv = addMessageToUI('assistant', `(Voice): ${text}`);
+                 translateAndAppend(text, msgDiv);
+                 realtimeAiText = '';
+                 realtimeAiDiv = null;
+                 setCharacterState('');
+            }
+            if (event.type === 'input_audio_buffer.speech_started') {
+                setCharacterState('listening');
+            }
+            if (event.type === 'conversation.item.input_audio_transcription.completed') {
+                 lastUserTs = Date.now();
+                 const text = event.transcript;
+                 const msgDiv = addMessageToUI('user', `(Voice): ${text}`);
+                 translateAndAppend(text, msgDiv);
+                 setCharacterState('thinking');
+            }
+        }
+
+        async function translateAndAppend(text, element) {
+            try {
+                const translation = await translateText(text);
+                // Add translation with a separator
+                const translationHtml = `<div class="text-sm text-gray-200 mt-2 pt-2 border-t border-white/20 font-light italic">${translation}</div>`;
+
+                // Adjust style based on role (user bubbles have white text, assistant bubbles have dark text)
+                if (element.parentElement.classList.contains('justify-start')) {
+                    // Assistant bubble (gray background, dark text)
+                    element.innerHTML += `<div class="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-300 font-light italic">${translation}</div>`;
+                } else {
+                    // User bubble (blue background, white text)
+                    element.innerHTML += `<div class="text-sm text-blue-100 mt-2 pt-2 border-t border-blue-400 font-light italic">${translation}</div>`;
+                }
+
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            } catch (e) {
+                console.error("Translation failed", e);
+            }
+        }
+
+        async function translateText(text) {
+            if (!text) return "";
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: "system", content: "You are a translator. Translate the following text to Korean if it is English, and to English if it is Korean. Only output the translated text." },
+                            { role: "user", content: text }
+                        ],
+                        temperature: 0.3
+                    })
+                });
+                const data = await response.json();
+                return data.choices[0].message.content;
+            } catch (err) {
+                console.error("Translation API Error", err);
+                return "(Translation failed)";
+            }
+        }
+
+        // Character state management
+        function setCharacterState(state) {
+            if (!aiCharacter) return;
+
+            // Remove all state classes
+            aiCharacter.classList.remove('speaking', 'thinking');
+
+            // Add new state
+            if (state === 'speaking') {
+                aiCharacter.classList.add('speaking');
+            } else if (state === 'thinking') {
+                aiCharacter.classList.add('thinking');
+            }
+        }
+
+        // Handlers
+        function handleSaveApiKey() {
+            const key = apiKeyInput.value.trim();
+            if (!key.startsWith('sk-')) {
+                apiKeyError.classList.remove('hidden');
+                apiKeyError.textContent = 'Invalid API Key format. It should start with "sk-".';
+                return;
+            }
+
+            apiKey = key;
+            localStorage.setItem('openai_api_key', apiKey); // Persist locally
+            apiKeyModal.classList.add('hidden');
+            userInput.focus();
+        }
+
+        function handleResetKey() {
+            localStorage.removeItem('openai_api_key');
+            apiKey = '';
+            messages = [messages[0]]; // Reset context
+            location.reload(); // Simple reload to reset state
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            const content = userInput.value.trim();
+            if (!content) return;
+
+            lastUserTs = Date.now();
+
+            // 1. Add User Message to UI & State
+            const userDiv = addMessageToUI('user', content);
+            messages.push({ role: "user", content: content });
+            userInput.value = '';
+
+            translateAndAppend(content, userDiv);
+
+            // Disable input while generating and set character to thinking
+            setInputState(false);
+            setCharacterState('thinking');
+
+            try {
+                // 2. Prepare for Stream
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini', // Cost-effective model for testing
+                        messages: messages,
+                        stream: true // ENABLE STREAMING
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'API Request Failed');
+                }
+
+                // 3. Create Placeholder for AI Message
+                const messageId = 'msg-' + Date.now();
+                const aiMessageContentDiv = addMessageToUI('assistant', '', messageId);
+
+                // Start character speaking animation
+                setCharacterState('speaking');
+
+                // 4. Process Stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let aiFullResponse = "";
+
+                // 초기에는 타이핑 인디케이터가 있으므로 비워줍니다.
+                aiMessageContentDiv.textContent = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine.startsWith('data: ')) continue;
+                        
+                        const dataStr = trimmedLine.replace('data: ', '');
+                        if (dataStr === '[DONE]') break;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            const contentDelta = data.choices[0].delta.content;
+                            
+                            if (contentDelta) {
+                                aiFullResponse += contentDelta;
+                                // 마크다운 파싱 없이, 텍스트를 바로 이어 붙여서 순차 표시
+                                aiMessageContentDiv.textContent = aiFullResponse;
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            }
+                        } catch (err) {
+                            console.error('Error parsing stream chunk', err);
+                        }
+                    }
+                }
+
+                // 5. Update State with full response (최종 마크다운 렌더링)
+                aiMessageContentDiv.innerHTML = marked.parse(aiFullResponse);
+                messages.push({ role: "assistant", content: aiFullResponse });
+
+                // Stop character speaking animation
+                setCharacterState('');
+
+            } catch (error) {
+                console.error(error);
+                addMessageToUI('system', `Error: ${error.message}`);
+                // Stop character animation on error
+                setCharacterState('');
+            } finally {
+                setInputState(true);
+                userInput.focus();
+            }
+        }
+
+        function updateRealtimeTyping(text) {
+            if (!realtimeAiDiv) {
+                realtimeAiDiv = addMessageToUI('assistant', '');
+            }
+            realtimeAiDiv.textContent = text;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function startIdleWatcher() {
+            if (idleTimer) clearInterval(idleTimer);
+            idleTimer = setInterval(() => {
+                const now = Date.now();
+                if (now - lastUserTs > IDLE_MS) {
+                    lastUserTs = now;
+                    addMessageToUI('assistant', '혹시 도움이 필요하신가요? 오늘은 어떤 주제로 영어 연습을 해볼까요?\n\n- 자기소개 연습하기\n- 여행 상황 대화 연습하기\n- 회사 미팅 표현 연습하기');
+                }
+            }, 3000);
+        }
+
+        // UI Helpers
+        function addMessageToUI(role, content, id = null) {
+            const isUser = role === 'user';
+            const isSystem = role === 'system';
+            
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+            
+            const bubbleDiv = document.createElement('div');
+            if (isSystem) {
+                bubbleDiv.className = 'bg-red-100 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm max-w-[90%]';
+            } else {
+                bubbleDiv.className = isUser 
+                    ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md max-w-[85%] sm:max-w-[75%]'
+                    : 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm max-w-[85%] sm:max-w-[75%] markdown-body';
+            }
+
+            if (id) bubbleDiv.id = id;
+            
+            if (content) {
+                bubbleDiv.innerHTML = isUser ? content : marked.parse(content);
+            } else if (role === 'assistant') {
+                // Typing indicator for empty initial AI bubble
+                bubbleDiv.innerHTML = '<div class="flex space-x-1 h-6 items-center"><div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div><div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div></div>';
+            }
+
+            wrapperDiv.appendChild(bubbleDiv);
+            chatContainer.appendChild(wrapperDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            return bubbleDiv; // Return the inner div for updates
+        }
+
+        function setInputState(enabled) {
+            userInput.disabled = !enabled;
+            sendBtn.disabled = !enabled;
+            if (enabled) {
+                userInput.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                userInput.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Run
+        init();
+    </script>
+</body>
+</html>
+
