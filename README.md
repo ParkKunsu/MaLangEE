@@ -35,8 +35,8 @@ BACKEND_PORT="8080"
 
 # 데이터베이스
 DB_NAME="malangee"
-DB_USER="malangee_user"
-DB_PASSWORD="malangee_password"
+DB_USER="aimaster"
+DB_PASSWORD="****"
 ```
 
 **장점**:
@@ -102,7 +102,7 @@ cd /home/aimaster/projects/MaLangEE && git status
 
 ### 6️⃣ 배포 수동 실행
 ```bash
-/home/aimaster/deploy.sh
+/home/aimaster/projects/malangee/scripts/deploy.sh
 ```
 
 ---
@@ -116,7 +116,7 @@ cd /home/aimaster/projects/MaLangEE && git status
 | **GitHub 저장소** | https://github.com/MaLangEECoperation/MaLangEE.git |
 | **브랜치** | main |
 | **배포 방식** | Cron (10분마다) |
-| **배포 스크립트** | /home/aimaster/deploy.sh |
+| **배포 스크립트** | /home/aimaster/projects/malangee/scripts/deploy.sh |
 | **배포 로그** | /var/log/MaLangEE_deploy.log |
 
 ---
@@ -268,50 +268,6 @@ psql -U postgres -d malangee -f database/init.sql
 
 ---
 
-### 웹 서버 설정 (Nginx)
-
-Frontend와 Backend를 Nginx를 통해 웹(포트 80)으로 접속 가능하게 설정:
-
-```bash
-# Nginx 설치 및 설정 (대화형)
-sudo bash scripts/3-setup_web.sh
-```
-
-**설정 예시 (공인 IP 49.50.137.35, 프로젝트 경로 /malangee):**
-
-```
-Frontend:    http://49.50.137.35/malangee
-Backend API: http://49.50.137.35/malangee/api
-```
-
-**설정 단계:**
-1. `Frontend 포트`: 5173 (기본)
-2. `Backend 포트`: 8080 (기본)
-3. `도메인/IP`: 49.50.137.35
-4. `프로젝트 경로`: malangee (또는 /malangee)
-
-### Nginx 기본 명령어
-
-```bash
-# Nginx 상태 확인
-sudo systemctl status nginx
-
-# Nginx 재시작
-sudo systemctl restart nginx
-
-# 설정 검증
-sudo nginx -t
-
-# 로그 확인
-sudo tail -f /var/log/nginx/access.log
-sudo tail -f /var/log/nginx/error.log
-
-# 설정 파일 수정
-sudo nano /etc/nginx/sites-available/malangee
-```
-
----
-
 ## ⚡ 자주 사용되는 명령어
 
 ### 배포 모니터링
@@ -369,9 +325,9 @@ sudo systemctl status cron
 
 ### 또는 수동 배포
 ```
-1. /home/aimaster/deploy.sh 실행
+1. /home/aimaster/projects/malangee/scripts/deploy.sh 실행
    ↓
-2. git fetch + reset --hard 실행
+2. git pull 실행
    ↓
 3. 배포 완료
 ```
@@ -431,7 +387,7 @@ sudo systemctl status cron
 cd /home/aimaster/projects/MaLangEE && git status
 
 # 4. 수동 배포 테스트
-/home/aimaster/deploy.sh
+/home/aimaster/projects/malangee/scripts/deploy.sh
 ```
 
 ### Cron 서비스 재시작
@@ -531,24 +487,3 @@ cd /home/aimaster/projects/MaLangEE && git log --oneline -1
 - Cron이 **10분마다** 실행되므로 최대 10분 지연
 
 ---
-
-## 🔗 관련 링크
-
-- ℹ️ **[docs/00-PROJECT_INFO.md](docs/00-PROJECT_INFO.md)** - 프로젝트 핵심 정보
-- ⚙️ **[docs/02-SERVER_OPS.md](docs/02-SERVER_OPS.md)** - 서버 운영 가이드
-- 🔧 **[scripts/1-init_server.sh](scripts/1-init_server.sh)** - 서버 초기화 스크립트
-
----
-
-## 📞 지원
-
-문제가 발생하면:
-
-1. **배포 로그 확인**: `/var/log/MaLangEE_deploy.log`
-2. **Cron 상태 확인**: `sudo systemctl status cron`
-3. **[docs/02-SERVER_OPS.md](docs/02-SERVER_OPS.md) - 문제 해결** 섹션 참고
-4. **수동 배포 테스트**: `/home/aimaster/deploy.sh`
-
----
-
-**최종 업데이트**: 2025-12-27
