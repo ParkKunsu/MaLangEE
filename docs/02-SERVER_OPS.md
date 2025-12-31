@@ -10,7 +10,7 @@
 더 이상 **Nginx를 사용하지 않습니다**. 대신 각 서비스가 고유 포트에서 직접 실행됩니다.
 
 ```
-Frontend:   49.50.137.35:5173  → Vite Development Server
+Frontend:   49.50.137.35:3000  → Next.js Development Server
 Backend:    49.50.137.35:8080  → Spring Boot Application
 AI Engine:  49.50.137.35:5000  → Python Flask/FastAPI
 Database:   49.50.137.35:5432  → PostgreSQL
@@ -140,7 +140,7 @@ curl http://49.50.137.35:8080/api/health
 
 **Frontend 테스트**
 ```bash
-curl http://49.50.137.35:5173/
+curl http://49.50.137.35:3000/
 ```
 
 ---
@@ -186,13 +186,13 @@ ls -la /home/aimaster/deploy.sh
 
 ### 2. 서비스 접속 불가
 
-**Frontend 접속 불가 (http://49.50.137.35:5173/)**
+**Frontend 접속 불가 (http://49.50.137.35:3000/)**
 ```bash
-# Vite 프로세스 확인
+# Next.js 프로세스 확인
 ps aux | grep vite
 
 # 포트 점유 확인
-sudo lsof -i :5173
+sudo lsof -i :3000
 
 # 프로세스 강제 종료
 kill -9 <PID>
@@ -276,7 +276,7 @@ grep "ERROR\|FAILED" /var/log/MaLangEE_deploy.log | wc -l
 
 ### 매일 아침
 - [ ] Cron 작동 확인: `tail -f /var/log/MaLangEE_deploy.log`
-- [ ] Frontend 접속 확인: `curl http://49.50.137.35:5173/`
+- [ ] Frontend 접속 확인: `curl http://49.50.137.35:3000/`
 - [ ] Backend API 접속 확인: `curl http://49.50.137.35:8080/api/health`
 - [ ] DB 접속 확인: `psql -h localhost -U malangee_user -d malangee`
 

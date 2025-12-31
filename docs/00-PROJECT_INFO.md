@@ -9,7 +9,7 @@
 
 | 서비스 | URL | 설명 |
 |:---:|---|---|
-| **Frontend** | [http://49.50.137.35:5173](http://49.50.137.35:5173) | 사용자 웹 인터페이스 (Vite) |
+| **Frontend** | [http://49.50.137.35:3000](http://49.50.137.35:3000) | 사용자 웹 인터페이스 (Next.js) |
 | **Backend API** | [http://49.50.137.35:8080/api](http://49.50.137.35:8080/api) | REST API 서버 (Health: `/api/health`) |
 | **AI Engine** | [http://49.50.137.35:5000](http://49.50.137.35:5000) | AI 분석 엔진 |
 | **Database** | `49.50.137.35:5432` | PostgreSQL 데이터베이스 |
@@ -37,10 +37,10 @@
 | 구분 | 기술 | 버전 | 비고 |
 |---|---|---|---|
 | **Language** | Java | **JDK 17** | OpenJDK 17.0.17 |
-| | Node.js | **v18.x** | v18.20.8 (LTS) |
+| | Node.js | **v20.x** | v20.19.6 (LTS) |
 | | Python | **3.9+** | 3.12.3 |
 | **Framework** | Spring Boot | 3.x | Maven 빌드 |
-| | React/Vue | Vite | npm 패키지 관리 |
+| | React/Vue | Next.js | npm 패키지 관리 |
 | **Database** | PostgreSQL | **15+** | 15.15 |
 
 ---
@@ -68,7 +68,7 @@
 
 | 포트 | 용도 | 비고 |
 |:---:|---|---|
-| **5173** | Frontend | Vite Dev Server |
+| **3000** | Frontend | Next.js Dev Server |
 | **8080** | Backend | Spring Boot Tomcat |
 | **5000** | AI Engine | Flask/FastAPI |
 | **5432** | Database | PostgreSQL |

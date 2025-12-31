@@ -5,7 +5,7 @@
 #  실행 방법: sudo bash 4-setup_test_project.sh
 #
 #  구성:
-#  1. Frontend: React + Vite (Port 5173)
+#  1. Frontend: React + Vite (Port 3000)
 #  2. Backend: Java Spring Boot (Port 8080)
 #  3. AI-Engine: Python Simple Server (Port 5000)
 ###############################################
@@ -72,7 +72,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 3000,
     host: true
   }
 })
@@ -283,4 +283,4 @@ echo "  cd $AI_DIR"
 echo "  python3 app.py"
 echo ""
 echo -e "${CYAN}🌐 접속 주소:${NC}"
-echo "  http://localhost:5173"
+echo "  http://localhost:3000"

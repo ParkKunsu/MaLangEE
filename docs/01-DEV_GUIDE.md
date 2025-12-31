@@ -49,7 +49,7 @@ cd backend
 - 접속: `http://localhost:8080/api/health`
 - 설정 파일: `src/main/resources/application-local.properties`
 
-#### 🅱️ Frontend (React + Vite)
+#### 🅱️ Frontend (React + Next.js)
 ```bash
 cd frontend
 
@@ -59,7 +59,7 @@ npm install
 # 개발 서버 실행
 npm run dev
 ```
-- 접속: `http://localhost:5173/`
+- 접속: `http://localhost:3000/`
 - 설정 파일: `.env.development` (API_BASE_URL 자동 설정)
 
 #### 🅾️ AI Engine (Python)
@@ -87,7 +87,7 @@ python app.py
 
 | 서비스 | URL | 설명 |
 |---|---|---|
-| **Frontend** | `http://localhost:5173` | 개발 서버 (Vite) |
+| **Frontend** | `http://localhost:3000` | 개발 서버 (Next.js) |
 | **Backend** | `http://localhost:8080/api` | REST API |
 | **AI Engine** | `http://localhost:5000` | AI 분석 서비스 |
 | **Database** | `localhost:5432` | PostgreSQL |
@@ -121,7 +121,7 @@ A. PowerShell에서 `./mvnw` 대신 `mvn` 명령어를 직접 사용하거나, G
 A. `src/main/resources/application-local.properties` 파일의 DB URL, Username, Password가 로컬 설정과 일치하는지 확인하세요.
 
 **Q. 포트 충돌이 발생해요.**
-A. 이미 해당 포트(8080, 5173 등)를 사용하는 프로세스를 종료하거나, 각 모듈의 설정 파일에서 포트를 변경하세요.
+A. 이미 해당 포트(8080, 3000 등)를 사용하는 프로세스를 종료하거나, 각 모듈의 설정 파일에서 포트를 변경하세요.
 
 **Q. API 호출이 실패해요.**
 A. Frontend의 `.env.development` 파일에서 `VITE_API_BASE_URL`이 올바른 Backend 주소를 가리키는지 확인하세요.

@@ -29,7 +29,7 @@ DEPLOY_USER="aimaster"
 DOMAIN_NAME="localhost"
 PROJECT_PATH="/"
 FRONTEND_HOST="localhost"
-FRONTEND_PORT="5173"
+FRONTEND_PORT="3000"
 BACKEND_HOST="localhost"
 BACKEND_PORT="8080"
 
@@ -79,7 +79,7 @@ bash scripts/2-setup_env.sh
 sudo bash scripts/3-setup_web.sh
 
 # 대화형 설정:
-# - Frontend 포트 (기본값: 5173)
+# - Frontend 포트 (기본값: 3000)
 # - Backend 포트 (기본값: 8080)
 # - 도메인/IP (기본값: localhost)
 # - 프로젝트 경로 (기본값: /) 예: /malangee
@@ -342,7 +342,7 @@ sudo systemctl status cron
 ```bash
 cd frontend
 npm run dev
-# 접속: http://localhost:5173
+# 접속: http://localhost:3000
 ```
 
 **터미널 2 - Backend (Spring Boot):**

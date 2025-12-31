@@ -61,8 +61,8 @@ print_header "2️⃣ Frontend & Backend 포트 설정"
 echo -e "${CYAN}로컬에서 실행 중인 서버 정보를 입력하세요.${NC}\n"
 
 # Frontend 설정
-read -p "Frontend 포트 (기본값: 5173): " FRONTEND_PORT
-FRONTEND_PORT=${FRONTEND_PORT:-"5173"}
+read -p "Frontend 포트 (기본값: 3000): " FRONTEND_PORT
+FRONTEND_PORT=${FRONTEND_PORT:-"3000"}
 
 read -p "Frontend 호스트 (기본값: localhost): " FRONTEND_HOST
 FRONTEND_HOST=${FRONTEND_HOST:-"localhost"}
@@ -102,7 +102,7 @@ print_info "Nginx 설정 파일 생성 중: $NGINX_CONFIG"
 cat > /tmp/malangee_nginx.conf << 'EOFNGINX'
 # MaLangEE Nginx 설정 (루트 분기 방식)
 # 구조:
-#   / → Frontend (localhost:5173)
+#   / → Frontend (localhost:3000)
 #   /api/ → Backend (localhost:8080)
 
 # Frontend 업스트림
@@ -288,7 +288,7 @@ echo "     cd $PROJECT_ROOT/backend"
 echo "     mvn spring-boot:run"
 echo ""
 echo "  3️⃣ 웹 브라우저에서 접속 (루트 분기):"
-echo "     Frontend: http://localhost:5173"
+echo "     Frontend: http://localhost:3000"
 echo "     Backend API: http://localhost:$BACKEND_PORT/api"
 echo ""
 
