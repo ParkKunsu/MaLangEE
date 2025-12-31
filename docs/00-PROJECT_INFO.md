@@ -32,16 +32,15 @@
 ---
 
 ## 🛠️ 기술 스택 및 버전
-
 개발 및 배포 환경을 일치시켜 주세요.
 
 | 구분 | 기술 | 버전 | 비고 |
 |---|---|---|---|
 | **Language** | Java | **JDK 17** | OpenJDK 17.0.17 |
 | | Node.js | **v20.x** | v20.19.6 (LTS) |
-| | Python | **3.9+** | 3.12.3 |
-| **Framework** | Spring Boot | 3.x | Maven 빌드 |
-| | React/Vue | Next.js | npm 패키지 관리 |
+| | Python | **3.12+** | 3.12.3 |
+| **Framework** | Spring Boot | **3.2.0** | Maven 빌드 |
+| | Next.js | **16.1.0** | React 기반, TypeScript |
 | **Database** | PostgreSQL | **15+** | 15.15 |
 
 ---

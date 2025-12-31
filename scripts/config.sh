@@ -20,30 +20,15 @@ export GITHUB_BRANCH="main"
 # ============================================
 # 배포 사용자 정보
 # ============================================
-# 참고: init_ubuntu_server.sh에서 사용자 입력으로 덮어씌워짐
 export DEPLOY_USER="aimaster"
 export PROJECT_BASE_PATH="/home/${DEPLOY_USER}/projects"
 
 # ============================================
-# 웹 서버 설정 (Nginx)
+# 서비스 포트 설정
 # ============================================
-# 참고: setup_nginx.sh에서 사용자 입력으로 덮어씌워짐
-export DOMAIN_NAME="localhost"
-export PROJECT_PATH="/"
-
-# ============================================
-# Frontend 설정
-# ============================================
-# 참고: setup_nginx.sh에서 사용자 입력으로 덮어씌워짐
-export FRONTEND_HOST="localhost"
 export FRONTEND_PORT="3000"
-
-# ============================================
-# Backend 설정
-# ============================================
-# 참고: setup_nginx.sh에서 사용자 입력으로 덮어씌워짐
-export BACKEND_HOST="localhost"
 export BACKEND_PORT="8080"
+export AI_ENGINE_PORT="5000"
 
 # ============================================
 # 데이터베이스 설정
@@ -58,15 +43,10 @@ export DB_PORT="5432"
 # ============================================
 # 로깅 및 배포 경로
 # ============================================
+# 로깅 설정
+# ============================================
 export LOG_DIR="/var/log"
 export DEPLOY_LOG="${LOG_DIR}/${PROJECT_NAME}_deploy.log"
-
-# ============================================
-# Nginx 설정 경로
-# ============================================
-export NGINX_SITES_AVAILABLE="/etc/nginx/sites-available"
-export NGINX_SITES_ENABLED="/etc/nginx/sites-enabled"
-export NGINX_CONFIG_NAME="${SERVICE_NAME}"
 
 # ============================================
 # 유틸리티 함수

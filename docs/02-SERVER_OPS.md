@@ -110,8 +110,8 @@ sudo systemctl restart cron
 
 **모든 서비스 상태 확인**
 ```bash
-# Frontend 상태
-ps aux | grep "vite\|npm run dev"
+# Frontend 상태 (Next.js)
+ps aux | grep "next\|npm run dev"
 
 # Backend 상태
 ps aux | grep "java\|spring"
@@ -156,8 +156,9 @@ curl http://49.50.137.35:3000/
 ### Frontend 환경 설정 (.env.production)
 ```bash
 # /home/aimaster/projects/MaLangEE/frontend/.env.production
-VITE_API_BASE_URL=http://49.50.137.35:8080
+NEXT_PUBLIC_API_BASE_URL=http://49.50.137.35:8080
 ```
+Next.js는 `NEXT_PUBLIC_` 접두사를 사용합니다.
 
 ### Backend 환경 설정
 ```bash

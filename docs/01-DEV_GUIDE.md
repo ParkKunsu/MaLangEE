@@ -96,11 +96,11 @@ python app.py
 
 ## 🔧 환경 설정 파일
 
-### Frontend (.env.development)
+### Frontend (.env.local)
 ```
-VITE_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ```
-Frontend는 이 파일을 자동으로 읽어 API 호출을 설정합니다.
+Next.js는 `NEXT_PUBLIC_` 접두사가 붙은 환경 변수를 클라이언트에서 사용할 수 있습니다.
 
 ### Backend (application-local.properties)
 ```properties
@@ -124,5 +124,5 @@ A. `src/main/resources/application-local.properties` 파일의 DB URL, Username,
 A. 이미 해당 포트(8080, 3000 등)를 사용하는 프로세스를 종료하거나, 각 모듈의 설정 파일에서 포트를 변경하세요.
 
 **Q. API 호출이 실패해요.**
-A. Frontend의 `.env.development` 파일에서 `VITE_API_BASE_URL`이 올바른 Backend 주소를 가리키는지 확인하세요.
+A. Frontend의 `.env.local` 파일에서 `NEXT_PUBLIC_API_BASE_URL`이 올바른 Backend 주소를 가리키는지 확인하세요.
 
