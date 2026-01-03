@@ -42,9 +42,12 @@ async def root():
 @app.get("/prompt")
 async def get_prompt():
     prompt_path = os.path.join(module_dir, "..", "prompts", "system_instruction.md")
+    print(f"DEBUG: Request to /prompt. Path: {prompt_path}")
     if os.path.exists(prompt_path):
+        print("DEBUG: File exists, reading content.")
         with open(prompt_path, "r", encoding="utf-8") as f:
             return {"prompt": f.read()}
+    print("DEBUG: File NOT found.")
     return {"prompt": "System prompt not found."}
 
 @app.websocket("/ws/chat")

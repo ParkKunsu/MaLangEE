@@ -326,7 +326,10 @@
         }
 
         // Automatically load prompt on page load
-        loadPrompt();
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("DOM ready, loading prompt...");
+            loadPrompt();
+        });
     </script>
 </body>
 
