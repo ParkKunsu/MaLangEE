@@ -29,6 +29,9 @@ class ConversationTracker:
         # 임시 저장소
         self._last_message_ts = None
         self._last_speech_duration = 0.0 # 방금 끝난 발화의 길이 저장용
+        
+        # WPM 추적
+        self.wpm_history: List[float] = [] # 최근 WPM 값들
 
     def start_user_speech(self):
         """VAD: 사용자가 말을 시작했을 때 호출"""
@@ -44,25 +47,41 @@ class ConversationTracker:
             self._speech_start_time = None
             logger.debug(f"[Tracker] 사용자 발화 종료. 추가 시간: {duration:.2f}초, 누적: {self.user_speech_total_seconds:.2f}초, 마지막: {self._last_speech_duration:.2f}초")
 
-    def add_transcript(self, role: str, content: str):
+    def add_transcript(self, role: str, content: str) -> str:
         """
-        완성된 자막(Transcript)을 대화 흐름에 추가합니다.
+        완성된 자막(Transcript)을 대화 흐름에 추가하고, 사용자의 경우 WPM을 분석합니다.
         
         Args:
             role (str): "user" | "assistant"
             content (str): 발화 내용
+            
+        Returns:
+            str: 현재 사용자의 발화 속도 상태 ("normal" | "slow" | "fast")
         """
         if not content.strip():
-            return
+            return "normal"
 
         now = datetime.now(timezone.utc).isoformat()
         
-        # 발화 길이 매핑
+        # 발화 길이 매핑 및 WPM 계산
         message_duration = 0.0
+        current_wpm = 0.0
+        
         if role == "user":
             # 사용자의 경우 방금 VAD로 측정된 길이를 사용
             message_duration = self._last_speech_duration
             self._last_speech_duration = 0.0 # 사용 후 초기화
+            
+            # WPM 계산 (5단어 이상만)
+            word_count = len(content.split())
+            if message_duration > 0.5 and word_count >= 5:
+                current_wpm = (word_count / message_duration) * 60
+                self.wpm_history.append(current_wpm)
+                if len(self.wpm_history) > 5: # 최근 5개만 유지
+                    self.wpm_history.pop(0)
+                logger.debug(f"[Tracker] WPM Calculated: {current_wpm:.1f} (Words: {word_count}, Time: {message_duration:.2f}s)")
+            else:
+                logger.debug(f"[Tracker] WPM Skipped (Short): Words: {word_count}, Time: {message_duration:.2f}s")
         else:
             # AI의 경우 (추후 오디오 이벤트 연동 필요), 현재는 단순 글자수 기반 추정 (예: 초당 15자) 
             # 혹은 0.0으로 둠. 여기서는 0.0
@@ -76,6 +95,22 @@ class ConversationTracker:
         }
         self.messages.append(message_entry)
         logger.info(f"[Tracker] 메시지 추가 ({role}): {content[:20]}...")
+        
+        return self._determine_wpm_status()
+
+    def _determine_wpm_status(self) -> str:
+        """최근 WPM 평균을 기반으로 상태 결정"""
+        if not self.wpm_history:
+            return "normal"
+            
+        avg_wpm = sum(self.wpm_history) / len(self.wpm_history)
+        
+        if avg_wpm < 90:
+            return "slow"
+        elif avg_wpm > 140:
+            return "fast"
+        else:
+            return "normal"
 
     def finalize(self) -> Dict:
         """

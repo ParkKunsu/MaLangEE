@@ -103,3 +103,29 @@ class ConversationManager:
                 logger.error(f"세션 업데이트 전송 실패: {e}")
         
         return should_reconnect
+
+    async def update_speaking_style(self, wpm_status: str):
+        """
+        사용자의 발화 속도(WPM Status)에 따라 시스템 프롬프트를 동적으로 업데이트합니다.
+        
+        Args:
+            wpm_status (str): "slow" | "normal" | "fast"
+        """
+        logger.info(f"발화 스타일 업데이트 요청: {wpm_status}")
+        
+        dynamic_instruction = ""
+        if wpm_status == "slow":
+            dynamic_instruction = "\n\n[Dynamic Instruction] The user speaks slowly. Please speak slowly and clearly, articulating every word."
+        elif wpm_status == "fast":
+            dynamic_instruction = "\n\n[Dynamic Instruction] The user is fluent. You should speak at a natural, faster pace like a native speaker."
+        else:
+            # Normal인 경우 기본 프롬프트만 사용 (추가 문구 없음)
+            pass
+
+        # 기존 베이스 프롬프트 뒤에 추가
+        new_instructions = self.system_instructions + dynamic_instruction
+        
+        # 현재 적용된 지시사항과 다를 경우에만 업데이트 수행
+        if self.current_config["instructions"] != new_instructions:
+            logger.info(f"시스템 프롬프트 변경 감지 (Status: {wpm_status})")
+            await self.update_session_settings({"instructions": new_instructions})

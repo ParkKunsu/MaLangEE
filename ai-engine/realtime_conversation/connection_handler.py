@@ -196,8 +196,11 @@ class ConnectionHandler:
                         "type": "user.transcript",
                         "transcript": transcript
                     })
-                    # [Tracker] 사용자 자막 기록
-                    self.tracker.add_transcript("user", transcript)
+                    # [Tracker] 사용자 자막 기록 & WPM 분석
+                    wpm_status = self.tracker.add_transcript("user", transcript)
+                    
+                    # [Manager] 발화 속도에 따라 스타일 업데이트 (비동기 호출)
+                    await self.conversation_manager.update_speaking_style(wpm_status)
                 elif event_type == "error":
                     logger.error(f"OpenAI 오류: {event.get('error')}")
 
