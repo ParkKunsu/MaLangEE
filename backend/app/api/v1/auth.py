@@ -22,8 +22,7 @@ async def create_user(
     """
     새로운 사용자 생성 (회원가입)
     """
-    # 사용자 중복 확인
-    # 사용자 중복 확인
+    # 아이디 중복 확인
     result = await db.execute(select(models.User).where(models.User.login_id == user_in.login_id))
     user = result.scalars().first()
     
@@ -31,6 +30,16 @@ async def create_user(
         raise HTTPException(
             status_code=400,
             detail="이미 존재하는 사용자 이름(ID)입니다.",
+        )
+
+    # 닉네임 중복 확인
+    result = await db.execute(select(models.User).where(models.User.nickname == user_in.nickname))
+    nickname_user = result.scalars().first()
+    
+    if nickname_user:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 사용 중인 닉네임입니다.",
         )
     
     # 새로운 사용자 생성
@@ -53,9 +62,7 @@ async def login_access_token(
     """
     OAuth2 호환 토큰 로그인, 향후 요청을 위한 액세스 토큰 발급
     """
-    # 사용자 인증
-    # 사용자 인증
-    # 폼데이터에서 username을 login_id로 변경
+    # 사용자 인증 (폼데이터의 username을 login_id로 매핑)
     result = await db.execute(select(models.User).where(models.User.login_id == form_data.username))
     user = result.scalars().first()
     
@@ -73,3 +80,43 @@ async def login_access_token(
         ),
         "token_type": "bearer",
     }
+
+@router.post("/check-login-id")
+async def check_login_id_availability(
+    check_in: user_schema.LoginIdCheck,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    아이디 중복 확인
+    - 사용 가능한 아이디인 경우: 200 OK ({"is_available": true})
+    - 이미 존재하는 경우: 400 Bad Request
+    """
+    result = await db.execute(select(models.User).where(models.User.login_id == check_in.login_id))
+    user = result.scalars().first()
+    
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 존재하는 아이디입니다.",
+        )
+    return {"message": "사용 가능한 아이디입니다.", "is_available": True}
+
+@router.post("/check-nickname")
+async def check_nickname_availability(
+    check_in: user_schema.NicknameCheck,
+    db: Session = Depends(get_db)
+) -> Any:
+    """
+    닉네임 중복 확인
+    - 사용 가능한 닉네임인 경우: 200 OK ({"is_available": true})
+    - 이미 존재하는 경우: 400 Bad Request
+    """
+    result = await db.execute(select(models.User).where(models.User.nickname == check_in.nickname))
+    user = result.scalars().first()
+    
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="이미 사용 중인 닉네임입니다.",
+        )
+    return {"message": "사용 가능한 닉네임입니다.", "is_available": True}

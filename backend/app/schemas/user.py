@@ -26,3 +26,10 @@ class User(UserInDBBase):
 
 class UserInDB(UserInDBBase):
     hashed_password: str
+
+# 중복 체크용 스키마
+class LoginIdCheck(BaseModel):
+    login_id: str
+
+class NicknameCheck(BaseModel):
+    nickname: str

@@ -37,3 +37,19 @@ async def update_user_me(
     await db.commit()
     await db.refresh(current_user)
     return current_user
+
+@router.delete("/me", response_model=user_schema.User)
+async def delete_user_me(
+    current_user: models.User = Depends(deps.get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    """
+    회원 탈퇴 (Soft Delete)
+    - 실제 데이터를 삭제하지 않고, 활성 상태(is_active)를 False로 변경합니다.
+    - 탈퇴 후에는 로그인이 불가능합니다.
+    """
+    current_user.is_active = False
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
