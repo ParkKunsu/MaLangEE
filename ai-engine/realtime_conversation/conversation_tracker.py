@@ -13,8 +13,9 @@ class ConversationTracker:
     세션 동안의 대화 흐름, 발화 시간, 자막(Transcript)을 메모리 상에서 추적합니다.
     세션이 종료되면 DB 저장을 위한 정형화된 데이터를 반환합니다.
     """
-    def __init__(self, session_id: Optional[str] = None):
+    def __init__(self, session_id: Optional[str] = None, title: Optional[str] = None):
         self.session_id = session_id or str(uuid.uuid4())
+        self.title = title or "New Conversation"
         self.started_at_ts = time.time()
         self.started_at = datetime.now(timezone.utc).isoformat()
         
@@ -126,7 +127,7 @@ class ConversationTracker:
 
         report = {
             "session_id": self.session_id,
-            "title": "New Conversation", # 초기 사용자 환경 질문으로 업데이트 예정
+            "title": self.title,
             "started_at": self.started_at,
             "ended_at": ended_at,
             "total_duration_sec": round(total_duration_sec, 2),

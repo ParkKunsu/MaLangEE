@@ -33,13 +33,14 @@ class ConnectionHandler:
        - 사용자/AI 대화 내용(Transcript) 처리 및 로그 출력
        - 에러 핸들링 및 세션 초기화
     """
-    def __init__(self, client_ws: WebSocket, api_key: str):
+    def __init__(self, client_ws: WebSocket, api_key: str, history: list = None, session_id: str = None, title: str = None):
         self.client_ws = client_ws
         self.api_key = api_key
         self.conversation_manager = ConversationManager()
-        self.tracker = ConversationTracker() # 트래커 초기화 (Session ID는 자동 생성)
+        self.tracker = ConversationTracker(session_id=session_id, title=title) 
         self.openai_ws = None
         self.openai_task = None
+        self.history = history or [] # 대화 히스토리 저장
 
     async def start(self):
         """[메인 실행 루프]"""
@@ -53,7 +54,7 @@ class ConnectionHandler:
         except Exception as e:
             logger.error(f"메인 루프 오류: {e}")
         finally:
-            await self.cleanup()
+            return await self.cleanup()
 
     async def connect_to_openai(self):
         """OpenAI 연결 및 수신 태스크 시작"""
@@ -72,6 +73,10 @@ class ConnectionHandler:
             
             # 세션 초기화
             await self.conversation_manager.initialize_session(self.openai_ws)
+            
+            # 히스토리 주입
+            if self.history:
+                await self.conversation_manager.inject_history(self.history)
 
             # 수신 태스크 재시작
             if self.openai_task and not self.openai_task.done():
@@ -129,6 +134,10 @@ class ConnectionHandler:
                         
                         if should_reconnect:
                             await self.reconnect_to_openai()
+
+                elif data.get("type") == "disconnect":
+                    logger.info("클라이언트로부터 연결 종료 요청 수신")
+                    break
 
         except WebSocketDisconnect:
             logger.info("클라이언트 연결 해제됨")
@@ -215,7 +224,20 @@ class ConnectionHandler:
         if self.openai_ws:
             await self.openai_ws.close()
         
-        # [Tracker] 세션 종료 및 리포트 생성 (로그 출력)
+        # [Tracker] 세션 종료 및 리포트 생성 (전송 & 반환)
         if hasattr(self, 'tracker'):
             report = self.tracker.finalize()
             logger.info(f"### Session Report ###\n{json.dumps(report, indent=2, ensure_ascii=False)}")
+            
+            # 클라이언트에게 리포트 전송 (이미 끊겼을 수도 있으므로 try-except)
+            try:
+                await self.client_ws.send_json({
+                    "type": "session.report",
+                    "report": report
+                })
+                logger.debug("클라이언트에게 세션 리포트 전송 완료")
+            except Exception as e:
+                logger.warning(f"리포트 전송 실패 (클라이언트 연결 끊김 추정): {e}")
+
+            return report
+        return None

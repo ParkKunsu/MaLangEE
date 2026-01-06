@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, Boolean
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, Boolean, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -12,6 +13,8 @@ class User(Base):
     hashed_password = Column(String, nullable=False) # 암호화된 비밀번호
     nickname = Column(String, nullable=False) # 닉네임
     is_active = Column(Boolean, default=True) # 활성 상태
+    
+    sessions = relationship("ConversationSession", back_populates="owner")
 
 class ConversationSession(Base):
     """대화 세션 테이블"""
@@ -25,12 +28,16 @@ class ConversationSession(Base):
     total_duration_sec = Column(Float, default=0.0)
     user_speech_duration_sec = Column(Float, default=0.0)
     
+    # Audit Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
     # 1:N 관계 설정 (한 세션에 여러 메시지)
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
 
-    # 1:1 관계 설정 (사용자가 세션을 소유하는 경우 나중에 추가 가능)
-    # user_id = Column(Integer, ForeignKey("users.id"))
-    # owner = relationship("User", back_populates="sessions")
+    # 1:1 관계 설정 (사용자가 세션을 소유하는 경우)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True) # 익명 대화 가능성 고려하여 Nullable
+    owner = relationship("User", back_populates="sessions")
 
 class ChatMessage(Base):
     """개별 메시지 테이블"""

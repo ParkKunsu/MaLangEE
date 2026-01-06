@@ -1,4 +1,5 @@
 from typing import List, Optional
+from datetime import datetime
 from pydantic import BaseModel
 
 class MessageSchema(BaseModel):
@@ -15,3 +16,10 @@ class SessionCreate(BaseModel):
     total_duration_sec: float
     user_speech_duration_sec: float
     messages: List[MessageSchema]
+
+class SessionResponse(SessionCreate):
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
