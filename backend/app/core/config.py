@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # Security (JWT)
     SECRET_KEY: str = "CHANGE_THIS_TO_A_STRONG_SECRET_KEY"  # 프로덕션에서는 반드시 환경변수로 덮어씌워야 함
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 240
     
     # Database
     # 1. 로컬 개발/테스트용: SQLite 사용 (기본값)
