@@ -35,6 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# override root .gitignore (Python lib/ pattern)
+!**/lib/
+
 # playwright
 /test-results/
 /playwright-report/
@@ -43,3 +46,9 @@ next-env.d.ts
 # vitest
 coverage/
 
+# env
+.env.local
+
+# Node.js (root level - frontend has its own)
+node_modules/
+yarn.lock
