@@ -170,8 +170,7 @@ if [[ "$TARGET" == "all" || "$TARGET" == "backend" ]]; then
     fi
     echo ""
 fi
-    echo ""
-fi
+
 
 # 4. AI-Engine 업데이트
 if [[ "$TARGET" == "all" || "$TARGET" == "ai" ]]; then
