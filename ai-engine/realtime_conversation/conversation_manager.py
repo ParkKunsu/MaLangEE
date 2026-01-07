@@ -36,9 +36,23 @@ class ConversationManager:
             )
             print(f"Warning: Prompt file not found at {prompt_path}")
 
+        # [Refactor] 3-Layer Prompt Variables (3단 프롬프트 관리 구조)
+        # 1. Base: 파일에서 로드한 불변의 기본 페르소나 및 핵심 규칙
+        self.instruction_base = self.system_instructions
+        
+        # 2. Active User: 프론트엔드(클라이언트)에서 session.update로 요청한 추가 설정
+        #    (예: "한국어로 설명해줘", "존댓말 써줘" 등)
+        self.instruction_active_user = ""
+        
+        # 3. Dynamic: 백엔드 로직(WPM 분석 등)에 의해 자동으로 추가되는 상태 기반 지시사항
+        #    (예: "사용자가 말이 빠르니 너도 자연스럽게 빨리 말해")
+        self.instruction_dynamic = ""
+
+        # 디폴트 설정
         self.current_config = {
             "modalities": ["audio", "text"],
-            "instructions": self.system_instructions,
+            "instructions": self.instruction_base, # 초기값은 Base만
+
             "voice": "alloy",
             "input_audio_format": "pcm16",
             "output_audio_format": "pcm16",
@@ -60,6 +74,9 @@ class ConversationManager:
         """
         self.openai_ws = openai_ws # 웹소켓 객체 저장 (나중에 업데이트 할 때 사용)
         
+        # [Refactor] 초기 프롬프트 조립 (Base + User + Dynamic)
+        self.current_config["instructions"] = self._assemble_instructions()
+
         # 현재 저장된 설정값 로그 출력
         logger.info(f"세션 초기화 시작. 적용할 설정: {json.dumps(self.current_config, ensure_ascii=False)}")
 
@@ -107,6 +124,25 @@ class ConversationManager:
             
         logger.info("-> 대화 히스토리 주입 완료")
 
+    def _assemble_instructions(self) -> str:
+        """
+        [3-Layer Prompt Assembly]
+        세 가지 소스의 프롬프트를 합쳐서 최종 시스템 지시사항을 생성합니다.
+        
+        순서: Base(기본) -> User(사용자요구) -> Dynamic(동적상황)
+        이렇게 함으로써 기본 페르소나를 유지하면서도 사용자 설정과 상황별 가이드를 
+        모두 충돌 없이 적용할 수 있습니다.
+        """
+        parts = [self.instruction_base]
+        
+        if self.instruction_active_user:
+            parts.append(f"\n\n[User Requirement]\n{self.instruction_active_user}")
+            
+        if self.instruction_dynamic:
+            parts.append(f"\n\n[Dynamic Adjustment]\n{self.instruction_dynamic}")
+            
+        return "".join(parts)
+
     async def update_session_settings(self, new_settings: dict) -> bool:
         """
         세션 설정을 업데이트합니다.
@@ -116,6 +152,15 @@ class ConversationManager:
         """
         logger.info(f"세션 설정 업데이트 요청: {new_settings.keys()}")
         should_reconnect = False
+
+        # [Refactor] instructions 분리 처리
+        if "instructions" in new_settings:
+            # 프론트엔드에서 오는 요청은 'Active User' 레이어만 업데이트
+            self.instruction_active_user = new_settings.pop("instructions")
+            logger.info(f"사용자 프롬프트(User Layer) 업데이트됨: {self.instruction_active_user}")
+            
+            # 최종 조립 후 실제 전송용 payload에 다시 담기
+            new_settings["instructions"] = self._assemble_instructions()
 
         # 1. 내부 설정값 업데이트
         for key, value in new_settings.items():
@@ -147,21 +192,34 @@ class ConversationManager:
         Args:
             wpm_status (str): "slow" | "normal" | "fast"
         """
-        logger.info(f"발화 스타일 업데이트 요청: {wpm_status}")
-        
-        dynamic_instruction = ""
+        new_dynamic_instruction = ""
         if wpm_status == "slow":
-            dynamic_instruction = "\n\n[Dynamic Instruction] The user speaks slowly. Please speak slowly and clearly, articulating every word."
+            new_dynamic_instruction = "The user speaks slowly. Please speak slowly and clearly, articulating every word."
         elif wpm_status == "fast":
-            dynamic_instruction = "\n\n[Dynamic Instruction] The user is fluent. You should speak at a natural, faster pace like a native speaker."
-        else:
-            # Normal인 경우 기본 프롬프트만 사용 (추가 문구 없음)
-            pass
-
-        # 기존 베이스 프롬프트 뒤에 추가
-        new_instructions = self.system_instructions + dynamic_instruction
+            new_dynamic_instruction = "The user is fluent. You should speak at a natural, faster pace like a native speaker."
         
-        # 현재 적용된 지시사항과 다를 경우에만 업데이트 수행
-        if self.current_config["instructions"] != new_instructions:
-            logger.info(f"시스템 프롬프트 변경 감지 (Status: {wpm_status})")
-            await self.update_session_settings({"instructions": new_instructions})
+        # 변경사항이 없으면 리턴
+        if self.instruction_dynamic == new_dynamic_instruction:
+            return
+
+        logger.info(f"시스템 프롬프트 동적 변경 (WPM: {wpm_status})")
+        
+        # [Refactor] Dynamic 레이어만 업데이트
+        self.instruction_dynamic = new_dynamic_instruction
+        
+        # 전체 프롬프트 재조립
+        assembled = self._assemble_instructions()
+        self.current_config["instructions"] = assembled
+        
+        # 직접 전송 (User 레이어 영향 없이)
+        if self.openai_ws:
+            try:
+                await self.openai_ws.send(json.dumps({
+                    "type": "session.update",
+                    "session": {
+                        "instructions": assembled
+                    }
+                }))
+                logger.info("-> WPM 반영 프롬프트 업데이트 전송 완료")
+            except Exception as e:
+                logger.error(f"WPM 업데이트 실패: {e}")
