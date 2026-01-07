@@ -12,8 +12,16 @@ const navigationItems = [
   { href: "/scenario", label: "Scenario", labelKr: "상황극" },
 ];
 
+// Navigation을 숨길 경로들
+const hiddenPaths = ["/login", "/auth/login", "/auth/register"];
+
 export function Navigation() {
   const pathname = usePathname();
+
+  // 로그인/인증 페이지에서는 Navigation 숨김
+  if (hiddenPaths.includes(pathname)) {
+    return null;
+  }
 
   return (
     <nav className="border-b bg-background">
