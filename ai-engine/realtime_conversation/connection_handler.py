@@ -51,10 +51,38 @@ class ConnectionHandler:
             # 2. 클라이언트 수신 루프
             await self.receive_from_client()
             
+        except WebSocketDisconnect:
+            logger.info("클라이언트 연결이 정상적으로 종료되었습니다.")
         except Exception as e:
             logger.error(f"메인 루프 오류: {e}")
+            await self.send_error_to_client("server_error", str(e))
         finally:
-            return await self.cleanup()
+            return await self.cleanup()  # 반환값 전달 (Session Report)
+
+    async def send_error_to_client(self, code: str, message: str):
+        """클라이언트에게 에러 메시지 전송"""
+        try:
+            await self.client_ws.send_json({
+                "type": "error",
+                "code": code,
+                "message": message
+            })
+            logger.info(f"클라이언트에게 에러 전송: {code} - {message}")
+        except Exception as e:
+            logger.warning(f"에러 메시지 전송 실패 (연결 끊김): {e}")
+
+    async def handle_openai_disconnect(self, reason: str = None):
+        """OpenAI 연결 끊김 처리 (클라이언트에게 알림 -> cleanup)"""
+        logger.warning(f"OpenAI 연결 끊김 감지: {reason}")
+        await self.send_error_to_client(
+            "openai_disconnected", 
+            f"OpenAI connection lost: {reason or 'Unknown error'}"
+        )
+        # 이 함수 호출 후 상위 루프(receive_from_openai)가 종료되고
+        # 결국 start() 메서드가 끝나면서 finally 블록의 cleanup()이 호출될 것임
+        # 하지만 명시적인 흐름 제어를 위해 여기서 즉시 cleanup을 호출하지 않고
+        # 에러 메시지만 보낸 뒤 루프를 빠져나가도록 유도함.
+
 
     async def connect_to_openai(self):
         """OpenAI 연결 및 수신 태스크 시작"""
@@ -218,7 +246,12 @@ class ConnectionHandler:
 
         except Exception as e:
             logger.error(f"OpenAI 수신 루프 중지됨: {e}")
-            pass
+            await self.handle_openai_disconnect(str(e))
+        finally:
+            # 정상적으로 루프가 끝난 경우에도 연결이 끊긴 것으로 간주
+            if self.openai_ws and self.openai_ws.open:
+                 await self.openai_ws.close()
+
 
     async def cleanup(self):
         """자원 정리"""
@@ -233,14 +266,18 @@ class ConnectionHandler:
             logger.info(f"### Session Report ###\n{json.dumps(report, indent=2, ensure_ascii=False)}")
             
             # 클라이언트에게 리포트 전송 (이미 끊겼을 수도 있으므로 try-except)
+            # 주의: 에러 발생("error" 타입 전송) 직후라면 리포트 전송이 의미 없거나 실패할 수 있음
             try:
+                # 연결이 살아있을 때만 "disconnected" 정류 종료 알림과 함께 리포트 전송
+                # (이미 "error"를 보냈거나 소켓이 닫혔으면 실패할 것임)
                 await self.client_ws.send_json({
-                    "type": "session.report",
+                    "type": "disconnected",
+                    "reason": "Session ended",
                     "report": report
                 })
-                logger.debug("클라이언트에게 세션 리포트 전송 완료")
+                logger.debug("클라이언트에게 세션 리포트 및 종료 알림 전송 완료")
             except Exception as e:
-                logger.warning(f"리포트 전송 실패 (클라이언트 연결 끊김 추정): {e}")
+                pass # 이미 끊긴 경우 무시
 
             return report
         return None
