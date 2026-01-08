@@ -107,3 +107,15 @@ class ChatRepository:
         )
         result = await self.db.execute(stmt)
         return result.all()
+
+    async def update_session_owner(self, session_id: str, user_id: int) -> bool:
+        stmt = select(ConversationSession).where(ConversationSession.session_id == session_id)
+        result = await self.db.execute(stmt)
+        session = result.scalars().first()
+        
+        if session:
+            session.user_id = user_id
+            await self.db.commit()
+            await self.db.refresh(session)
+            return True
+        return False

@@ -1,32 +1,34 @@
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, Query
 
 from app.api import deps
 from app.db import models
-from app.schemas.chat import SessionCreate, SessionSummary, SessionResponse
+from app.schemas.chat import SessionCreate, SessionSummary, SessionResponse, SessionIdRequest
 from app.services.chat_service import ChatService
 
 router = APIRouter()
 
-@router.put("/logs", status_code=201, summary="대화 로그 동기화 및 세션 연동")
-async def upload_chat_log(
-    session_data: SessionCreate,
+@router.put("/logs", status_code=200, summary="데모 세션 사용자 회원가입후 아아디 연동")
+async def sync_guest_session(
+    request: SessionIdRequest,
     current_user: models.User = Depends(deps.get_current_user),
     service: ChatService = Depends(deps.get_chat_service),
 ):
     """
-    게스트 세션의 소유권을 로그인한 사용자로 변경(동기화)합니다.
+    게스트 세션의 소유권을 로그인한 사용자로 변경합니다.
     
     [용도]
     - WebSocket 연결 종료 시 데이터는 서버에서 자동 저장되므로, 이 엔드포인트는 **'사용자 ID 매핑(Map User ID)'** 용도로 사용됩니다.
-    - 프론트엔드에서는 `session_id`를 포함하여 요청하며, 데이터 중복 누적을 방지하기 위해 
-      통계 값(duration)은 0, 메시지는 빈 리스트로 전송하는 것을 권장합니다.
     
     [동작]
     - 입력받은 `session_id`에 해당하는 세션을 찾아 `user_id`를 현재 로그인한 사용자로 업데이트합니다.
     """
     try:
-        await service.save_chat_log(session_data, user_id=current_user.id)
-        return {"status": "success", "session_id": session_data.session_id}
+        success = await service.map_session_to_user(request.session_id, user_id=current_user.id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Session not found")
+            
+        return {"status": "success", "session_id": request.session_id}
     except Exception as e:
         # 이미 존재하는 세션 ID 등 에러 처리
         raise HTTPException(status_code=500, detail=str(e))
