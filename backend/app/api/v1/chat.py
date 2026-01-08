@@ -3,14 +3,14 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, Query
 
 from app.api import deps
 from app.db import models
-from app.schemas.chat import SessionCreate, SessionSummary, SessionResponse, SessionIdRequest, SyncSessionResponse, HintResponse
+from app.schemas.chat import SessionCreate, SessionSummary, SessionResponse, SyncSessionResponse, HintResponse
 from app.services.chat_service import ChatService
 
 router = APIRouter()
 
-@router.put("/sync", response_model=SyncSessionResponse, summary="데모 세션 사용자 회원가입후 아아디 연동")
+@router.put("/sessions/{session_id}/sync", response_model=SyncSessionResponse, summary="데모 세션 사용자 회원가입후 아아디 연동")
 async def sync_guest_session(
-    request: SessionIdRequest,
+    session_id: str,
     current_user: models.User = Depends(deps.get_current_user),
     service: ChatService = Depends(deps.get_chat_service),
 ):
@@ -24,16 +24,16 @@ async def sync_guest_session(
     - 입력받은 `session_id`에 해당하는 세션을 찾아 `user_id`를 현재 로그인한 사용자로 업데이트합니다.
     """
     try:
-        success = await service.map_session_to_user(request.session_id, user_id=current_user.id)
+        success = await service.map_session_to_user(session_id, user_id=current_user.id)
         if not success:
             raise HTTPException(status_code=404, detail="Session not found")
             
-        return SyncSessionResponse(status="success", session_id=request.session_id)
+        return SyncSessionResponse(status="success", session_id=session_id)
     except Exception as e:
         # 이미 존재하는 세션 ID 등 에러 처리
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/sessions", response_model=List[SessionSummary])
+@router.get("/sessions", response_model=List[SessionSummary], summary="사용자 대화 세션 목록 조회")
 async def get_user_sessions(
     skip: int = 0,
     limit: int = 20,
@@ -45,7 +45,7 @@ async def get_user_sessions(
     """
     return await service.get_user_sessions(current_user.id, skip, limit)
 
-@router.get("/sessions/{session_id}", response_model=SessionResponse)
+@router.get("/sessions/{session_id}", response_model=SessionResponse, summary="대화 세션 상세 조회")
 async def get_session_detail(
     session_id: str,
     current_user: models.User = Depends(deps.get_current_user),
@@ -59,7 +59,7 @@ async def get_session_detail(
         raise HTTPException(status_code=404, detail="Session not found")
     return session
 
-@router.get("/recent", response_model=Optional[SessionResponse])
+@router.get("/recent", response_model=Optional[SessionResponse], summary="가장 최근 대화 세션 조회")
 async def get_recent_chat_session(
     current_user: models.User = Depends(deps.get_current_user),
     service: ChatService = Depends(deps.get_chat_service),
