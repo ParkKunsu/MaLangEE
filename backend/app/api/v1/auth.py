@@ -15,7 +15,7 @@ async def signup(
     service: AuthService = Depends(deps.get_auth_service),
 ) -> Any:
     """
-    회원가입 API
+    회원가입
     """
     try:
         return await service.signup(user_in)
@@ -31,7 +31,7 @@ async def login_access_token(
     service: AuthService = Depends(deps.get_auth_service),
 ) -> Any:
     """
-    OAuth2 호환 로그인 API
+    OAuth2 호환 로그인
     """
     try:
         user_obj = await service.authenticate_user(form_data.username, form_data.password)
@@ -59,6 +59,9 @@ async def check_login_id(
     check_data: user.LoginIdCheck,
     service: AuthService = Depends(deps.get_auth_service),
 ):
+    """
+    로그인 ID 중복 확인
+    """
     is_available = await service.check_login_id_availability(check_data.login_id)
     return {"is_available": is_available}
 
@@ -67,5 +70,8 @@ async def check_nickname(
     check_data: user.NicknameCheck,
     service: AuthService = Depends(deps.get_auth_service),
 ):
+    """
+    닉네임 중복 확인
+    """
     is_available = await service.check_nickname_availability(check_data.nickname)
     return {"is_available": is_available}
