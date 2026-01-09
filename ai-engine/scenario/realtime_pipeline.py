@@ -16,11 +16,13 @@ class RealtimeScenarioPipeline:
         *,
         max_attempts: int = 3,
         on_complete: Optional[OnComplete] = None,
+        send_final_response: bool = True,
     ) -> None:
         self._builder = builder
         self._send_response = send_response
         self._max_attempts = max_attempts
         self._on_complete = on_complete
+        self._send_final_response = send_final_response
 
     async def handle_event(self, event: dict[str, Any]) -> None:
         if self._builder.state.completed:
@@ -31,7 +33,8 @@ class RealtimeScenarioPipeline:
 
         self._builder.ingest_user_text(user_text)
         if self._builder.state.is_complete():
-            await self._maybe_await(self._send_response(self._builder.finalize_scenario()))
+            if self._send_final_response:
+                await self._maybe_await(self._send_response(self._builder.finalize_scenario()))
             if self._on_complete:
                 await self._maybe_await(self._on_complete(self._builder))
             return
@@ -39,9 +42,11 @@ class RealtimeScenarioPipeline:
         question = self._builder.build_follow_up_question()
         if question is None:
             if self._builder.state.attempts >= self._max_attempts:
-                await self._maybe_await(self._send_response(self._builder.finalize_with_fallback()))
+                if self._send_final_response:
+                    await self._maybe_await(self._send_response(self._builder.finalize_with_fallback()))
             else:
-                await self._maybe_await(self._send_response(self._builder.finalize_scenario()))
+                if self._send_final_response:
+                    await self._maybe_await(self._send_response(self._builder.finalize_scenario()))
             if self._on_complete:
                 await self._maybe_await(self._on_complete(self._builder))
             return

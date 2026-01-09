@@ -171,7 +171,12 @@ async def handle_client(client_ws) -> None:
         state["completed_sent"] = True
         await openai_client.close()
 
-    pipeline = RealtimeScenarioPipeline(builder, send_response, on_complete=on_complete)
+    pipeline = RealtimeScenarioPipeline(
+        builder,
+        send_response,
+        on_complete=on_complete,
+        send_final_response=False,
+    )
     async def forward_user_transcript(event: dict[str, Any]) -> None:
         event_type = event.get("type", "")
         if event_type in (
