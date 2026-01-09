@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
+import { useState } from "react";
 import { authApi } from "@/shared/api/auth";
 
 const loginSchema = z.object({
@@ -18,6 +19,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const {
     register,
     handleSubmit,
@@ -36,6 +38,11 @@ export default function LoginPage() {
 
   const onSubmit = (data: LoginFormData) => {
     mutation.mutate(data);
+  };
+
+  const handleFindClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setShowComingSoonModal(true);
   };
 
   return (
@@ -137,9 +144,9 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex items-center justify-between px-1 text-sm text-[#625a75]">
-                  <Link href="/auth/find" className="hover:text-[#7B6CF6]" style={{ letterSpacing: "-0.1px" }}>
+                  <a href="#" onClick={handleFindClick} className="hover:text-[#7B6CF6]" style={{ letterSpacing: "-0.1px" }}>
                     아이디/비밀번호 찾기
-                  </Link>
+                  </a>
                   <Link href="/auth/signup" className="hover:text-[#7B6CF6]" style={{ letterSpacing: "-0.1px" }}>
                     회원가입
                   </Link>
@@ -173,6 +180,30 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {showComingSoonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="relative w-full max-w-sm rounded-[24px] border border-white/60 bg-gradient-to-br from-white/90 via-white/80 to-[#f0e8ff]/80 shadow-[0_20px_80px_rgba(125,106,246,0.3)] backdrop-blur-2xl mx-4">
+            <div className="space-y-6 px-8 py-8">
+              <div className="space-y-2">
+                <p className="text-center text-2xl font-semibold text-[#1F1C2B]">
+                  준비중입니다
+                </p>
+                <p className="text-center text-sm text-[#625a75]" style={{ letterSpacing: "-0.1px" }}>
+                  해당 기능은 현재 준비 중입니다.<br />
+                  조금만 기다려주세요!
+                </p>
+              </div>
+              <button
+                onClick={() => setShowComingSoonModal(false)}
+                className="h-[48px] w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8]"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
