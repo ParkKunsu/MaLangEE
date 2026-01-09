@@ -141,7 +141,11 @@ npx shadcn@latest add input
 
 ```env
 # .env.local
-NEXT_PUBLIC_API_URL=http://localhost:8000
+# 로컬호스트 URL (개발 환경용)
+NEXT_PUBLIC_LOCALHOST_URL=http://localhost:8000
+
+# 백엔드 API 서버 URL (기본 경로: /api/v1 자동 포함)
+NEXT_PUBLIC_API_URL=http://49.50.137.35:8080
 ```
 
 ## 문서
