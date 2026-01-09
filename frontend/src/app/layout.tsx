@@ -20,8 +20,8 @@ const notoSans = Noto_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ETutor - English Thinking Training",
-  description: "English Thinking Training Chatbot",
+  title: "MalangEE - English Free Talking AI Chat-bot",
+  description: "English Free Talking AI Chat-bo",
 };
 
 export default function RootLayout({
