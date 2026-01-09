@@ -1,0 +1,38 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- 내부 원 색상 애니메이션 -->
+        <linearGradient id="activeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7E6CF3">
+                <animate attributeName="stop-color" values="#7E6CF3; #A594F9; #7E6CF3" dur="2s" repeatCount="indefinite" />
+            </stop>
+            <stop offset="100%" stop-color="#A594F9">
+                <animate attributeName="stop-color" values="#A594F9; #7E6CF3; #A594F9" dur="2s" repeatCount="indefinite" />
+            </stop>
+        </linearGradient>
+
+        <style>
+            .wave { transform-origin: center; animation: pulse 2s infinite ease-out; }
+            .w2 { animation-delay: 0.6s; }
+            .w3 { animation-delay: 1.2s; }
+            @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.4); opacity: 0; }
+            }
+        </style>
+    </defs>
+
+    <!-- 파동 효과 (중앙 원 뒤에서 퍼져나감) -->
+    <circle cx="100" cy="100" r="70" fill="#7E6CF3" class="wave w1" />
+    <circle cx="100" cy="100" r="70" fill="#7E6CF3" class="wave w2" />
+    <circle cx="100" cy="100" r="70" fill="#7E6CF3" class="wave w3" />
+
+    <!-- 메인 배경 원 (OFF와 동일한 크기 70) -->
+    <circle cx="100" cy="100" r="70" fill="url(#activeGrad)" stroke="white" stroke-width="1" />
+
+    <!-- 마이크 아이콘 (OFF와 100% 동일한 좌표) -->
+    <g fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="85" y="67" width="30" height="48" rx="15" />
+        <path d="M 68 98 A 32 32 0 0 0 132 98" />
+        <line x1="100" y1="130" x2="100" y2="142" />
+    </g>
+</svg>
