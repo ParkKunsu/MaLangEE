@@ -11,7 +11,7 @@ export interface Token {
 }
 
 export interface DuplicateCheckResponse {
-  available: boolean;
+  is_available: boolean;
 }
 
 export interface DailyReflection {
