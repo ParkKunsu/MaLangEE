@@ -4,7 +4,9 @@ import json
 import sys
 from pathlib import Path
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from app.api import deps
+from app.db import models
 from websockets.exceptions import ConnectionClosedOK
 
 AI_ENGINE_ROOT = Path(__file__).resolve().parents[4] / "ai-engine"
@@ -41,11 +43,27 @@ class FastAPIWebSocketAdapter:
 
 
 @router.websocket("/ws/scenario")
-async def websocket_scenario(websocket: WebSocket) -> None:
+async def websocket_scenario(
+    websocket: WebSocket,
+    user: models.User = Depends(deps.get_current_user_ws),
+) -> None:
     await websocket.accept()
     adapter = FastAPIWebSocketAdapter(websocket)
     try:
-        await handle_client(adapter)
+        await handle_client(adapter, user_id=user.id)
+    except (WebSocketDisconnect, ConnectionClosedOK):
+        return
+    except RuntimeError as exc:
+        await websocket.send_text(json.dumps({"type": "error", "message": str(exc)}))
+        await websocket.close(code=1011, reason="Server configuration error")
+
+
+@router.websocket("/ws/guest-scenario")
+async def websocket_guest_scenario(websocket: WebSocket) -> None:
+    await websocket.accept()
+    adapter = FastAPIWebSocketAdapter(websocket)
+    try:
+        await handle_client(adapter, user_id=None)
     except (WebSocketDisconnect, ConnectionClosedOK):
         return
     except RuntimeError as exc:

@@ -16,7 +16,7 @@
 - 테스트 참고: `tests/index.html`
 
 ## 2) 프런트엔드 데이터 흐름
-1) 브라우저 마이크 → PCM16 base64 → WS(`/api/v1/ws/scenario`, `input_audio_chunk`)
+1) 브라우저 마이크 → PCM16 base64 → WS(`/api/v1/ws/scenario` 또는 `/api/v1/ws/guest-scenario`, `input_audio_chunk`)
 2) 서버가 Realtime STT로 사용자 발화를 텍스트로 추출
 3) 시나리오 로직이 질문/완료 문장 생성
 4) 서버가 TTS(PCM16) 스트리밍 전송(`response.audio.delta`)
@@ -229,8 +229,9 @@ export function ScenarioClient({ wsUrl }: { wsUrl: string }) {
 - 서버 실행:
   - `cd backend`
   - `uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
-- 프런트엔드에서 `ws://127.0.0.1:8000/api/v1/ws/scenario` 연결 후 오디오 전송.
-- `tests/index.html`의 기본 URL도 동일하게 맞춰져 있음.
+- 로그인 사용자: `ws://127.0.0.1:8000/api/v1/ws/scenario?token=...`
+- 게스트: `ws://127.0.0.1:8000/api/v1/ws/guest-scenario`
+- `tests/index.html` 기본 URL은 게스트 엔드포인트를 사용.
 
 ## 8) 주의사항
 - 입력 오디오 포맷은 PCM16(LE), 모노 채널 기준.

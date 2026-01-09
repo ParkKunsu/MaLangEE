@@ -49,7 +49,7 @@ async def relay_server(host: str, port: int, stop_event: Optional[asyncio.Event]
             await stop_event.wait()
 
 
-async def handle_client(client_ws) -> None:
+async def handle_client(client_ws, user_id: Optional[int] = None) -> None:
     logger = get_logger("realtime_bridge")
     client_peer = getattr(client_ws, "remote_address", None)
     client_id = _new_client_id()
@@ -146,6 +146,7 @@ async def handle_client(client_ws) -> None:
                 session_id=session_id,
                 scenario_state=scenario_state_payload,
                 title=title,
+                user_id=user_id,
             )
         except Exception as exc:
             logger.error("Scenario save failed [%s]: %s", client_id, exc)
@@ -356,6 +357,7 @@ async def _persist_scenario_state(
     session_id: str,
     scenario_state: dict[str, Any],
     title: str,
+    user_id: Optional[int] = None,
 ) -> None:
     now = datetime.now(timezone.utc).isoformat()
     session_data = SessionCreate(
@@ -374,7 +376,7 @@ async def _persist_scenario_state(
     )
     async with AsyncSessionLocal() as db:
         repo = ChatRepository(db)
-        await repo.create_session_log(session_data, user_id=None)
+        await repo.create_session_log(session_data, user_id=user_id)
 
 async def _generate_session_title(
     config: AppConfig,
