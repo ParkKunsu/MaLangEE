@@ -37,16 +37,40 @@
 </head>
 
 <body>
-    <h1>MaLangEE Realtime Test</h1>
+<body>
+    <h1>MaLangEE Realtime w/ Debug</h1>
+
+    <!-- 1. Session Control -->
+    <div style="margin-bottom: 20px;">
+        <label>Session ID: </label>
+        <input type="text" id="sessionIdInput" placeholder="Leave empty for auto-gen" style="width: 300px; padding: 5px;">
+        <button onclick="generateUUID()">🎲 Generate New</button>
+    </div>
+
     <button id="connectBtn">Connect & Start</button>
     <button id="disconnectBtn" disabled>Disconnect</button>
+    
     <div id="status">Disconnected</div>
+
+    <!-- 2. Debug Monitor -->
+    <div style="margin-top: 20px; padding: 10px; background-color: #f0f0f0; border: 1px solid #ccc;">
+        <strong>📊 Live Debug Monitor</strong>
+        <div style="display: flex; gap: 20px; margin-top: 5px;">
+            <div>Speed Status: <span id="wpmStatus" style="font-weight: bold; color: blue;">-</span></div>
+            <div style="flex: 1;">
+                Active Dynamic Instruction: 
+                <div id="dynamicInstruction" style="background: white; padding: 5px; font-size: 12px; height: 40px; overflow: auto; border: 1px dashed gray;">(Waiting for update...)</div>
+            </div>
+        </div>
+    </div>
+
     <div id="log"></div>
 
     <div style="margin: 20px; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
-        <h3>Session Settings</h3>
+        <h3>Session Settings & Prompts</h3>
 
         <div>
+            <label>Voice: </label>
             <select id="voiceSelect"
                 class="bg-gray-700 text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500 focus:outline-none">
                 <option value="alloy">Alloy (Default)</option>
@@ -60,21 +84,22 @@
             </select>
         </div>
 
-        <div class="mt-4">
-            <label>System Instructions (Persona): </label>
-            <textarea id="instructionsInput"
-                class="w-full bg-gray-700 text-white rounded p-2 text-sm border border-gray-600 focus:border-blue-500 focus:outline-none"
-                style="width: 100%; height: 500px; box-sizing: border-box;" placeholder="Loading prompt..."></textarea>
+        <!-- 3-Layer Prompt UI -->
+        <div class="mt-4" style="display: flex; gap: 10px; margin-top: 15px;">
+            <div style="flex: 1;">
+                <label>1. Base System Prompt (Read-only)</label>
+                <textarea id="basePromptInput" readonly
+                    style="width: 100%; height: 200px; background-color: #eee; color: #555; box-sizing: border-box;"></textarea>
+            </div>
+            <div style="flex: 1;">
+                <label>2. User Custom Instructions (Editable)</label>
+                <textarea id="userPromptInput"
+                    style="width: 100%; height: 200px; box-sizing: border-box;" 
+                    placeholder="e.g. Speak Korean only, Be sarcastic..."></textarea>
+            </div>
         </div>
 
-        <div class="mt-4 flex gap-2">
-            Using Presets:
-            <button onclick="setPersona('tutor')">Friendly Tutor</button>
-            <button onclick="setPersona('strict')">Strict Instructor</button>
-            <button onclick="setPersona('pirate')">Pirate 🏴‍☠️</button>
-        </div>
-
-        <button id="updateSettingsBtn" style="background-color: #4CAF50; color: white;">Update Settings</button>
+        <button id="updateSettingsBtn" style="background-color: #4CAF50; color: white; margin-top: 10px;">Update Settings (Apply User Prompt)</button>
     </div>
 
     <script>
@@ -89,27 +114,24 @@
 
         // Settings UI
         const voiceSelect = document.getElementById('voiceSelect');
-        const instructionsInput = document.getElementById('instructionsInput');
+        const basePromptInput = document.getElementById('basePromptInput');
+        const userPromptInput = document.getElementById('userPromptInput');
         const updateSettingsBtn = document.getElementById('updateSettingsBtn');
+        const sessionIdInput = document.getElementById('sessionIdInput');
+
+        // Debug UI
+        const wpmStatusSpan = document.getElementById('wpmStatus');
+        const dynamicInstructionDiv = document.getElementById('dynamicInstruction');
 
         function log(msg) {
             logDiv.innerHTML += `<div>${msg}</div>`;
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        // Persona Presets
-        window.setPersona = (type) => {
-            const instructionsInput = document.getElementById("instructionsInput");
-            if (type === 'tutor') {
-                // 기본값(Tutor)은 서버의 시스템 프롬프트(.md) 원본을 다시 불러옴
-                instructionsInput.placeholder = "Reloading prompt...";
-                loadPrompt();
-            } else if (type === 'strict') {
-                instructionsInput.value = "You are a strict Drill Sergeant. Correct every single grammar mistake immediately and yell if necessary. Demand loud and clear pronunciation!";
-            } else if (type === 'pirate') {
-                instructionsInput.value = "You are a wise old Pirate Captain. Use lots of pirate slang (Ahoy, Matey, Arrr!). Tell stories about the seven seas while teaching English.";
-            }
-        };
+        function generateUUID() {
+            const uuid = crypto.randomUUID();
+            sessionIdInput.value = uuid;
+        }
 
         // Update Settings Button Logic
         updateSettingsBtn.onclick = () => {
@@ -122,22 +144,29 @@
                 type: "session.update",
                 config: {
                     voice: voiceSelect.value,
-                    instructions: instructionsInput.value
+                    instructions: userPromptInput.value // Only send User layer
                 }
             };
 
             ws.send(JSON.stringify(newSettings));
-            log(">> Sent Settings Update Request");
+            log(">> Sent Settings Update Request (User Prompt)");
         };
 
         connectBtn.onclick = async () => {
+            let sessionId = sessionIdInput.value.trim();
             statusDiv.textContent = "Connecting...";
-            // 1. WebSocket Connect
-            ws = new WebSocket("ws://localhost:8002/ws/chat");
+            
+            // Build WS URL
+            let url = "ws://localhost:8002/ws/chat";
+            if (sessionId) {
+                url += `?session_id=${sessionId}`;
+            }
+
+            ws = new WebSocket(url);
 
             ws.onopen = async () => {
-                statusDiv.textContent = "Connected. Initializing Audio...";
-                log("WS Connected");
+                statusDiv.textContent = `Connected (Session: ${sessionId || 'New'})`;
+                log(`WS Connected to ${url}`);
                 connectBtn.disabled = true;
                 disconnectBtn.disabled = false;
                 await startAudio();
@@ -145,12 +174,20 @@
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data);
+                
+                // [Debug Monitor]
+                if (data.type === "debug.state") {
+                    wpmStatusSpan.textContent = data.wpm_status;
+                    dynamicInstructionDiv.textContent = data.dynamic_instruction || "(None)";
+                    dynamicInstructionDiv.style.backgroundColor = "#e8f5e9"; // blink effect
+                    setTimeout(() => dynamicInstructionDiv.style.backgroundColor = "white", 300);
+                    return;
+                }
+
                 if (data.type === "audio.delta") {
-                    // Play Received Audio (Base64 -> PCM16 -> AudioBuffer)
                     playPcm16(data.delta);
                 } else if (data.type === "speech.started") {
                     log("User started speaking... (Interruption detected)");
-                    // Cancel current audio playback (Barge-in)
                     clearScheduledAudio();
                 } else if (data.type === "transcript.done") {
                     log(`AI: ${data.transcript}`);
@@ -212,10 +249,8 @@
                 workletNode = new AudioWorkletNode(audioContext, 'recorder-processor');
 
                 workletNode.port.onmessage = (event) => {
-                    // PCM16 ArrayBuffer
                     const arrayBuffer = event.data;
                     if (ws && ws.readyState === WebSocket.OPEN) {
-                        // Convert ArrayBuffer to Base64
                         const base64Audio = arrayBufferToBase64(arrayBuffer);
                         ws.send(JSON.stringify({
                             type: "input_audio_buffer.append",
@@ -226,11 +261,7 @@
 
                 source.connect(workletNode);
                 workletNode.connect(audioContext.destination);
-                // Mute local feedback? No, destination needed for worklet to run in some browsers.
-                // However, to avoid self-hearing, we can disconnect or set gain to 0. 
-                // For now, let's keep it connected but be aware of feedback if speakers are loud.
-                // Actually, let's disconnect to be safe.
-                workletNode.disconnect();
+                workletNode.disconnect(); // Prevent feedback
 
             } catch (e) {
                 log(`Error starting audio: ${e.message}`);
@@ -268,34 +299,26 @@
             source.buffer = buffer;
             source.connect(audioContext.destination);
 
-            // Audio Scheduling Logic
             const currentTime = audioContext.currentTime;
-
-            // If nextStartTime is in the past (gap in audio), reset to now
             if (nextStartTime < currentTime) {
                 nextStartTime = currentTime;
             }
 
             source.start(nextStartTime);
-
-            // Track source for cancellation
             scheduledAudioSources.push(source);
             source.onended = () => {
                 const index = scheduledAudioSources.indexOf(source);
                 if (index > -1) scheduledAudioSources.splice(index, 1);
             };
 
-            // Increment next start time by duration of this chunk
             nextStartTime += buffer.duration;
         }
 
         function clearScheduledAudio() {
-            log("Interruption: Stopping audio...");
             scheduledAudioSources.forEach(source => {
                 try { source.stop(); } catch (e) { }
             });
             scheduledAudioSources = [];
-            // Reset timing so next response starts fresh
             if (audioContext) {
                 nextStartTime = audioContext.currentTime;
             }
@@ -316,18 +339,14 @@
                 const response = await fetch('/prompt');
                 const data = await response.json();
                 if (data.prompt) {
-                    const instructionsInput = document.getElementById("instructionsInput");
-                    instructionsInput.value = data.prompt;
-                    instructionsInput.placeholder = "System instructions loaded.";
+                    basePromptInput.value = data.prompt; // Show Read-only Base
                 }
             } catch (e) {
                 console.error("Failed to load prompt:", e);
             }
         }
 
-        // Automatically load prompt on page load
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("DOM ready, loading prompt...");
             loadPrompt();
         });
     </script>
