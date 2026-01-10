@@ -51,7 +51,7 @@
   z-index: 10;
   width: 100%;
   max-width: 960px;
-  min-height: 750px;
+  min-height: 550px;
   background: rgba(255, 255, 255, 0.5);
   box-shadow: 2px 2px 8px rgba(123, 108, 246, 0.2);
   backdrop-filter: blur(20px);
