@@ -49,14 +49,11 @@ export default function LoginPage() {
             <div className="text-xl font-semibold text-[#5F51D9]">MalangEE</div>
 
             <div className="relative flex items-center gap-6">
-              <div className="absolute -left-6 bottom-0 h-28 w-28 rounded-full bg-white/60 blur-3xl" />
-              <div className="absolute -left-4 -top-4 h-20 w-20 rounded-full bg-[#fdf4c7] opacity-70 blur-2xl" />
               <div className="relative flex h-32 w-32 items-center justify-center">
                 <Image
-                  src="/images/mascot.svg"
-                  alt="MalangEE mascot"
-                  width={128}
-                  height={128}
+                  src="/images/malangee.svg"
+                  alt="MalangEE Character"
+                  width={150} height={150}
                   priority
                   className="h-32 w-32 object-contain"
                 />

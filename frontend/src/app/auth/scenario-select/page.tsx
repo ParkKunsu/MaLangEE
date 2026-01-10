@@ -90,45 +90,18 @@ export default function ScenarioSelectPage() {
     <AuthGuard>
       <GlassCard
         withBackground={true}
-        header={
-          <>
-            <div className="scenario-logo">MalangEE</div>
-            <button className="btn-exit" onClick={logout}>대화 종료하기</button>
-          </>
-        }
         footer={
           <MicButton
             isListening={isListening}
             onClick={handleMicClick}
             size="md"
-            className={currentState === 3 ? "opacity-50 pointer-events-none" : ""}
+            className={currentState === 3 ? "pointer-events-none opacity-50" : ""}
           />
         }
       >
         {/* Character */}
         <div className="character-box">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="charGrad" cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stopColor="#f2fbff" />
-                <stop offset="60%" stopColor="#ffffff" />
-                <stop offset="100%" stopColor="#fffde8" />
-              </radialGradient>
-            </defs>
-            <path
-              d="M100,28 C145,28 182,58 182,100 C182,142 148,172 100,172 C52,172 18,142 18,100 C18,58 55,28 100,28"
-              fill="url(#charGrad)"
-            />
-            <circle cx="72" cy="94" r="9" fill="#1e1e2c" />
-            <circle cx="128" cy="94" r="9" fill="#1e1e2c" />
-            <path
-              d="M90,122 Q100,130 110,122"
-              fill="none"
-              stroke="#1e1e2c"
-              strokeWidth="6"
-              strokeLinecap="round"
-            />
-          </svg>
+          <img src={"/images/malangee.svg"} alt="MalangEE Character" width={150} height={150} />
         </div>
 
         {/* Text Group */}

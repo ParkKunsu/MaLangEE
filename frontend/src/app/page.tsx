@@ -60,7 +60,7 @@ export default function LoginPage() {
       <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
         {/* 로고/아이콘 영역 */}
         <Image
-          src="/images/mascot.svg"
+          src="/images/malangee.svg"
           alt="MalangEE mascot"
           width={128}
           height={128}
