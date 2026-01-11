@@ -39,26 +39,26 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
         className={`relative mx-4 w-full ${maxWidthClasses[maxWidth]} rounded-[32px] border border-white/60 bg-white shadow-[0_20px_80px_rgba(123,108,246,0.3)] backdrop-blur-2xl`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* 닫기 버튼 - 상단 우측에 absolute 배치 */}
+        {showCloseButton && (
+          <button
+            onClick={onClose}
+            className="absolute right-6 top-6 text-gray-400 transition-colors hover:text-gray-600 z-10"
+            aria-label="닫기"
+          >
+            <X size={24} />
+          </button>
+        )}
+
         <div className="space-y-6 px-8 py-8">
           {/* 헤더 영역 */}
-          {(title || showCloseButton || headerContent) && (
-            <div className="flex items-center justify-between">
+          {(title || headerContent) && (
+            <div className="flex items-center">
               {headerContent ? (
                 headerContent
               ) : title ? (
                 <h2 className="text-2xl font-bold text-[#1F1C2B]">{title}</h2>
-              ) : (
-                <div />
-              )}
-              {showCloseButton && (
-                <button
-                  onClick={onClose}
-                  className="text-gray-400 transition-colors hover:text-gray-600"
-                  aria-label="닫기"
-                >
-                  <X size={24} />
-                </button>
-              )}
+              ) : null}
             </div>
           )}
 
