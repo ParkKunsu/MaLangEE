@@ -320,8 +320,10 @@ export default function ScenarioSelectPage() {
                 대화 그만하기
               </Button>
               <Button
+                variant="primary"
+                size="xl"
                 onClick={handleLogin}
-                className="h-14 flex-1 rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8]"
+                className="flex-1"
               >
                 로그인하기
               </Button>
@@ -353,8 +355,10 @@ export default function ScenarioSelectPage() {
                 대화 그만하기
               </Button>
               <Button
+                variant="primary"
+                size="xl"
                 onClick={handleContinueChat}
-                className="h-14 flex-1 rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8]"
+                className="flex-1"
               >
                 이어 말하기
               </Button>
@@ -386,8 +390,10 @@ export default function ScenarioSelectPage() {
                 대화 그만하기
               </Button>
               <Button
+                variant="primary"
+                size="xl"
                 onClick={handleContinueFromEnd}
-                className="h-14 flex-1 rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8]"
+                className="flex-1"
               >
                 이어 말하기
               </Button>

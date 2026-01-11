@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
+import { Button } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useGetChatSessions } from "@/features/chat";
 import type { ChatHistoryItem } from "@/shared/types/chat";
@@ -190,12 +191,13 @@ export default function DashboardPage() {
       {/* Added wrapper width and tracking */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
-        <button
+        <Button
+          variant="secondary"
+          size="auto"
           onClick={() => setShowNicknamePopup(true)}
-          className="rounded-full bg-[#D4CCFF] px-4 py-2 text-[10px] font-medium text-[#5F51D9] transition-colors hover:bg-[#C9BFFF]"
         >
           닉네임 변경
-        </button>
+        </Button>
       </div>
       <div className="mt-4 space-y-1">
         {" "}
@@ -213,12 +215,14 @@ export default function DashboardPage() {
           </span>
         </div>
       </div>
-      <button
+      <Button
+        variant="solid"
+        size="md"
+        className="mt-6"
         onClick={() => router.push("/chat/welcome-back")}
-        className="mt-6 rounded-full bg-[#5F51D9] px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-[#4a3ec4]"
       >
         말랭이랑 새로운 대화를 해볼까요?
-      </button>
+      </Button>
     </div>
   );
 

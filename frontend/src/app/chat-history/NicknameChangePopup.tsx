@@ -11,6 +11,7 @@ import {
   useUpdateNickname,
 } from "@/features/auth";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
+import { Button } from "@/shared/ui";
 
 interface NicknameChangePopupProps {
   onClose: () => void;
@@ -167,13 +168,16 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="md"
+              fullWidth
               disabled={isSubmitDisabled}
-              className="h-[48px] w-full rounded-full text-sm font-semibold shadow-[0_10px_30px_rgba(118,102,245,0.15)] transition enabled:bg-[#7B6CF6] enabled:text-white enabled:hover:bg-[#6B5CE6] disabled:cursor-not-allowed disabled:bg-[#d4d0df] disabled:text-[#8c869c] disabled:opacity-60"
+              isLoading={updateNicknameMutation.isPending}
             >
               {updateNicknameMutation.isPending ? "변경 중..." : "변경하기"}
-            </button>
+            </Button>
           </form>
     </PopupLayout>
   );

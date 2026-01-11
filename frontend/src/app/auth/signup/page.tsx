@@ -12,6 +12,7 @@ import {
   type RegisterFormData,
 } from "@/features/auth";
 import { FullLayout } from "@/shared/ui/FullLayout";
+import { Button } from "@/shared/ui";
 
 export default function RegisterPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -182,13 +183,16 @@ export default function RegisterPage() {
               </p>
             )}
 
-            <button
+            <Button
               type="submit"
+              variant="primary"
+              size="lg"
+              fullWidth
               disabled={isSubmitDisabled}
-              className="h-[56px] w-full rounded-full text-base font-semibold shadow-[0_10px_30px_rgba(118,102,245,0.15)] transition enabled:bg-[#7B6CF6] enabled:text-white enabled:hover:bg-[#6B5CE6] disabled:cursor-not-allowed disabled:bg-[#d4d0df] disabled:text-[#8c869c] disabled:opacity-60"
+              isLoading={registerMutation.isPending}
             >
               {registerMutation.isPending ? "가입 중..." : "회원가입"}
-            </button>
+            </Button>
 
             <p className="text-center text-sm text-[#625a75]" style={{ letterSpacing: "-0.1px" }}>
               이미 계정이 있으신가요?{" "}

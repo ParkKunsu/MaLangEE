@@ -31,6 +31,7 @@ export default function ConversationPage() {
   };
 
   const [subtitleEnabled, setSubtitleEnabled] = useState(getInitialSubtitleSetting);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
 
@@ -94,6 +95,10 @@ export default function ConversationPage() {
   const toggleSubtitle = () => {
     setSubtitleEnabled(!subtitleEnabled);
     sessionStorage.setItem("subtitleEnabled", (!subtitleEnabled).toString());
+  };
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
   };
 
   const handleCompleteChat = () => {
@@ -176,12 +181,13 @@ export default function ConversationPage() {
       </div>
 
       {/* Mic Button */}
-      <div className="relative mt-2">
+      <div className="mt-2 relative">
         <MicButton
           isListening={conversationState === "user-speaking"}
           onClick={handleMicClick}
           size="md"
           className={conversationState === "ai-speaking" ? "pointer-events-none opacity-50" : ""}
+          isMuted={isMuted}
         />
       </div>
 
@@ -254,6 +260,16 @@ export default function ConversationPage() {
             }`}
           >
             {subtitleEnabled ? "자막 숨기기" : "자막 보기"}
+          </button>
+          <button
+            onClick={toggleMute}
+            className={`rounded-full px-3 py-1 text-xs transition ${
+              isMuted
+                ? "bg-red-100 hover:bg-red-200"
+                : "bg-blue-100 hover:bg-blue-200"
+            }`}
+          >
+            {isMuted ? "음소거 해제" : "음소거"}
           </button>
           <button
             onClick={handleCompleteChat}

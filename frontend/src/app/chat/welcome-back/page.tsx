@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FullLayout } from "@/shared/ui/FullLayout";
+import { Button } from "@/shared/ui";
 import "@/shared/styles/scenario.css";
 
 // 테스트 데이터
@@ -116,21 +117,26 @@ export default function WelcomeBackPage() {
 
       {/* Buttons */}
       <div className="mt-8 flex w-full max-w-md flex-col gap-4">
-        <button
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
           onClick={handleContinueChat}
           disabled={isConfirmed}
-          className="h-14 w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
+          isLoading={isConfirmed}
         >
           {isConfirmed ? "시작 중..." : "대화 시작하기"}
-        </button>
+        </Button>
 
-        <button
+        <Button
+          variant="outline-purple"
+          size="xl"
+          fullWidth
           onClick={handleNewTopic}
           disabled={isConfirmed}
-          className="h-14 w-full rounded-full border-2 border-[#7B6CF6] bg-white text-base font-semibold text-[#7B6CF6] transition hover:bg-[#f6f4ff] disabled:opacity-60"
         >
           새로운 주제 고르기
-        </button>
+        </Button>
       </div>
     </FullLayout>
   );

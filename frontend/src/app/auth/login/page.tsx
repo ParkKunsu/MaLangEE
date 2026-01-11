@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
+import { Button } from "@/shared/ui";
 import { type LoginFormData, loginSchema, useLogin } from "@/features/auth";
 
 export default function LoginPage() {
@@ -123,21 +124,25 @@ export default function LoginPage() {
         )}
 
         <div className="flex flex-col gap-3">
-          <button
+          <Button
             type="submit"
-            disabled={loginMutation.isPending}
-            className="h-[56px] w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
+            variant="primary"
+            size="lg"
+            fullWidth
+            isLoading={loginMutation.isPending}
           >
             {loginMutation.isPending ? "로그인 중..." : "로그인"}
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="outline-purple"
+            size="lg"
+            fullWidth
             onClick={() => router.push("/auth/scenario-select")}
-            className="h-[56px] w-full rounded-full border-2 border-[#7B6CF6] bg-white text-base font-semibold text-[#7B6CF6] transition hover:bg-[#f6f4ff]"
           >
             바로 대화해보기
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -169,12 +174,14 @@ export default function LoginPage() {
                   조금만 기다려주세요!
                 </p>
               </div>
-              <button
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
                 onClick={() => setShowComingSoonModal(false)}
-                className="h-[48px] w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8]"
               >
                 확인
-              </button>
+              </Button>
             </div>
           </div>
         </div>

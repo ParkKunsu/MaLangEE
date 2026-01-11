@@ -1,5 +1,5 @@
 import { FC } from "react";
-import Image from "next/image";
+import { Mic, MicOff } from "lucide-react";
 import "./MicButton.css";
 
 interface MicButtonProps {
@@ -7,6 +7,7 @@ interface MicButtonProps {
   onClick: () => void;
   size?: "sm" | "md" | "lg";
   className?: string;
+  isMuted?: boolean;
 }
 
 export const MicButton: FC<MicButtonProps> = ({
@@ -14,6 +15,7 @@ export const MicButton: FC<MicButtonProps> = ({
   onClick,
   size = "md",
   className = "",
+  isMuted = false,
 }) => {
   const sizeClasses = {
     sm: "mic-container-sm",
@@ -29,7 +31,7 @@ export const MicButton: FC<MicButtonProps> = ({
 
   return (
     <div
-      className={`mic-container ${sizeClasses[size]} ${isListening ? "is-listening" : ""} ${className}`}
+      className={`mic-container ${sizeClasses[size]} ${isListening ? "is-listening" : ""} ${isMuted ? "is-muted" : ""} ${className}`}
       onClick={onClick}
     >
       {/* Waves */}
@@ -41,13 +43,11 @@ export const MicButton: FC<MicButtonProps> = ({
 
       {/* Main Mic Button */}
       <div className="mic-main">
-        <Image
-          src="/images/mic-icon.svg"
-          alt="Microphone"
-          width={iconSizes[size]}
-          height={iconSizes[size]}
-          priority
-        />
+        {isMuted ? (
+          <MicOff size={iconSizes[size]} strokeWidth={2} />
+        ) : (
+          <Mic size={iconSizes[size]} strokeWidth={2} />
+        )}
       </div>
     </div>
   );

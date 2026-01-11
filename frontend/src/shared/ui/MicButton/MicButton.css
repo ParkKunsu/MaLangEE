@@ -84,11 +84,22 @@
   justify-content: center;
   align-items: center;
   box-shadow: 0 8px 20px rgba(126, 108, 243, 0.3);
-  transition: transform 0.2s;
+  transition: transform 0.2s, background 0.3s;
+  color: white;
 }
 
 .mic-main:active {
   transform: scale(0.9);
+}
+
+/* Muted state */
+.is-muted .mic-main {
+  background: #ef4444;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+}
+
+.is-muted .waves {
+  display: none;
 }
 
 /* Responsive adjustments */

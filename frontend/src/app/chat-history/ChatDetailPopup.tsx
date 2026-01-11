@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatTranscriptPopup } from "./ChatTranscriptPopup";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
+import { Button } from "@/shared/ui";
 
 interface ChatDetailPopupProps {
   session: ChatHistoryItem;
@@ -46,12 +47,13 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
               이 대화에서는 주제에 대해 심도 있는 논의가 이루어졌습니다. 주요 포인트와 핵심 내용을
               중심으로 효과적인 의사소통이 진행되었습니다.
             </p>
-            <button
+            <Button
+              variant="solid"
+              size="sm"
               onClick={() => setShowTranscript(true)}
-              className="rounded-full bg-[#5F51D9] px-6 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4a3ec4]"
             >
               전문보기
-            </button>
+            </Button>
           </div>
 
           {/* 세 번째 행: 피드백 목록 */}
