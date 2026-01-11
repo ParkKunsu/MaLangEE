@@ -87,32 +87,32 @@ export default function ScenarioSelectPage() {
 
   return (
     <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
-        {/* Character */}
-        <div className="character-box">
-          <Image
-            src="/images/malangee.svg"
-            alt="MalangEE Character"
-            width={150}
-            height={150}
-            priority
-          />
-        </div>
+      {/* Character */}
+      <div className="character-box">
+        <Image
+          src="/images/malangee.svg"
+          alt="MalangEE Character"
+          width={150}
+          height={150}
+          priority
+        />
+      </div>
 
-        {/* Text Group */}
-        <div className="text-group" style={{ opacity: textOpacity }}>
-          <h1 className="scenario-title">{getMainTitle()}</h1>
-          <p className="scenario-desc">{getSubDesc()}</p>
-        </div>
+      {/* Text Group */}
+      <div className="text-group text-center" style={{ opacity: textOpacity }}>
+        <h1 className="scenario-title">{getMainTitle()}</h1>
+        <p className="scenario-desc">{getSubDesc()}</p>
+      </div>
 
-        {/* Mic Button - Footer */}
-        <div className="mt-8">
-          <MicButton
-            isListening={isListening}
-            onClick={handleMicClick}
-            size="md"
-            className={currentState === 3 ? "pointer-events-none opacity-50" : ""}
-          />
-        </div>
-      </FullLayout>
+      {/* Mic Button - Footer */}
+      <div className="mt-8">
+        <MicButton
+          isListening={isListening}
+          onClick={handleMicClick}
+          size="md"
+          className={currentState === 3 ? "pointer-events-none opacity-50" : ""}
+        />
+      </div>
+    </FullLayout>
   );
 }

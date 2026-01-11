@@ -33,6 +33,7 @@ export default function WelcomeBackPage() {
   const [isConfirmed, setIsConfirmed] = useState(false);
   const user = mockUser;
   const lastSession = mockLastSession;
+  const [textOpacity, setTextOpacity] = useState(1);
 
   // 로딩 시뮬레이션
   useEffect(() => {
@@ -86,58 +87,54 @@ export default function WelcomeBackPage() {
   }
 
   return (
-    <AuthGuard>
-      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
-        {/* Character */}
-        <div className="character-box">
-          <Image
-            src="/images/malangee.svg"
-            alt="MalangEE Character"
-            width={150}
-            height={150}
-            priority
-          />
-        </div>
+    <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+      {/* Character */}
+      <div className="character-box">
+        <Image
+          src="/images/malangee.svg"
+          alt="MalangEE Character"
+          width={150}
+          height={150}
+          priority
+        />
+      </div>
 
-        {/* Text Group */}
-        <div className="text-group">
-          <h1 className="scenario-title">
-            {isConfirmed ? (
-              <>
-                {lastSession.title}을
-                <br />
-                같이 재현해 볼까요?
-              </>
-            ) : (
-              <>
-                {user.nickname}님, 기다리고 있었어요!
-                <br />
-                지난번에 했던 {lastSession.title},
-                <br />이 주제로 다시 이야기해볼까요?
-              </>
-            )}
-          </h1>
-        </div>
+      {/* Text Group */}
+      <div className="text-group text-center" style={{ opacity: textOpacity }}>
+        <p className="scenario-desc">{user.nickname}님, 기다리고 있었어요!</p>
+        <h1 className="scenario-title">
+          {isConfirmed ? (
+            <>
+              {lastSession.title}을
+              <br />
+              같이 재현해 볼까요?
+            </>
+          ) : (
+            <> 지난번에 했던
+              {lastSession.title},
+              <br/>이 주제로 다시 이야기해볼까요?</>
+          )}
+        </h1>
+      </div>
 
-        {/* Buttons */}
-        <div className="mt-8 flex w-full max-w-md flex-col gap-4">
-          <button
-            onClick={handleContinueChat}
-            disabled={isConfirmed}
-            className="h-14 w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
-          >
-            {isConfirmed ? "시작 중..." : "대화 시작하기"}
-          </button>
+      {/* Buttons */}
+      <div className="mt-8 flex w-full max-w-md flex-col gap-4">
+        <button
+          onClick={handleContinueChat}
+          disabled={isConfirmed}
+          className="h-14 w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
+        >
+          {isConfirmed ? "시작 중..." : "대화 시작하기"}
+        </button>
 
-          <button
-            onClick={handleNewTopic}
-            disabled={isConfirmed}
-            className="h-14 w-full rounded-full border-2 border-[#7B6CF6] bg-white text-base font-semibold text-[#7B6CF6] transition hover:bg-[#f6f4ff] disabled:opacity-60"
-          >
-            새로운 주제 고르기
-          </button>
-        </div>
-      </FullLayout>
-    </AuthGuard>
+        <button
+          onClick={handleNewTopic}
+          disabled={isConfirmed}
+          className="h-14 w-full rounded-full border-2 border-[#7B6CF6] bg-white text-base font-semibold text-[#7B6CF6] transition hover:bg-[#f6f4ff] disabled:opacity-60"
+        >
+          새로운 주제 고르기
+        </button>
+      </div>
+    </FullLayout>
   );
 }

@@ -212,7 +212,7 @@ export default function DashboardPage() {
         </div>
       </div>
       <button
-        onClick={() => router.push("/auth/scenario-select")}
+        onClick={() => router.push("/chat/welcome-back")}
         className="mt-6 rounded-full bg-[#5F51D9] px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:bg-[#4a3ec4]"
       >
         말랭이랑 새로운 대화를 해볼까요?
