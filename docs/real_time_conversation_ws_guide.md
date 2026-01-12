@@ -207,3 +207,40 @@ AI 발화의 텍스트가 완성되었습니다.
   }
 }
 ```
+
+---
+
+## 6. Voice Options
+
+현재 지원되는 AI 목소리 목록입니다. 실시간 대화 중 언제든지 변경할 수 있습니다.
+
+### 🎙️ Available Voices
+*   `alloy` (Default)
+*   `ash`
+*   `ballad`
+*   `coral`
+*   `echo`
+*   `sage`
+*   `shimmer`
+*   `verse`
+
+### 📝 Usage Examples
+
+**1. 연결 시 설정 (URL Parameter)**
+```javascript
+// 'coral' 목소리로 시작
+const socket = new WebSocket(
+  "ws://api.malangee.com/api/v1/chat/ws/chat/SESSION_123?voice=coral"
+);
+```
+
+**2. 대화 중 변경 (Session Update)**
+```javascript
+// 대화 도중 'sage'로 변경 요청
+socket.send(JSON.stringify({
+  type: "session.update",
+  config: {
+    voice: "sage"
+  }
+}));
+```
