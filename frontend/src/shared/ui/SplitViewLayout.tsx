@@ -51,10 +51,10 @@ export const SplitViewLayout = ({
               <div className="flex items-center gap-6">
                 <div className="flex items-center justify-center">
                   <Image
-                    src="/images/malangee.svg"
+                    src="/images/malangee.gif"
                     alt="MalangEE"
-                    width={128}
-                    height={128}
+                    width={200}
+                    height={200}
                     priority
                     className="object-contain"
                   />
