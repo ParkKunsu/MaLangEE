@@ -32,9 +32,7 @@
 
 /* Character */
 .character-box {
-  width: 130px;
-  height: 130px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
 }
 
 /* Text group with fade animation */

@@ -33,7 +33,7 @@ export const SplitViewLayout = ({
   }, [bgClass]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
+    <div className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
       <div
         className={
           maxWidth
@@ -44,7 +44,7 @@ export const SplitViewLayout = ({
         <div className="mx-auto flex w-full gap-8">
           {/* Left Content Section */}
           <div
-            className="flex flex-col items-start justify-center gap-6 overflow-y-auto"
+            className="flex flex-col items-start justify-center gap-6 "
             style={{ flex: `0 0 ${(leftColSpan / 12) * 100}%` }}
           >
             <>
@@ -62,7 +62,7 @@ export const SplitViewLayout = ({
 
           {/* Right Content Section */}
           <div
-            className="flex items-center justify-center overflow-hidden"
+            className="flex items-center justify-center "
             style={{ flex: `0 0 ${(rightColSpan / 12) * 100}%` }}
           >
             <GlassCard withBackground={false} showHeader={showHeader} className="w-full">

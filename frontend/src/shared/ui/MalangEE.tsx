@@ -21,10 +21,7 @@ export const MalangEE = ({
   className = "",
 }: MalangEEProps) => {
   return (
-    <div
-      className={`relative flex items-center justify-center ${className}`}
-      style={{ width: size, height: size }}
-    >
+    <div className={`flex items-center justify-center ${className}`}>
       <Image
         src={statusImages[status]}
         alt={`MalangEE ${status}`}

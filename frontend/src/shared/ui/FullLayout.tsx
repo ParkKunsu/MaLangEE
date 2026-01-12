@@ -25,11 +25,14 @@ export const FullLayout = ({
   }, [bgClass]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
-      <div className={maxWidth
-        ? `w-full sm:w-[90vw] ${maxWidth}`
-        : `w-full sm:w-[90vw] md:min-w-[960px] md:max-w-[80vw]`
-      }>
+    <div className="flex min-h-screen items-center justify-center">
+      <div
+        className={
+          maxWidth
+            ? `w-full sm:w-[90vw] ${maxWidth}`
+            : `w-full sm:w-[90vw] md:min-w-[960px] md:max-w-[80vw]`
+        }
+      >
         <GlassCard withBackground={false} showHeader={showHeader} className="w-full">
           {children}
         </GlassCard>
