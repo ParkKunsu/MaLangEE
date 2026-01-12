@@ -126,10 +126,16 @@ if [[ "$CONFIRM_DB" =~ ^[Nn]$ ]]; then
     read -p "  • Database User [$DB_USER]: " INPUT_DB_USER
     read -sp "  • Database Password: " INPUT_DB_PASSWORD
     echo ""
+    read -p "  • Database Host [$DB_HOST]: " INPUT_DB_HOST
+    echo ""
     
     if [ -n "$INPUT_DB_NAME" ]; then DB_NAME="$INPUT_DB_NAME"; fi
     if [ -n "$INPUT_DB_USER" ]; then DB_USER="$INPUT_DB_USER"; fi
     if [ -n "$INPUT_DB_PASSWORD" ]; then DB_PASSWORD="$INPUT_DB_PASSWORD"; fi
+    if [ -n "$INPUT_DB_HOST" ]; then DB_HOST="$INPUT_DB_HOST"; fi
+    
+    # 입력값에 대해서도 \r, 공백 제거 (Sanitize)
+    DB_HOST=$(echo "$DB_HOST" | tr -d '\r' | xargs)
     
     echo "  ✓ 설정이 업데이트되었습니다."
 fi
