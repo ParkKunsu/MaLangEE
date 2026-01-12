@@ -208,7 +208,7 @@ export default function ConversationPage() {
       {/* Character */}
       <div className="character-box relative">
         <Image
-          src="/images/malangee.svg"
+          src="/images/malangee.gif"
           alt="MalangEE Character"
           width={150}
           height={150}

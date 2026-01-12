@@ -70,7 +70,7 @@ export default function WelcomeBackPage() {
       <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
         <div className="character-box">
           <Image
-            src="/images/malangee.svg"
+            src="/images/malangee.gif"
             alt="MalangEE Character"
             width={150}
             height={150}
@@ -89,7 +89,7 @@ export default function WelcomeBackPage() {
       {/* Character */}
       <div className="character-box">
         <Image
-          src="/images/malangee.svg"
+          src="/images/malangee.gif"
           alt="MalangEE Character"
           width={150}
           height={150}

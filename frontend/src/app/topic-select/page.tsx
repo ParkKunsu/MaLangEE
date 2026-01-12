@@ -63,7 +63,7 @@ export default function TopicSelectPage() {
                 <div className="relative flex h-32 w-32 items-center justify-center">
                   <div className="absolute inset-0 rounded-full bg-[#fdf4c7]/30 blur-xl" />
                   <Image
-                    src="/images/malangee.svg"
+                    src="/images/malangee.gif"
                     alt="MalangEE mascot"
                     width={128}
                     height={128}
