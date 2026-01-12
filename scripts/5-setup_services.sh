@@ -126,7 +126,7 @@ Environment=PYTHONPATH=$BACKEND_DIR:$AI_DIR
 Environment=PATH=/usr/bin:/usr/local/bin:/home/$DEPLOY_USER/.local/bin
 Environment=OPENAI_API_KEY=$OPENAI_API_KEY
 Environment=SECRET_KEY=$SECRET_KEY
-Environment=USE_SQLITE=TRUE
+Environment=USE_SQLITE=FALSE
 Environment=POSTGRES_USER=$DB_USER
 Environment=POSTGRES_PASSWORD=$DB_PASSWORD
 Environment=POSTGRES_SERVER=$DB_HOST

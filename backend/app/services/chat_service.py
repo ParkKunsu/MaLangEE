@@ -63,11 +63,12 @@ class ChatService:
         
         return history_messages
 
-    async def start_ai_session(self, websocket: WebSocket, user_id: Optional[int], session_id: str = None):
+    async def start_ai_session(self, websocket: WebSocket, user_id: Optional[int], session_id: str = None, voice: str = None, show_text: bool = None):
         """
         AI와의 실시간 대화 세션을 시작합니다.
         - OpenAI API Key 로드
-        - 히스토리 조회 (내부적으로 처리)
+        - [New] 사용자 선호 설정(보이스, 자막) 선 저장
+        - 최신 세션 정보 및 히스토리 조회
         - ConnectionHandler 시작
         """
         # 1. OpenAI API Key 확인
@@ -78,15 +79,61 @@ class ChatService:
             await websocket.close(code=1008, reason="Server configuration error")
             return
 
-        # 2. 히스토리 조회 (Service Layer Logic)
-        history_messages = []
-        if session_id and user_id:
-             history_messages = await self.get_history_for_websocket(session_id, user_id)
+        # 2. 사용자 선호 설정 선 저장 (DB First)
+        # 파라미터가 들어온 경우에만 업데이트를 수행합니다.
+        if session_id and (voice is not None or show_text is not None):
+            await self.chat_repo.update_preferences(session_id, voice, show_text)
 
-        # 3. ConnectionHandler 시작
+        # 3. 최신 세션 정보 및 히스토리 조회
+        history_messages = []
+        conversation_context = None
+        voice_config = None # DB에서 가져온 보이스 설정
+
+        if session_id:
+            # DB에서 최신 세션 정보 조회
+            # user_id 필터 없이 조회 후, 로직에서 소유권 검증 수행
+            session_obj = await self.chat_repo.get_session_by_id(session_id)
+            
+            if session_obj:
+                # [Security Check] 소유권 검증
+                # 세션에 주인이 있는데(owned), 요청자가 주인이 아니거나(mismatch) 비회원(None)인 경우 접근 차단
+                if session_obj.user_id is not None:
+                    if user_id is None or session_obj.user_id != user_id:
+                        print(f"Unauthorized access attempt to session {session_id} by user {user_id}")
+                        await websocket.close(code=4003, reason="Unauthorized access to this session")
+                        return
+
+                # [New] 시나리오 컨텍스트 추출
+                conversation_context = {
+                    "title": session_obj.title,
+                    "place": session_obj.scenario_place,
+                    "partner": session_obj.scenario_partner,
+                    "goal": session_obj.scenario_goal
+                }
+                
+                # [New] 저장된 Voice 설정 추출
+                if session_obj.voice:
+                    voice_config = session_obj.voice
+                
+                # 히스토리 추출
+                if session_obj.messages:
+                    for msg in session_obj.messages:
+                        history_messages.append({
+                            "role": msg.role,
+                            "content": msg.content
+                        })
+
+        # 4. ConnectionHandler 시작
         if ConnectionHandler:
-            # title 인자 제거
-            handler = ConnectionHandler(websocket, api_key, history=history_messages, session_id=session_id)
+            # context 및 voice 설정 전달
+            handler = ConnectionHandler(
+                websocket, 
+                api_key, 
+                history=history_messages, 
+                session_id=session_id,
+                context=conversation_context,
+                voice=voice_config # [New]
+            )
             
             # [Manager] 세션 등록
             if session_id:
@@ -95,11 +142,16 @@ class ChatService:
             try:
                 report = await handler.start()
                 
-                # 4. 세션 종료 후 리포트 저장 (Auto-Save)
+                # 5. 세션 종료 후 리포트 저장 (Auto-Save)
                 # user_id가 없어도(Guest/Demo) 저장합니다. (DB에는 user_id=NULL로 저장됨)
                 if report:
                     try:
                         session_data = SessionCreate(**report)
+                        # 중요: 종료 시점의 설정값도 저장하고 싶다면 report에 포함되어야 함.
+                        # 하지만 이미 시작할 때 update_preferences로 저장했으므로,
+                        # 여기서는 변동사항이 없다면 건너뛰어도 됨.
+                        # 다만 SessionCreate에 voice, show_text 필드가 추가되었으므로 
+                        # Tracker가 이를 채워서 보내준다면 업데이트될 것임.
                         await self.save_chat_log(session_data, user_id)
                         print(f"Session {session_data.session_id} saved (User: {user_id})")
                     except Exception as e:

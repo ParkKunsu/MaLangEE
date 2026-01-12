@@ -75,41 +75,56 @@ async def get_recent_chat_session(
         
     return SessionResponse.model_validate(session)
 
-@router.websocket("/ws/chat")
+@router.websocket("/ws/chat/{session_id}")
 async def websocket_chat(
     websocket: WebSocket,
+    session_id: str,
     # token은 get_current_user_ws 내부에서 처리됨
     user: models.User = Depends(deps.get_current_user_ws),
-    session_id: str = Query(None, description="세션 ID (주제 선택 대화에서 생성됨)"),
+    voice: Optional[str] = Query(None),
+    show_text: Optional[bool] = Query(None),
     chat_service: ChatService = Depends(deps.get_chat_service),
 ):
     """
-    실시간 대화 WebSocket 엔드포인트
-    - token: 쿼리 파라미터로 JWT 토큰 전달 필요 (deps.get_current_user_ws에서 처리)
-    - session_id: 이전 대화를 이어하려면 세션 ID 전달
+    실시간 대화 WebSocket 엔드포인트 (회원용)
+    - token: 쿼리 파라미터 or 헤더로 전달 (Strict Auth)
+    - session_id: Path Parameter
     """
     await websocket.accept()
     
-    # 1. 토큰 검증 및 사용자 조회는 이미 Dependency에서 완료됨
-    # user 객체는 안전하게 존재함
+    # 1. 토큰 검증 완료 (user 객체 존재 보장)
+    # 2. AI 세션 시작 (user.id 전달)
+    await chat_service.start_ai_session(
+        websocket, 
+        user_id=user.id, 
+        session_id=session_id,
+        voice=voice,
+        show_text=show_text
+    )
 
-    # 2. AI 세션 시작 (Service 위임)
-    # Service 내부에서 필요한 히스토리를 조회하도록 위임합니다.
-    await chat_service.start_ai_session(websocket, user.id, session_id)
-
-@router.websocket("/ws/guest-chat")
+@router.websocket("/ws/guest-chat/{session_id}")
 async def websocket_guest_chat(
     websocket: WebSocket,
-    session_id: str = Query(None, description="세션 ID (주제 선택 대화에서 생성됨)"),
+    session_id: str,
+    voice: Optional[str] = Query(None),
+    show_text: Optional[bool] = Query(None),
     chat_service: ChatService = Depends(deps.get_chat_service),
 ):
     """
-    실시간 대화 WebSocket 엔드포인트 (게스트용, 인증 없음)
+    실시간 대화 WebSocket 엔드포인트 (게스트용)
+    - 인증 없음
+    - session_id: Path Parameter
     """
     await websocket.accept()
     
     # AI 세션 시작 (user_id=None)
-    await chat_service.start_ai_session(websocket, user_id=None, session_id=session_id)
+    await chat_service.start_ai_session(
+        websocket, 
+        user_id=None, 
+        session_id=session_id,
+        voice=voice,
+        show_text=show_text
+    )
 
 @router.get("/hints/{session_id}", response_model=HintResponse, summary="대화 힌트 생성")
 async def get_hint(

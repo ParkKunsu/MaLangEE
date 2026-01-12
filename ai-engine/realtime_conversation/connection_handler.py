@@ -33,10 +33,15 @@ class ConnectionHandler:
        - 사용자/AI 대화 내용(Transcript) 처리 및 로그 출력
        - 에러 핸들링 및 세션 초기화
     """
-    def __init__(self, client_ws: WebSocket, api_key: str, history: list = None, session_id: str = None):
+    def __init__(self, client_ws: WebSocket, api_key: str, history: list = None, session_id: str = None, context: dict = None, voice: str = None):
         self.client_ws = client_ws
         self.api_key = api_key
         self.conversation_manager = ConversationManager()
+        
+        # [Refactor] 세션 컨텍스트 저장 (초기화 시점에 주입하도록 위임)
+        self.context = context
+        self.voice = voice # [New] 보이스 설정
+            
         self.tracker = ConversationTracker(session_id=session_id) 
         self.openai_ws = None
         self.openai_task = None
@@ -99,8 +104,16 @@ class ConnectionHandler:
             )
             logger.info("OpenAI Realtime API에 연결되었습니다.")
             
-            # 세션 초기화
-            await self.conversation_manager.initialize_session(self.openai_ws)
+            # 세션 초기화 (컨텍스트 전달 & 보이스 오버라이드)
+            override_config = {}
+            if self.voice:
+                override_config["voice"] = self.voice
+                
+            await self.conversation_manager.initialize_session(
+                self.openai_ws, 
+                context=self.context,
+                override_config=override_config
+            )
             
             # 히스토리 주입
             # [Voice Change 등 재연결 시] 

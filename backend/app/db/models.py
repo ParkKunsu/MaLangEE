@@ -39,6 +39,10 @@ class ConversationSession(Base):
     scenario_completed_at = Column(DateTime(timezone=True), nullable=True)
     deleted = Column(Boolean, default=False)
     
+    # [New] User Preferences
+    voice = Column(String, nullable=True)
+    show_text = Column(Boolean, nullable=True)
+    
     # Audit Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

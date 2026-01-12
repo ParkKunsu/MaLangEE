@@ -27,18 +27,19 @@ class ConversationManager:
         
         try:
             with open(prompt_path, "r", encoding="utf-8") as f:
-                self.system_instructions = f.read().strip()
+                # [Refactor] 원본 템플릿 보존 (Session Context 주입 전)
+                self.raw_system_prompt = f.read().strip()
         except FileNotFoundError:
             # 파일이 없을 경우 기본값 사용 (안전장치)
-            self.system_instructions = (
+            self.raw_system_prompt = (
                 "You are a helpful and friendly English tutor named 'Malang'. "
                 "Speak naturally."
             )
             print(f"Warning: Prompt file not found at {prompt_path}")
 
         # [Refactor] 3-Layer Prompt Variables (3단 프롬프트 관리 구조)
-        # 1. Base: 파일에서 로드한 불변의 기본 페르소나 및 핵심 규칙
-        self.instruction_base = self.system_instructions
+        # 1. Base: 템플릿 치환 후의 기본 페르소나 (초기엔 원본과 동일)
+        self.instruction_base = self.raw_system_prompt
         
         # 2. Active User: 프론트엔드(클라이언트)에서 session.update로 요청한 추가 설정
         #    (예: "한국어로 설명해줘", "존댓말 써줘" 등)
@@ -48,33 +49,93 @@ class ConversationManager:
         #    (예: "사용자가 말이 빠르니 너도 자연스럽게 빨리 말해")
         self.instruction_dynamic = ""
 
-        # 디폴트 설정
-        self.current_config = {
-            "modalities": ["audio", "text"],
-            "instructions": self.instruction_base, # 초기값은 Base만
+        # 3. Dynamic: 백엔드 로직(WPM 분석 등)에 의해 자동으로 추가되는 상태 기반 지시사항
+        #    (예: "사용자가 말이 빠르니 너도 자연스럽게 빨리 말해")
+        self.instruction_dynamic = ""
 
-            "voice": "alloy",
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
-            "turn_detection": {
-                "type": "server_vad",
-                "threshold": 0.5,
-                "prefix_padding_ms": 300,
-                "silence_duration_ms": 500,
-            },
-            "input_audio_transcription": {
-                "model": "whisper-1"
-            },
-        }
+        # [Refactor] Load Default Config from JSON
+        self.default_config = {}
+        config_path = os.path.join(current_dir, "session_config_default.json")
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                self.default_config = json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load default config: {e}. Using fallback defaults.")
+            self.default_config = {
+                "modalities": ["audio", "text"],
+                "voice": "alloy",
+                "input_audio_format": "pcm16",
+                "output_audio_format": "pcm16",
+                "turn_detection": {"type": "server_vad", "threshold": 0.5},
+                "input_audio_transcription": {"model": "whisper-1"}
+            }
+        
+        # 기본값으로 초기 설정 세팅
+        self.current_config = self.default_config.copy()
+        self.current_config["instructions"] = self.instruction_base
 
-    async def initialize_session(self, openai_ws):
+
+    def inject_session_context(self, context_data: dict):
+        """
+        [New] 세션 컨텍스트 데이터를 받아 프롬프트의 템플릿 변수를 치환합니다.
+        
+        Args:
+            context_data (dict): {
+                "title": "...",    # Session Title
+                "place": "...",    # scenario_place
+                "partner": "...",  # scenario_partner
+                "goal": "..."      # scenario_goal
+            }
+        """
+        if not context_data:
+            return
+
+        # 원본 템플릿(raw_system_prompt)을 사용하여 치환 수행
+        # 매핑:
+        # {{SESSION_TITLE}} -> title
+        # {{KEY_INFO_1}}    -> place (장소)
+        # {{KEY_INFO_2}}    -> partner (대화 상대)
+        # {{KEY_INFO_3}}    -> goal (목표)
+        filled_prompt = self.raw_system_prompt.replace("{{SESSION_TITLE}}", context_data.get("title", "Free Conversation")) \
+                                              .replace("{{KEY_INFO_1}}", context_data.get("place", "Anywhere")) \
+                                              .replace("{{KEY_INFO_2}}", context_data.get("partner", "Friend")) \
+                                              .replace("{{KEY_INFO_3}}", context_data.get("goal", "Just chat"))
+        
+        # Base Layer 업데이트
+        self.instruction_base = filled_prompt
+        logger.info(f"세션 컨텍스트 주입 완료: {context_data.get('title')}")
+        
+        # 현재 설정에 즉시 반영 (아직 초기화 전이라면 이 값이 initialize_session때 사용됨)
+        self.current_config["instructions"] = self._assemble_instructions()
+
+    async def initialize_session(self, openai_ws, context: dict = None, override_config: dict = None):
         """
         OpenAI 세션을 초기화합니다.
-        저장된 current_config를 사용하여 세션 설정을 전송합니다.
+        기본 설정(Default)에 오버라이드 설정(User Preference)을 적용하여 전송합니다.
+        
+        Args:
+            openai_ws: WebSocket connection to OpenAI
+            context (dict): Optional session context data (title, place, etc.)
+            override_config (dict): Optional configuration overrides (e.g., {"voice": "shimmer"})
         """
         self.openai_ws = openai_ws # 웹소켓 객체 저장 (나중에 업데이트 할 때 사용)
         
-        # [Refactor] 초기 프롬프트 조립 (Base + User + Dynamic)
+        # [New] 세션 컨텍스트 주입 (if provided)
+        if context:
+            self.inject_session_context(context)
+            
+        # [Refactor] 설정 초기화 및 오버라이드 적용
+        # 1. 기본값 복사
+        final_config = self.default_config.copy()
+        
+        # 2. 오버라이드 적용 (예: DB에서 가져온 Voice 설정)
+        if override_config:
+            final_config.update(override_config)
+            logger.info(f"설정 오버라이드 적용됨: {override_config}")
+            
+        self.current_config = final_config
+            
+        # 3. 프롬프트 조립 및 적용 (instruction은 config 파일이 아니라 별도 관리되므로 다시 넣어줌)
         self.current_config["instructions"] = self._assemble_instructions()
 
         # 현재 저장된 설정값 로그 출력

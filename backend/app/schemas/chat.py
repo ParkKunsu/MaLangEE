@@ -25,6 +25,8 @@ class SessionCreate(SessionBase):
     scenario_state_json: Optional[Dict[str, Any]] = None
     scenario_completed_at: Optional[str] = None
     deleted: Optional[bool] = None
+    voice: Optional[str] = None
+    show_text: Optional[bool] = None
 
 class SessionResponse(SessionCreate):
     created_at: Optional[datetime] = None
