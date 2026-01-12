@@ -242,6 +242,7 @@ class ConnectionHandler:
                 elif event_type == "input_audio_buffer.speech_stopped":
                     # [Tracker] 사용자 발화 종료 (VAD)
                     self.tracker.stop_user_speech()
+                    await self.client_ws.send_json({"type": "speech.stopped"})
                 elif event_type == "conversation.item.input_audio_transcription.completed":
                     transcript = event.get("transcript", "")
                     logger.info(f"사용자 자막: {transcript}")
