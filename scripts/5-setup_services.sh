@@ -163,6 +163,20 @@ if [[ "$CONFIRM_KEY" =~ ^[Yy]$ ]]; then
 fi
 
 
+
+# ============================================
+# [Final Safe Guard] 모든 변수 최종 세척 (Sanitize)
+# ============================================
+# 서비스 파일 생성 직전에 한 번 더 확실하게 \r과 공백을 제거합니다.
+DB_HOST=$(echo "$DB_HOST" | tr -d '\r' | xargs)
+DB_PORT=$(echo "$DB_PORT" | tr -d '\r' | xargs)
+DB_NAME=$(echo "$DB_NAME" | tr -d '\r' | xargs)
+DB_USER=$(echo "$DB_USER" | tr -d '\r' | xargs)
+DB_PASSWORD=$(echo "$DB_PASSWORD" | tr -d '\r' | xargs)
+OPENAI_API_KEY=$(echo "$OPENAI_API_KEY" | tr -d '\r' | xargs)
+SECRET_KEY=$(echo "$SECRET_KEY" | tr -d '\r' | xargs)
+
+
 # 1. Backend 서비스 (Spring Boot)
 echo -e "\n${GREEN}1️⃣ Backend 서비스 등록 (malangee-backend)${NC}"
 
