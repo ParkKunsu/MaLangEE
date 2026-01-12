@@ -39,7 +39,7 @@ export default function TopicSelectPage() {
               className="text-xl font-semibold text-[#5F51D9]"
               style={{ letterSpacing: "-0.3px" }}
             >
-              MalangEE
+              <img src={"/images/logo.png"} alt="MalangEE Logo" />
             </div>
             <button
               onClick={handleEndConversation}

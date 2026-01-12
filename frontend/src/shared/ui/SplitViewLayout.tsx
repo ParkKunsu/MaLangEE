@@ -47,14 +47,16 @@ export const SplitViewLayout = ({
             style={{ flex: `0 0 ${(leftColSpan / 12) * 100}%` }}
           >
             <>
-              <div className="text-lg font-semibold text-[#5F51D9]">MalangEE</div>
+              <div className="text-lg font-semibold text-[#5F51D9]">
+                <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+              </div>
               <div className="flex items-center gap-6">
                 <div className="flex items-center justify-center">
                   <Image
                     src="/images/malangee.gif"
                     alt="MalangEE"
-                    width={200}
-                    height={200}
+                    width={150}
+                    height={150}
                     priority
                     className="object-contain"
                   />

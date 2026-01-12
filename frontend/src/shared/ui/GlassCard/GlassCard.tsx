@@ -26,7 +26,11 @@ export const GlassCard: FC<GlassCardProps> = ({
 }) => {
   const { logout } = useAuth();
 
-  const defaultHeaderLeft = <div className="scenario-logo">MalangEE</div>;
+  const defaultHeaderLeft = (
+    <div className="scenario-logo">
+      <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+    </div>
+  );
 
   const defaultHeaderRight = (
     <div className="flex items-center gap-4">
