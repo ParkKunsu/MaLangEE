@@ -15,6 +15,15 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 
+# [Fix] Windows에서 편집된 경우를 대비해 변수 내 \r 제거 (Sanitize)
+DB_HOST=$(echo "$DB_HOST" | tr -d '\r')
+DB_PORT=$(echo "$DB_PORT" | tr -d '\r')
+DB_NAME=$(echo "$DB_NAME" | tr -d '\r')
+DB_USER=$(echo "$DB_USER" | tr -d '\r')
+DB_PASSWORD=$(echo "$DB_PASSWORD" | tr -d '\r')
+OPENAI_API_KEY=$(echo "$OPENAI_API_KEY" | tr -d '\r')
+SECRET_KEY=$(echo "$SECRET_KEY" | tr -d '\r')
+
 # ============================================
 # Secret Key (JWT) & API Key 관리
 # ============================================
