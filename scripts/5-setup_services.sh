@@ -100,6 +100,32 @@ PYTHON_PATH=$(which python3)
 echo "  ℹ️  Python 경로: $PYTHON_PATH"
 
 
+# ============================================
+# DB 설정 확인 (Interactive)
+# ============================================
+echo -e "\n${GREEN}0️⃣-1 데이터베이스 설정 확인${NC}"
+echo "  서비스에 등록될 DB 연결 정보를 확인합니다."
+echo "  • Database: $DB_NAME"
+echo "  • User: $DB_USER"
+echo "  • Host: $DB_HOST"
+echo ""
+
+read -p "  위 설정으로 진행하시겠습니까? (Y/n): " CONFIRM_DB
+if [[ "$CONFIRM_DB" =~ ^[Nn]$ ]]; then
+    echo ""
+    read -p "  • Database Name [$DB_NAME]: " INPUT_DB_NAME
+    read -p "  • Database User [$DB_USER]: " INPUT_DB_USER
+    read -sp "  • Database Password: " INPUT_DB_PASSWORD
+    echo ""
+    
+    if [ -n "$INPUT_DB_NAME" ]; then DB_NAME="$INPUT_DB_NAME"; fi
+    if [ -n "$INPUT_DB_USER" ]; then DB_USER="$INPUT_DB_USER"; fi
+    if [ -n "$INPUT_DB_PASSWORD" ]; then DB_PASSWORD="$INPUT_DB_PASSWORD"; fi
+    
+    echo "  ✓ 설정이 업데이트되었습니다."
+fi
+
+
 # 1. Backend 서비스 (Spring Boot)
 echo -e "\n${GREEN}1️⃣ Backend 서비스 등록 (malangee-backend)${NC}"
 
