@@ -12,7 +12,7 @@ interface FullLayoutProps {
 export const FullLayout = ({
   children,
   bgClass = "bg-login-02", // 기본값
-  showHeader = true, // 기본값 true
+  showHeader = false, // 기본값 true
   maxWidth, // 기본값 없음 (제한 없음)
   withBackground = true,
 }: FullLayoutProps) => {

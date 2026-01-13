@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import Image from "next/image";
 import { GlassCard } from "./GlassCard";
 import { MalangEE } from "./MalangEE";
+import Link from "next/link";
 
 interface SplitViewLayoutProps {
   leftChildren?: React.ReactNode;
@@ -49,7 +50,9 @@ export const SplitViewLayout = ({
           >
             <>
               <div className="text-lg font-semibold text-[#5F51D9]">
+                <Link href={"/chat-history"} className="inline-block">
                 <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+                </Link>
               </div>
               <div className="flex items-center gap-6">
                 <div className="flex items-center justify-center">

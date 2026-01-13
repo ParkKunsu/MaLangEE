@@ -6,6 +6,7 @@ import { useAuth } from "@/features/auth/hook/use-auth";
 import { PopupLayout } from "../PopupLayout";
 import { MalangEE } from "../MalangEE";
 import { Button } from "../Button";
+import Link from "next/link";
 
 interface GlassCardProps {
   children: ReactNode;
@@ -22,7 +23,7 @@ export const GlassCard: FC<GlassCardProps> = ({
   headerRight,
   footer,
   className = "",
-  showHeader = true,
+  showHeader = false,
 }) => {
   const { logout } = useAuth();
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
@@ -42,12 +43,14 @@ export const GlassCard: FC<GlassCardProps> = ({
 
   const defaultHeaderLeft = (
     <div className="scenario-logo">
+      <Link href={"/chat-history"} className="inline-block">
       <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+      </Link>
     </div>
   );
 
   const defaultHeaderRight = (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 hidden">
       <button
         className="text-[#6A667A] transition-colors hover:text-[#5F51D9]"
         onClick={() => (location.href = "/chat-history")}
