@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
-import { MicButton, Button } from "@/shared/ui";
+import { MicButton, Button, MalangEE, MalangEEStatus } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
 import { FullLayout } from "@/shared/ui/FullLayout";
@@ -167,6 +166,12 @@ export default function ConversationPage() {
     setIsMuted(!isMuted);
   };
 
+  const getMalangEEStatus = (): MalangEEStatus => {
+    if (showInactivityMessage) return "humm";
+    if (conversationState === "ai-speaking") return "talking";
+    return "default";
+  };
+
   const handleCompleteChat = () => {
     // 대화 시간 시뮬레이션 데이터 저장
     sessionStorage.setItem("totalChatDuration", "240"); // 4분
@@ -207,13 +212,7 @@ export default function ConversationPage() {
     <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
       {/* Character */}
       <div className="character-box relative">
-        <Image
-          src="/images/malangee.svg"
-          alt="MalangEE Character"
-          width={150}
-          height={150}
-          priority
-        />
+        <MalangEE status={getMalangEEStatus()} size={150} />
 
         {/* Hint Bubble (사용자 차례일 때만 표시 - 캐릭터 아래에 위치) */}
         {conversationState === "user-turn" && (

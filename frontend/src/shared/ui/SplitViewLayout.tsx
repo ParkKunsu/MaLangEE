@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import { GlassCard } from "./GlassCard";
+import { MalangEE } from "./MalangEE";
 
 interface SplitViewLayoutProps {
   leftChildren?: React.ReactNode;
@@ -32,7 +33,7 @@ export const SplitViewLayout = ({
   }, [bgClass]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
+    <div className="main-page glass-page">
       <div
         className={
           maxWidth
@@ -43,21 +44,16 @@ export const SplitViewLayout = ({
         <div className="mx-auto flex w-full gap-8">
           {/* Left Content Section */}
           <div
-            className="flex flex-col items-start justify-center gap-6 overflow-y-auto"
-            style={{ flex: `0 0 ${(leftColSpan / 12) * 100}%` }}
+            className="flex flex-col items-start justify-center gap-6 "
+            style={{ flex: `0 0 ${(leftColSpan / 14) * 100}%` }}
           >
             <>
-              <div className="text-lg font-semibold text-[#5F51D9]">MalangEE</div>
+              <div className="text-lg font-semibold text-[#5F51D9]">
+                <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+              </div>
               <div className="flex items-center gap-6">
                 <div className="flex items-center justify-center">
-                  <Image
-                    src="/images/malangee.svg"
-                    alt="MalangEE"
-                    width={128}
-                    height={128}
-                    priority
-                    className="object-contain"
-                  />
+                  <MalangEE size={150} />
                 </div>
               </div>
             </>
@@ -66,10 +62,10 @@ export const SplitViewLayout = ({
 
           {/* Right Content Section */}
           <div
-            className="flex items-center justify-center overflow-hidden"
+            className="flex items-center justify-center "
             style={{ flex: `0 0 ${(rightColSpan / 12) * 100}%` }}
           >
-            <GlassCard withBackground={false} showHeader={showHeader} className="w-full">
+            <GlassCard showHeader={showHeader} className="w-full">
               {rightChildren}
             </GlassCard>
           </div>

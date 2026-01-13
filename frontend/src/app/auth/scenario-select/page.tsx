@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MicButton, Button } from "@/shared/ui";
+import { MicButton, Button, MalangEE } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
 import { FullLayout } from "@/shared/ui/FullLayout";
@@ -190,13 +190,7 @@ export default function ScenarioSelectPage() {
       <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
         {/* Character */}
         <div className="character-box">
-          <Image
-            src="/images/malangee.svg"
-            alt="MalangEE Character"
-            width={150}
-            height={150}
-            priority
-          />
+          <MalangEE status={showInactivityMessage ? "humm" : "default"} size={150} />
         </div>
 
         {/* Text Group */}

@@ -156,29 +156,29 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: url(/images/login-bg-01.png);
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    background-image: url(/images/split_layout_bg.svg);
+    background-size: 100% auto;
+    background-repeat: repeat-y;
+    background-position: top center;
   }
 }
 
 /* 배경 이미지 클래스 기반 설정 */
 @layer components {
   body.bg-login-01 {
-    background-image: url(/images/login-bg-01.png);
+    background-image: url(/images/split_layout_bg.svg);
   }
 
   body.bg-login-02 {
-    background-image: url(/images/login-bg-02.png);
+    background-image: url(/images/full_layout_bg.svg);
   }
 
   body.bg-auth-flow {
-    background-image: url(/images/login-bg-01.png);
+    background-image: url(/images/split_layout_bg.svg);
   }
 
   body.bg-chat-history {
-    background-image: url(/images/login-bg-01.png);
+    background-image: url(/images/split_layout_bg.svg);
   }
 }
 
@@ -192,48 +192,195 @@
     transform: translateX(0);
   }
 }
-
-/* 공통 스크롤바 스타일 */
-.custom-scrollbar {
-  position: relative;
-  overflow-y: auto;
+/* Decorative blobs container */
+.bg-decorative {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
+/* Background decoration blobs */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+}
+
+
+/* Decorative blob elements */
+.blob-1 {
+  position: absolute;
+  left: 7rem;
+  top: -5rem;
+  height: 14rem;
+  width: 14rem;
+  border-radius: 9999px;
+  background-color: #f2b8f3;
+  filter: blur(3rem);
+  opacity: 0.3;
+}
+
+.blob-2 {
+  position: absolute;
+  bottom: 0;
+  right: -15%;
+  height: 5rem;
+  width: 5rem;
+  border-radius: 9999px;
+  background-color: #efc4fb;
+  filter: blur(3rem);
+  opacity: 0.9;
+}
+
+.blob-3 {
+  position: absolute;
+  left: 0;
+  top: 33.333%;
+  height: 16rem;
+  width: 16rem;
+  border-radius: 9999px;
+  background-color: #efc4fb;
+  filter: blur(2rem);
+  opacity: 0.5;
+}
+
+/* Glass Card Component Styles */
+
+/* Page container with background */
+.glass-page {}
+
+
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px 0 rgba(123, 108, 246, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 30px 40px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.5s ease;
+}
+
+/* Header section */
+.glass-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Content section */
+.glass-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: left;
+}
+
+/* Footer section */
+.glass-card-footer {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+}
+
+.scenario-logo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #5F51D9;
+}
+
+.btn-exit {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #444;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.btn-exit:hover {
+  opacity: 0.7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .glass-card {
+    min-height: 500px;
+  }
+
+  .glass-card-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .glass-card-footer {
+    padding-top: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .glass-card {
+    min-height: 450px;
+  }
+
+  .glass-card-header {
+    margin-bottom: 1rem;
+  }
+
+  .glass-card-content {
+    gap: 16px;
+  }
+
+  .glass-card-footer {
+    padding-top: 1rem;
+  }
+}
+
+
+/* 공통 스크롤바 스타일 (전역 적용) */
+* {
+  scrollbar-color: #C9C5F3 transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
   width: 12px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   background: #C9C5F3;
   border-radius: 9999px;
   min-height: 100px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+*::-webkit-scrollbar-thumb:hover {
   background: #b8b0e8;
 }
-
-/* Firefox */
-.custom-scrollbar {
-  scrollbar-color: #C9C5F3 transparent;
-  scrollbar-width: thin;
-}
 .main-page {
-  position: relative;
   min-height: 100vh;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
 }
 
 .main-container {
-  position: relative;
   z-index: 10;
   width: 100%;
   display: flex;

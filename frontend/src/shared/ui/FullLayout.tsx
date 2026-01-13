@@ -6,6 +6,7 @@ interface FullLayoutProps {
   bgClass?: string; // body에 적용할 배경 클래스 (예: 'bg-login-01')
   showHeader?: boolean; // GlassCard의 header 표시 여부 (기본값 true)
   maxWidth?: string; // 최대 넓이 (예: 'max-w-[350px]', 'max-w-md')
+  withBackground?: boolean;
 }
 
 export const FullLayout = ({
@@ -13,6 +14,7 @@ export const FullLayout = ({
   bgClass = "bg-login-02", // 기본값
   showHeader = true, // 기본값 true
   maxWidth, // 기본값 없음 (제한 없음)
+  withBackground = true,
 }: FullLayoutProps) => {
   useEffect(() => {
     // body에 배경 클래스 적용
@@ -25,12 +27,24 @@ export const FullLayout = ({
   }, [bgClass]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
-      <div className={maxWidth
-        ? `w-full sm:w-[90vw] ${maxWidth}`
-        : `w-full sm:w-[90vw] md:min-w-[960px] md:max-w-[80vw]`
-      }>
-        <GlassCard withBackground={false} showHeader={showHeader} className="w-full">
+    <div className="main-page glass-page">
+      {/* Background Blobs */}
+      {withBackground && (
+        <>
+          <div className="blob blob-1" />
+          <div className="blob blob-2" />
+          <div className="blob blob-3" />
+        </>
+      )}
+
+      <div
+        className={
+          maxWidth
+            ? `w-full sm:w-[90vw] ${maxWidth}`
+            : `w-full sm:w-[90vw] md:min-w-[960px] md:max-w-[80vw]`
+        }
+      >
+        <GlassCard showHeader={showHeader}>
           {children}
         </GlassCard>
       </div>

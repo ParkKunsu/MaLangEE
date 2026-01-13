@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
-import "./shared-background.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,11 +51,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${notoSans.variable} h-full antialiased`}
         style={{ fontFamily: "var(--font-noto-sans)" }}
       >
-        <Providers>
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="py-4">{children}</div>
-          </div>
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

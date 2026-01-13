@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { AuthGuard } from "@/features/auth";
 import { Mic } from "lucide-react";
+import { MalangEE } from "@/shared/ui";
 
 export default function TopicSelectPage() {
   const [isRecording, setIsRecording] = useState(false);
@@ -39,7 +40,7 @@ export default function TopicSelectPage() {
               className="text-xl font-semibold text-brand"
               style={{ letterSpacing: "-0.3px" }}
             >
-              MalangEE
+              <img src={"/images/logo.png"} alt="MalangEE Logo" />
             </div>
             <button
               onClick={handleEndConversation}
@@ -62,14 +63,7 @@ export default function TopicSelectPage() {
                 {/* 마스코트 */}
                 <div className="relative flex h-32 w-32 items-center justify-center">
                   <div className="absolute inset-0 rounded-full bg-[#fdf4c7]/30 blur-xl" />
-                  <Image
-                    src="/images/malangee.svg"
-                    alt="MalangEE mascot"
-                    width={128}
-                    height={128}
-                    priority
-                    className="relative h-32 w-32 object-contain"
-                  />
+                  <MalangEE size={128} />
                 </div>
 
                 {/* 제목 */}

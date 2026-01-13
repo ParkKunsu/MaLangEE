@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { authApi } from "../api";
+import { registerSchema } from "../model/schema";
 
 interface UseDuplicateCheckOptions {
   /** 디바운스 지연 시간 (ms) */
@@ -181,4 +182,68 @@ export function useNicknameCheck(
   }, [value, debounceMs, minLength]);
 
   return { error, isChecking, isAvailable };
+}
+
+/**
+ * 비밀번호 유효성 검사용 훅
+ * - registerSchema의 password 규칙을 사용합니다
+ */
+export function usePasswordValidation(
+  value: string,
+  options: UseDuplicateCheckOptions = {}
+): { error: string | null; isChecking: boolean; isValid: boolean | null } {
+  const { debounceMs = 300, minLength = 1 } = options;
+
+  const [error, setError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isValid, setIsValid] = useState<boolean | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    // 단순 초기화
+    if (!value || value.length < minLength) {
+      setError(null);
+      setIsValid(null);
+      setIsChecking(false);
+      return;
+    }
+
+    setIsChecking(true);
+    const timer = setTimeout(() => {
+      try {
+        // registerSchema의 password 규칙만 사용
+        const pwdSchema = registerSchema.pick({ password: true });
+        const parsed = pwdSchema.safeParse({ password: value });
+        if (!mountedRef.current) return;
+
+        if (!parsed.success) {
+          const msg = parsed.error.issues[0]?.message || "비밀번호 형식이 올바르지 않습니다";
+          setError(String(msg));
+          setIsValid(false);
+        } else {
+          setError(null);
+          setIsValid(true);
+        }
+      } catch (e) {
+        console.error("비밀번호 검증 오류:", e);
+        setError("비밀번호 검증 중 오류가 발생했습니다");
+        setIsValid(null);
+      } finally {
+        if (mountedRef.current) setIsChecking(false);
+      }
+    }, debounceMs);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, debounceMs, minLength]);
+
+  return { error, isChecking, isValid };
 }

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FullLayout } from "@/shared/ui/FullLayout";
-import { Button } from "@/shared/ui";
+import { Button, MalangEE } from "@/shared/ui";
 import "@/shared/styles/scenario.css";
 
 // 테스트 데이터
@@ -69,13 +69,7 @@ export default function WelcomeBackPage() {
     return (
       <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
         <div className="character-box">
-          <Image
-            src="/images/malangee.svg"
-            alt="MalangEE Character"
-            width={150}
-            height={150}
-            priority
-          />
+          <MalangEE size={150} />
         </div>
         <div className="text-group">
           <h1 className="scenario-title">잠시만 기다려주세요...</h1>
@@ -88,13 +82,7 @@ export default function WelcomeBackPage() {
     <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
       {/* Character */}
       <div className="character-box">
-        <Image
-          src="/images/malangee.svg"
-          alt="MalangEE Character"
-          width={150}
-          height={150}
-          priority
-        />
+        <MalangEE size={150} />
       </div>
 
       {/* Text Group */}

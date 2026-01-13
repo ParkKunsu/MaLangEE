@@ -35,7 +35,7 @@ export const ChatTranscriptPopup: React.FC<ChatTranscriptPopupProps> = ({
           {/* 두 번째 행 이후: 대화 목록 - 표 형태 */}
           <div className="space-y-4">
 
-            <div className="custom-scrollbar max-h-[300px] overflow-y-auto pr-2">
+            <div className="max-h-[300px] overflow-y-auto pr-2">
             <table className="w-full border-collapse">
                
               <tbody>

@@ -158,7 +158,6 @@ interface ChatHistoryItem {
 
 #### 5.1 말랭이 캐릭터 이미지 추가
 - **파일**:
-  - `malangee.svg`: 벡터 이미지
   - `malangee.gif`: 애니메이션 이미지
 - **용도**: 로고, 대기 화면, 로딩 인디케이터
 - 기존 `mascot.svg` 제거
@@ -269,10 +268,10 @@ e783750 refactor: scenario-logo 스타일 수정
 4566139 feat: temp.html 제거 및 GlassCard 컴포넌트 개선
 3f604e0 feat: SplitViewLayout 컴포넌트 추가 및 레이아웃 수정
 f68d07b feat: Dashboard 페이지 삭제 및 채팅 기록 페이지 추가
-895ae6b feat: favicon 생성 시 mascot.svg를 malangee.svg로 변경
-e984d6f feat: 페이지 레이아웃 수정 및 malangee.svg 이미지로 변경
+895ae6b feat: favicon 생성 시 mascot.svg를 malangee.gif로 변경
+e984d6f feat: 페이지 레이아웃 수정 및 malangee.gif 이미지로 변경
 922b99d feat: GlassCard 컴포넌트의 최소 높이를 750px에서 550px로 변경
-5ae7ca1 feat: malangee.svg 파일 추가 및 애니메이션 효과 구현
+5ae7ca1 feat: malangee.gif 파일 추가 및 애니메이션 효과 구현
 c45fa9c feat: GlassCard, MicButton, FullLayout, CardLayout 컴포넌트 내보내기 추가
 d2f46a4 feat: FullLayout 컴포넌트 추가 및 레이아웃 구성
 f31b36c feat: GlassCard 컴포넌트의 크기 조정 및 최소 높이 변경

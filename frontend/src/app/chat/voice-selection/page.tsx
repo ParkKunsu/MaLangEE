@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/shared/ui";
+import { Button, MalangEE } from "@/shared/ui";
 import "@/shared/styles/scenario.css";
 import { FullLayout } from "@/shared/ui/FullLayout";
 
@@ -55,13 +55,7 @@ export default function VoiceSelectionPage() {
     <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
       {/* Character */}
       <div className="character-box">
-        <Image
-          src="/images/malangee.svg"
-          alt="MalangEE Character"
-          width={150}
-          height={150}
-          priority
-        />
+        <MalangEE size={150} />
       </div>
 
       {/* Text Group */}

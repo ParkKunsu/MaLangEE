@@ -40,7 +40,7 @@
 
 #### shared 레이어 정리
 - [ ] `shared/ui/` - 공용 UI 컴포넌트 인덱스 파일 정리 및 re-export 구조화
-- [ ] `shared/ui/button.tsx` - brand, brand-outline variant 문서화 및 타입 export
+- [ ] `shared/ui/Button.tsx` - brand, brand-outline variant 문서화 및 타입 export
 - [ ] `shared/ui/MicButton/` - 마이크 버튼 컴포넌트 리팩토링 (props 인터페이스 개선)
 - [ ] `shared/ui/GlassCard/` - 글래스모피즘 카드 컴포넌트 props 타입 개선
 - [ ] `shared/lib/utils.ts` - cn 함수 및 유틸리티 함수 확장
@@ -73,7 +73,7 @@ src/
 ├── shared/
 │   ├── ui/
 │   │   ├── index.ts              # 모든 UI 컴포넌트 re-export
-│   │   ├── button.tsx
+│   │   ├── Button.tsx
 │   │   ├── input.tsx
 │   │   ├── MicButton/
 │   │   └── GlassCard/

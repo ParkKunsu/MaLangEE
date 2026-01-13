@@ -16,12 +16,12 @@ const buttonVariants = cva(
         "brand-outline":
           "border-2 border-brand bg-background text-brand hover:bg-brand-muted rounded-full",
         primary:
-          "bg-brand text-brand-foreground shadow-[0_10px_30px_rgba(118,102,245,0.35)] hover:bg-brand/90 focus-visible:ring-brand rounded-full",
+          "bg-[#7666f5] text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] hover:bg-[#6758e8] focus-visible:ring-[#7B6CF6] rounded-full",
         "outline-purple":
-          "border-2 border-brand bg-white text-brand hover:bg-brand-50 focus-visible:ring-brand rounded-full",
+          "border-2 border-[#7B6CF6] bg-white text-[#7B6CF6] hover:bg-[#f6f4ff] focus-visible:ring-[#7B6CF6] rounded-full",
         secondary:
-          "bg-brand-200 text-brand hover:bg-brand-200/80 focus-visible:ring-brand rounded-full",
-        solid: "bg-brand text-brand-foreground shadow-lg hover:bg-brand/90 focus-visible:ring-brand rounded-full",
+          "bg-[#D4CCFF] text-[#5F51D9] hover:bg-[#C9BFFF] focus-visible:ring-[#5F51D9] rounded-full",
+        solid: "bg-[#5F51D9] text-white shadow-lg hover:bg-[#4a3ec4] focus-visible:ring-[#5F51D9] rounded-full",
       },
       size: {
         default: "h-10 px-4 py-2 text-sm",

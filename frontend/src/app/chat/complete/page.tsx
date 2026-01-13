@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Image from "next/image";
 import { Clock, Mic } from "lucide-react";
-import { Button } from "@/shared/ui";
+import { Button, MalangEE } from "@/shared/ui";
 import { FullLayout } from "@/shared/ui/FullLayout";
 import "@/shared/styles/scenario.css";
 
@@ -47,13 +47,7 @@ export default function ChatCompletePage() {
     <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
       {/* Character */}
       <div className="character-box">
-        <Image
-          src="/images/malangee.svg"
-          alt="MalangEE Character"
-          width={150}
-          height={150}
-          priority
-        />
+        <MalangEE size={150} />
       </div>
 
       {/* Main Message */}

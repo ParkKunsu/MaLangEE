@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
 import { Button } from "@/shared/ui";
 import { useRouter } from "next/navigation";
@@ -145,7 +145,8 @@ export default function DashboardPage() {
   // 테스트 데이터 초기 로드 (디버그 모드에서만)
   useEffect(() => {
     if (DEBUG_MODE) {
-      const testData = generateTestData();
+      //const testData: ChatHistoryItem[] = [];
+      const testData: ChatHistoryItem[] = generateTestData();
       const testUserProfile = generateUserProfileTestData();
       setAllSessions(testData);
       setUserProfile(testUserProfile);
@@ -189,13 +190,9 @@ export default function DashboardPage() {
   const leftContent = (
     <div className="w-full max-w-sm tracking-tight">
       {/* Added wrapper width and tracking */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
-        <Button
-          variant="secondary"
-          size="auto"
-          onClick={() => setShowNicknamePopup(true)}
-        >
+        <Button variant="secondary" size="auto" onClick={() => setShowNicknamePopup(true)}>
           닉네임 변경
         </Button>
       </div>
@@ -234,20 +231,33 @@ export default function DashboardPage() {
         <h2 className="text-2xl font-bold text-[#1F1C2B]">대화 내역</h2>
       </div>
       {/* 대화 목록 */}
-      <div
-        ref={scrollContainerRef}
-        className="custom-scrollbar left-0 flex flex-col items-start justify-start w-full max-h-[350px] overflow-y-auto pr-2"
-      >
-        {allSessions.length === 0 && isInitialLoading ? (
-          <div className="flex w-full items-center justify-center">
-            <div className="border-3 h-8 w-8 animate-spin rounded-full border-[#5F51D9] border-t-transparent"></div>
+
+      {allSessions.length === 0 && isInitialLoading ? (
+        <div className="flex w-full items-center justify-center">
+          <div className="border-3 h-8 w-8 animate-spin rounded-full border-[#5F51D9] border-t-transparent"></div>
+        </div>
+      ) : allSessions.length === 0 ? (
+        <div className="flex min-h-[350px] w-full items-center justify-center text-xl text-gray-500">
+          말랭이와 대화한 이력이 없어요.
+        </div>
+      ) : (
+        <>
+          {/* 목록 헤더: 날짜 / 주제 / 말한시간 / 대화시간 */}
+          <div className="mb-2 flex w-full items-center border-b border-[#D5D2DE] px-0 py-4 ">
+            <div className="flex min-w-[80px] flex-col items-center  text-sm text-[#6A667A]">
+              날짜
+            </div>
+            <div className="flex min-w-0 flex-1 items-center justify-between  gap-2">
+              <div className="flex-1 text-sm text-[#6A667A]">주제</div>
+              <div className="flex shrink-0 items-center gap-1 text-sm text-[#6A667A]">
+                말한시간 / 대화시간
+              </div>
+            </div>
           </div>
-        ) : allSessions.length === 0 ? (
-          <div className="flex w-full items-center justify-center text-xs text-gray-500">
-            대화 내역이 없습니다
-          </div>
-        ) : (
-          <>
+          <div
+            ref={scrollContainerRef}
+            className="left-0 flex max-h-[350px] w-full flex-col items-start justify-start overflow-y-auto pr-2"
+          >
             {visibleSessions.map((item) => (
               <div
                 key={item.id}
@@ -255,7 +265,7 @@ export default function DashboardPage() {
                   setSelectedSession(item);
                   setShowDetailPopup(true);
                 }}
-                className="flex w-full cursor-pointer items-center gap-4 border-b border-[#D5D2DE] px-0 py-2 transition-all hover:bg-gray-50"
+                className="hover:bg-white-50 flex w-full cursor-pointer items-center gap-4 border-b border-[#D5D2DE] px-0 py-4 transition-all"
               >
                 {/* 날짜 */}
                 <div className="flex min-w-[80px] flex-col items-center justify-center text-sm text-[#6A667A]">
@@ -287,12 +297,13 @@ export default function DashboardPage() {
             {/* 데이터가 없거나 모두 로드됨 */}
             {!hasMore && allSessions.length > 0 && (
               <div className="flex w-full items-center justify-center py-4 text-xs text-gray-500">
-                모든 데이터를 불러왔습니다 (조회된 데이터: {allSessions.length}건 / 페이지: {displayPage})
+                모든 데이터를 불러왔습니다 (조회된 데이터: {allSessions.length}건 / 페이지:{" "}
+                {displayPage})
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -301,7 +312,6 @@ export default function DashboardPage() {
       <SplitViewLayout
         leftChildren={leftContent}
         rightChildren={rightContent}
-        bgClass="bg-chat-history"
         leftColSpan={4}
         rightColSpan={8}
         showHeader={!showNicknamePopup && !showDetailPopup}
@@ -309,10 +319,7 @@ export default function DashboardPage() {
 
       {/* 대화 상세 팝업 */}
       {showDetailPopup && selectedSession && (
-        <ChatDetailPopup
-          session={selectedSession}
-          onClose={() => setShowDetailPopup(false)}
-        />
+        <ChatDetailPopup session={selectedSession} onClose={() => setShowDetailPopup(false)} />
       )}
 
       {/* 닉네임 변경 팝업 */}
