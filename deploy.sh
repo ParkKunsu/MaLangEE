@@ -173,13 +173,17 @@ if [[ "$TARGET" == "all" || "$TARGET" == "backend" ]]; then
         if [ -f "pyproject.toml" ]; then
             poetry config virtualenvs.in-project true
             
-            # 1차 시도: 일반 설치
-            poetry install
+            # 1차 시도: 일반 설치 (출력을 캡처하여 경고 메시지 확인)
+            INSTALL_OUTPUT=$(poetry install 2>&1)
+            INSTALL_EXIT_CODE=$?
             
-            # 실패 시 Lock 파일 갱신 후 재시도
-            if [ $? -ne 0 ]; then
-                echo -e "${YELLOW}⚠ 의존성 설치 실패. Lock 파일 불일치 가능성 있음.${NC}"
-                echo "[INFO] poetry lock 실행 중..." | tee -a $LOG_FILE
+            # 결과를 화면과 로그에 출력
+            echo "$INSTALL_OUTPUT" | tee -a $LOG_FILE
+            
+            # 실패했거나, Lock 파일 호환성 경고가 있는 경우 재시도
+            if [ $INSTALL_EXIT_CODE -ne 0 ] || [[ "$INSTALL_OUTPUT" == *"The lock file might not be compatible"* ]]; then
+                echo -e "${YELLOW}⚠ Lock 파일 호환성 문제 또는 설치 오류 감지. 갱신 후 재시도...${NC}"
+                echo "[INFO] poetry lock 갱신 및 재설치 실행..." | tee -a $LOG_FILE
                 
                 poetry lock
                 poetry install
