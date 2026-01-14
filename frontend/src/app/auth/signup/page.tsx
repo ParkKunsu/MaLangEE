@@ -167,7 +167,9 @@ export default function RegisterPage() {
                 <p className="mt-2 px-1 text-sm text-red-500">{errors.login_id.message}</p>
               )}
               {loginIdCheck.error && !errors.login_id && (
-                <p className="mt-2 px-1 text-sm text-red-500">{getCheckErrorMessage(loginIdCheck.error)}</p>
+                <p className="mt-2 px-1 text-sm text-red-500">
+                  {getCheckErrorMessage(loginIdCheck.error)}
+                </p>
               )}
               {!loginIdCheck.isChecking &&
                 !loginIdCheck.error &&
@@ -204,9 +206,12 @@ export default function RegisterPage() {
               {passwordCheck.error && !errors.password && (
                 <p className="mt-2 px-1 text-sm text-red-500">{passwordCheck.error}</p>
               )}
-              {!passwordCheck.isChecking && !passwordCheck.error && passwordCheck.isValid && watch("password") && (
-                <p className="mt-2 px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
-              )}
+              {!passwordCheck.isChecking &&
+                !passwordCheck.error &&
+                passwordCheck.isValid &&
+                watch("password") && (
+                  <p className="mt-2 px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
+                )}
               {/* 서버/submit 관련 validationError가 비밀번호 관련이면 하단에 표시 */}
               {validationError && validationError.includes("비밀번호") && (
                 <p className="mt-2 px-1 text-sm text-red-500">{validationError}</p>
@@ -238,7 +243,9 @@ export default function RegisterPage() {
                 <p className="mt-2 px-1 text-sm text-red-500">{errors.nickname.message}</p>
               )}
               {nicknameCheck.error && !errors.nickname && (
-                <p className="mt-2 px-1 text-sm text-red-500">{getCheckErrorMessage(nicknameCheck.error)}</p>
+                <p className="mt-2 px-1 text-sm text-red-500">
+                  {getCheckErrorMessage(nicknameCheck.error)}
+                </p>
               )}
               {!nicknameCheck.isChecking &&
                 !nicknameCheck.error &&
@@ -290,6 +297,12 @@ export default function RegisterPage() {
               isLoading={loginMutation.isPending}
               onClick={() => {
                 setLoginError(null);
+
+                //로그인 페이지로 이동
+                window.location.href = "/auth/login";
+                return;
+
+                /* 바로 로그인 하는 경우
                 if (!savedCredentials) {
                   // 자격증명이 없으면 로그인 페이지로 이동
                   window.location.href = "/auth/login";
@@ -308,6 +321,7 @@ export default function RegisterPage() {
                     },
                   }
                 );
+                */
               }}
             >
               로그인하기
