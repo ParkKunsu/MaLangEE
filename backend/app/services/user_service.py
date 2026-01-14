@@ -15,12 +15,13 @@ class UserService:
         return await self.user_repo.get_by_login_id(login_id)
 
     async def update_user_profile(self, user: User, user_in: UserUpdate) -> User:
-        if user_in.password:
+        if user_in.password and user_in.password.strip():
             user.hashed_password = security.get_password_hash(user_in.password)
-        if user_in.nickname:
+        if user_in.nickname and user_in.nickname.strip():
             user.nickname = user_in.nickname
         
         return await self.user_repo.update(user)
+
 
     async def withdraw_user(self, user: User) -> User:
         user.is_active = False

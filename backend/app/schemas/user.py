@@ -1,6 +1,6 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 class UserBase(BaseModel):
     login_id: str
@@ -10,6 +10,12 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     nickname: str # 회원가입 시 닉네임 필수
+
+    @field_validator('login_id', 'nickname', 'password')
+    def check_empty_whitespace(cls, v):
+        if not v or not v.strip():
+            raise ValueError('빈 값이나 공백만 입력할 수 없습니다.')
+        return v
 
 class UserUpdate(BaseModel):
     nickname: Optional[str] = None
