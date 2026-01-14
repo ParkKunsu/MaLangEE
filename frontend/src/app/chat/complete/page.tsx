@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
 import { Clock, Mic } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
 import { FullLayout } from "@/shared/ui/FullLayout";
@@ -24,8 +23,8 @@ export default function ChatCompletePage() {
     return userSpeak ? parseInt(userSpeak) : 90; // 1분 30초
   };
 
-  const [totalDuration, setTotalDuration] = useState(getInitialTotalDuration);
-  const [userSpeakDuration, setUserSpeakDuration] = useState(getInitialUserSpeakDuration);
+  const [totalDuration] = useState(getInitialTotalDuration);
+  const [userSpeakDuration] = useState(getInitialUserSpeakDuration);
 
   const handleGoHome = () => {
     // 세션 데이터 정리
@@ -94,39 +93,6 @@ export default function ChatCompletePage() {
       </div>
       </div>
 
-      {/* Test Links */}
-      <div className="mt-8 flex flex-col items-center gap-2 border-t pt-4">
-        <p className="mb-1 text-xs font-bold text-gray-600">🔧 테스트 링크</p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              setTotalDuration(120);
-              setUserSpeakDuration(60);
-            }}
-            className="rounded-full bg-blue-100 px-3 py-1 text-xs transition hover:bg-blue-200"
-          >
-            2분 대화
-          </button>
-          <button
-            onClick={() => {
-              setTotalDuration(300);
-              setUserSpeakDuration(180);
-            }}
-            className="rounded-full bg-green-100 px-3 py-1 text-xs transition hover:bg-green-200"
-          >
-            5분 대화
-          </button>
-          <button
-            onClick={() => {
-              setTotalDuration(600);
-              setUserSpeakDuration(420);
-            }}
-            className="rounded-full bg-purple-100 px-3 py-1 text-xs transition hover:bg-purple-200"
-          >
-            10분 대화
-          </button>
-        </div>
-      </div>
     </FullLayout>
   );
 }

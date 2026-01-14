@@ -14,15 +14,11 @@ export default function LogoutPage() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    console.log("[LogoutPage] 로그아웃 처리 시작");
-
     // 토큰 제거
     tokenStorage.remove();
 
     // React Query 캐시 초기화
     queryClient.clear();
-
-    console.log("[LogoutPage] 로그아웃 완료, 로그인 페이지로 이동");
 
     // 로그인 페이지로 리다이렉트
     router.replace("/auth/login");
