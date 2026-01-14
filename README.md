@@ -106,30 +106,30 @@ cd /home/aimaster/projects/MaLangEE && git status
 
 ```
 MaLangEE/
-├── frontend/                    # Next.js 16 프론트엔드 애플리케이션
+├── frontend/                   # Next.js 16 프론트엔드 애플리케이션
 │   ├── src/                    # 소스 코드
 │   ├── public/                 # 정적 파일
 │   ├── package.json            # npm 의존성
 │   └── next.config.ts          # Next.js 설정 (TypeScript)
-├── backend/                     # Java Spring Boot REST API 서버
-│   ├── src/                    # Java 소스코드
-│   ├── pom.xml                 # Maven 설정
-│   └── target/                 # Build 결과물
-├── ai-engine/                   # Python 기반 AI 학습 엔진
-│   ├── app.py                  # Flask/FastAPI 애플리케이션
+├── backend/                    # FastAPI REST 서버
+│   ├── app/                    # 소스코드
+│   ├── pyproject.toml          # peotry 설정
 │   └── venv/                   # Python 가상환경
-├── database/                    # PostgreSQL 데이터베이스 스키마
-├── docs/                        # 📚 문서 모음
-│   ├── 00-PROJECT_INFO.md       # ℹ️ 프로젝트 핵심 정보
-│   ├── 01-DEV_GUIDE.md          # 💻 개발자 가이드
-│   └── 02-SERVER_OPS.md         # ⚙️ 서버 운영 가이드
-├── scripts/                     # 서버 설정 스크립트
+├── ai-engine/                  # Python 기반 AI 학습 엔진 (모듈)
+│   ├── app.py                  # FastAPI 애플리케이션 (테스트)
+│   └── venv/                   # Python 가상환경
+├── database/                   # PostgreSQL 데이터베이스 스키마
+├── docs/                       # 📚 문서 모음
+│   ├── 00-PROJECT_INFO.md      # ℹ️ 프로젝트 핵심 정보
+│   ├── 01-DEV_GUIDE.md         # 💻 개발자 가이드
+│   └── 02-SERVER_OPS.md        # ⚙️ 서버 운영 가이드
+├── scripts/                    # 서버 설정 스크립트
 │   ├── config.sh               # 공통 설정 파일 (중앙 관리)
 │   ├── 1-init_server.sh        # 1️⃣ Ubuntu 서버 초기화
 │   ├── 2-setup_env.sh          # 2️⃣ 개발 환경 설치
 │   └── 5-setup_services.sh     # 5️⃣ 서비스 등록 (systemd)
-├── deploy.sh                    # 🚀 메인 배포 스크립트 (프로젝트 루트)
-└── README.md                    # 프로젝트 소개 (이 파일)
+├── deploy.sh                   # 🚀 메인 배포 스크립트 (프로젝트 루트)
+└── README.md                   # 프로젝트 소개 (이 파일)
 ```
 
 ---
@@ -156,11 +156,10 @@ export DB_PASSWORD="secure_password"
 
 | 도구 | 버전 | 용도 |
 |------|------|------|
-| **Java** | 17+ | Spring Boot Backend |
 | **Node.js** | 18+ | Frontend |
 | **npm** | 9+ | 패키지 관리 (Frontend) |
-| **Maven** | 3.8+ | 패키지 관리 (Backend) |
-| **Python** | 3.9+ | AI Engine |
+| **poetry** | 2.2+ | 패키지 관리 (Backend) |
+| **Python** | 3.9+ | AI Engine, Backend |
 | **PostgreSQL** | 13+ | 데이터베이스 |
 | **Git** | 2.30+ | 버전 관리 |
 
@@ -203,15 +202,9 @@ bash scripts/2-setup_env.sh
 cd frontend
 npm install
 
-# Backend 설치 (Maven)
-cd ../backend
-mvn clean install
-
-# AI Engine 설치 (Python)
-cd ../ai-engine
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# Backend 및 AI 엔진 설치 (poetry)
+cd ../backend 
+poetry install
 ```
 
 ### 3️⃣ 데이터베이스 초기화
@@ -314,18 +307,17 @@ npm run dev
 # 접속: http://localhost:3000
 ```
 
-**터미널 2 - Backend (Spring Boot):**
+**터미널 2 - Backend:**
 ```bash
 cd backend
-mvn spring-boot:run
-# 접속: http://localhost:8080/api
+poetry run uvicorn app.main:app --reload
+# 접속: http://localhost:8080
 ```
 
 **터미널 3 - AI Engine (선택):**
 ```bash
 cd ai-engine
-source venv/bin/activate
-python main.py
+python app.py
 ```
 
 ### Nginx를 통한 통합 접속
@@ -338,7 +330,7 @@ python main.py
 # 웹 접속
 https://lb-dev-web-ai-117002060-f11523401681.kr.lb.naverncp.com  # Frontend (HTTPS, 운영)
 http://localhost:3000       # Frontend (개발 직접 접속)
-http://localhost:8080/api  # Backend API
+http://localhost:8080/docs  # Backend API
 http://localhost:5000      # AI Engine
 ```
 
@@ -391,7 +383,7 @@ docs/
 
 ### 💻 [01-DEV_GUIDE.md](docs/01-DEV_GUIDE.md)
 개발자가 로컬 환경(Windows/Mac)에서 프로젝트를 실행하는 방법입니다.
-- 필수 설치 도구 (Git, JDK, Node 등)
+- 필수 설치 도구 (Git, Node 등)
 - Backend, Frontend, AI Engine 실행 명령어
 - 트러블슈팅
 
