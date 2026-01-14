@@ -2,6 +2,10 @@ from typing import List, Optional
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
+    """
+    환경 변수 설정
+    서버 환경변수 설정시, config.sh 및 5-setup_services.sh에서 주입된 환경변수 사용
+    """
     PROJECT_NAME: str = "MaLangEE Backend"
     API_V1_STR: str = "/api/v1"
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
@@ -13,6 +17,12 @@ class Settings(BaseSettings):
     
     # External APIs
     OPENAI_API_KEY: Optional[str] = None
+
+    # Session Cleanup Configuration
+    SESSION_CLEANUP_ENABLED: bool = True  # 세션 자동 정리 활성화 여부
+    SESSION_CLEANUP_INTERVAL_SECONDS: int = 3600  # 정리 주기 (기본 1시간)
+    SESSION_GUEST_TTL_MINS: int = 30  # 게스트 세션 만료 시간 (분)
+
     
     # Database
     # 1. 로컬 개발/테스트용: SQLite 사용 (기본값)
