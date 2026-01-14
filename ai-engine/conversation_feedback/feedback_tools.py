@@ -1,3 +1,16 @@
+import logging
+from pathlib import Path
+
+import yaml
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
+
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 """
 feedback_tools.py - 영어 학습 피드백 도구들
 
@@ -12,16 +25,6 @@ ReAct Agent가 사용하는 피드백 생성 도구들을 정의합니다.
 - expression_improver: 표현 개선
 - generate_summary: TOP 3 요약 생성
 """
-import logging
-import yaml
-from pathlib import Path
-
-from langchain_core.tools import tool
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
-
-logger = logging.getLogger(__name__)
 
 # 프롬프트 로드
 PROMPTS_PATH = Path(__file__).parent / "feedback_prompts.yaml"
@@ -33,7 +36,7 @@ except FileNotFoundError:
     logger.error(f"프롬프트 파일을 찾을 수 없음: {PROMPTS_PATH}")
     PROMPTS = {}
 
-llm = ChatOpenAI(model="gpt-4o")
+llm = ChatOpenAI(model=settings.OPENAI_MODEL, api_key=settings.OPENAI_API_KEY)
 
 
 def _get_prompt(tool_name: str) -> ChatPromptTemplate:
@@ -47,10 +50,7 @@ def _get_prompt(tool_name: str) -> ChatPromptTemplate:
         ChatPromptTemplate 객체
     """
     p = PROMPTS[tool_name]
-    return ChatPromptTemplate.from_messages([
-        ("system", p["system"].strip()),
-        ("user", p["user"])
-    ])
+    return ChatPromptTemplate.from_messages([("system", p["system"].strip()), ("user", p["user"])])
 
 
 @tool

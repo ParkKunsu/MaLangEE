@@ -1,3 +1,15 @@
+import logging
+from pathlib import Path
+
+import yaml
+from .feedback_tools import all_tools
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+
+from app.core.config import settings
+
+logger = logging.getLogger(__name__)
+
 """
 feedback_agent.py - 영어 학습 피드백 ReAct Agent
 
@@ -10,16 +22,6 @@ feedback_agent.py - 영어 학습 피드백 ReAct Agent
 2. 오류 유형에 따라 적절한 도구(tool) 호출
 3. 모든 분석 후 TOP 3 요약 생성
 """
-import logging
-import yaml
-from pathlib import Path
-
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
-
-from feedback_tools import all_tools
-
-logger = logging.getLogger(__name__)
 
 # 프롬프트 파일 경로
 PROMPTS_PATH = Path(__file__).parent / "feedback_prompts.yaml"
@@ -49,7 +51,7 @@ def _create_agent():
     Returns:
         생성된 ReAct Agent 인스턴스
     """
-    llm = ChatOpenAI(model="gpt-4o")
+    llm = ChatOpenAI(model=settings.OPENAI_MODEL, api_key=settings.OPENAI_API_KEY)
     prompts = _load_prompts()
     system_prompt = prompts.get("agent_system", "")
 
