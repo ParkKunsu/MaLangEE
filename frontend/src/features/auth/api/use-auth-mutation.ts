@@ -17,10 +17,8 @@ export function useLogin() {
     mutationFn: (data: LoginFormData) =>
       authApi.login(data.username, data.password),
     onSuccess: (data) => {
-      console.log("[useLogin] 로그인 성공, 토큰 저장");
       tokenStorage.set(data.access_token);
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      console.log("[useLogin] /chat-history로 이동");
       router.push("/chat-history");
     },
   });

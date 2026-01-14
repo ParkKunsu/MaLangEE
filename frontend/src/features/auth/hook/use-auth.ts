@@ -24,14 +24,6 @@ export function useAuth() {
   // 인증 상태: 토큰이 있고, 사용자 정보가 있으며, 인증 에러가 없는 경우
   const isAuthenticated = hasToken && !!user && !isAuthError;
 
-  console.log("[useAuth]", {
-    hasToken,
-    user: !!user,
-    isLoading: hasToken && isLoading,
-    isAuthError,
-    isAuthenticated,
-  });
-
   const logout = useCallback(() => {
     tokenStorage.remove();
     queryClient.clear();

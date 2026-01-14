@@ -116,7 +116,6 @@ export class WebSocketClient {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       setTimeout(() => {
-        console.log(`Reconnecting... (attempt ${this.reconnectAttempts})`);
         this.connect();
       }, this.reconnectDelay);
     }

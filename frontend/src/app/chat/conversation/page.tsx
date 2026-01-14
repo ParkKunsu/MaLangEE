@@ -26,9 +26,7 @@ export default function ConversationPage() {
   const [textOpacity, setTextOpacity] = useState(1);
 
   // 마이크 녹음 관련
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   // 세션 스토리지에서 자막 설정 가져오기
@@ -38,8 +36,8 @@ export default function ConversationPage() {
     return subtitle === null ? true : subtitle === "true";
   };
 
-  const [subtitleEnabled, setSubtitleEnabled] = useState(getInitialSubtitleSetting);
-  const [isMuted, setIsMuted] = useState(false);
+  const [subtitleEnabled] = useState(getInitialSubtitleSetting);
+  const [isMuted] = useState(false);
 
   // 팝업 상태
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -61,12 +59,13 @@ export default function ConversationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // WebSocket 상태에 따른 대화 상태 업데이트
+  // WebSocket 상태에 따른 대화 상태 업데이트 (최초 준비 시에만 실행)
   useEffect(() => {
     if (chatState.isReady && conversationState === "ai-speaking") {
       // AI가 준비되면 초기 메시지 전송
       sendText("Hello! Start a conversation with me.");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatState.isReady]);
 
   // AI 말하기 상태 동기화
@@ -77,6 +76,7 @@ export default function ConversationPage() {
       setConversationState("user-turn");
       startInactivityTimer();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatState.isAiSpeaking, chatState.isConnected, chatState.isReady]);
 
   // 비활동 타이머 시작 (15초 후 메시지 표시)
@@ -143,7 +143,6 @@ export default function ConversationPage() {
       source.connect(processor);
       processor.connect(audioContextRef.current.destination);
 
-      console.log("[Recording] Started");
     } catch (error) {
       console.error("[Recording] Failed to start:", error);
     }
@@ -159,7 +158,6 @@ export default function ConversationPage() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
-    console.log("[Recording] Stopped");
   }, []);
 
   const handleMicClick = () => {
@@ -213,25 +211,10 @@ export default function ConversationPage() {
     }
   };
 
-  const toggleSubtitle = () => {
-    setSubtitleEnabled(!subtitleEnabled);
-    sessionStorage.setItem("subtitleEnabled", (!subtitleEnabled).toString());
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
   const getMalangEEStatus = (): MalangEEStatus => {
     if (showInactivityMessage) return "humm";
     if (conversationState === "ai-speaking") return "talking";
     return "default";
-  };
-
-  const handleCompleteChat = () => {
-    sessionStorage.setItem("totalChatDuration", "240");
-    sessionStorage.setItem("userSpeakDuration", "150");
-    router.push("/chat/complete");
   };
 
   const handleLogin = () => {
@@ -383,79 +366,6 @@ export default function ConversationPage() {
           </div>
         )}
 
-        {/* Debug Controls */}
-        <div className="mt-8 flex flex-col items-center gap-2 border-t pt-4">
-          <p className="mb-1 text-xs font-bold text-gray-600">디버그 컨트롤</p>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => connect()}
-              className="rounded-full bg-green-100 px-3 py-1 text-xs transition hover:bg-green-200"
-            >
-              WebSocket 재연결
-            </button>
-            <button
-              onClick={() => sendText("Hello, how are you?")}
-              className="rounded-full bg-blue-100 px-3 py-1 text-xs transition hover:bg-blue-200"
-              disabled={!chatState.isConnected}
-            >
-              테스트 메시지 전송
-            </button>
-            <button
-              onClick={toggleSubtitle}
-              className={`rounded-full px-3 py-1 text-xs transition ${
-                subtitleEnabled
-                  ? "bg-purple-100 hover:bg-purple-200"
-                  : "bg-gray-300 hover:bg-gray-400"
-              }`}
-            >
-              {subtitleEnabled ? "자막 숨기기" : "자막 보기"}
-            </button>
-            <button
-              onClick={toggleMute}
-              className={`rounded-full px-3 py-1 text-xs transition ${
-                isMuted ? "bg-red-100 hover:bg-red-200" : "bg-blue-100 hover:bg-blue-200"
-              }`}
-            >
-              {isMuted ? "음소거 해제" : "음소거"}
-            </button>
-          </div>
-
-          <p className="mb-1 mt-2 text-xs font-bold text-gray-600">팝업 테스트</p>
-
-          <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => setShowLoginPopup(true)}
-              className="rounded-full bg-purple-100 px-3 py-1 text-xs transition hover:bg-purple-200"
-            >
-              로그인 권유 팝업
-            </button>
-            <button
-              onClick={() => setShowWaitPopup(true)}
-              className="rounded-full bg-cyan-100 px-3 py-1 text-xs transition hover:bg-cyan-200"
-            >
-              응답 대기 팝업
-            </button>
-            <button
-              onClick={() => setShowEndChatPopup(true)}
-              className="rounded-full bg-pink-100 px-3 py-1 text-xs transition hover:bg-pink-200"
-            >
-              대화 종료 팝업
-            </button>
-            <button
-              onClick={handleCompleteChat}
-              className="rounded-full bg-green-100 px-3 py-1 text-xs transition hover:bg-green-200"
-            >
-              대화 완료
-            </button>
-          </div>
-
-          {/* Connection Info */}
-          <div className="mt-2 text-xs text-gray-500">
-            <p>Connected: {chatState.isConnected ? "✅" : "❌"}</p>
-            <p>Ready: {chatState.isReady ? "✅" : "❌"}</p>
-          </div>
-        </div>
       </FullLayout>
 
       {/* Login Popup */}

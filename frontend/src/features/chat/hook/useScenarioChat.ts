@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { tokenStorage } from "@/features/auth";
-import { config } from "@/shared/lib/config";
 
 /**
  * WebSocket 메시지 타입
@@ -79,8 +78,6 @@ export function useScenarioChat() {
       ? `${wsBaseUrl}/api/v1/ws/scenario?token=${encodeURIComponent(token)}`
       : `${wsBaseUrl}/api/v1/ws/guest-scenario`;
 
-    console.log("[WebSocket] URL:", url);
-    console.log("[WebSocket] Token exists:", !!token);
     return url;
   }, []);
 
@@ -157,6 +154,7 @@ export function useScenarioChat() {
     } catch (error) {
       console.error("Failed to play audio:", error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const playNextAudio = async () => {
@@ -186,7 +184,6 @@ export function useScenarioChat() {
     (event: MessageEvent) => {
       try {
         const message: ScenarioMessage = JSON.parse(event.data);
-        console.log("[WebSocket] Message received:", message.type);
 
         switch (message.type) {
           case "ready":
@@ -246,34 +243,27 @@ export function useScenarioChat() {
   const connect = useCallback(() => {
     // 새 연결 ID 생성 (이전 연결의 이벤트 무시용)
     const currentConnectionId = ++connectionIdRef.current;
-    console.log("[WebSocket] connect() called, connectionId:", currentConnectionId);
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      console.log("[WebSocket] Already connected");
       return;
     }
 
     // 기존 연결이 있으면 정리
     if (wsRef.current) {
-      console.log("[WebSocket] Closing existing connection");
       wsRef.current.close();
       wsRef.current = null;
     }
 
     try {
       const url = getWebSocketUrl();
-      console.log("[WebSocket] Attempting connection to:", url);
-
       const ws = new WebSocket(url);
 
       ws.onopen = () => {
         // 현재 연결 ID가 최신인지 확인
         if (connectionIdRef.current !== currentConnectionId) {
-          console.log("[WebSocket] Stale connection, ignoring open event");
           ws.close();
           return;
         }
-        console.log("[WebSocket] ✅ Connected successfully!");
         setState((prev) => ({ ...prev, isConnected: true, error: null }));
       };
 
@@ -282,13 +272,11 @@ export function useScenarioChat() {
         handleMessage(event);
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = () => {
         // 현재 연결 ID가 최신인지 확인
         if (connectionIdRef.current !== currentConnectionId) {
-          console.log("[WebSocket] Stale connection, ignoring close event");
           return;
         }
-        console.log("[WebSocket] ❌ Disconnected:", event.code, event.reason);
         setState((prev) => ({
           ...prev,
           isConnected: false,
@@ -297,9 +285,8 @@ export function useScenarioChat() {
         wsRef.current = null;
       };
 
-      ws.onerror = (event) => {
+      ws.onerror = () => {
         if (connectionIdRef.current !== currentConnectionId) return;
-        console.error("[WebSocket] ⚠️ Error event:", event);
         setState((prev) => ({
           ...prev,
           error: "WebSocket connection failed. Check if server is running.",
@@ -307,7 +294,6 @@ export function useScenarioChat() {
       };
 
       wsRef.current = ws;
-      console.log("[WebSocket] WebSocket object created, waiting for connection...");
     } catch (error) {
       console.error("[WebSocket] ❌ Failed to create WebSocket:", error);
       setState((prev) => ({
@@ -340,9 +326,6 @@ export function useScenarioChat() {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       const message = { type: "text", text };
       wsRef.current.send(JSON.stringify(message));
-      console.log("[WebSocket] Sent text:", text);
-    } else {
-      console.error("[WebSocket] Not connected");
     }
   }, []);
 
@@ -359,8 +342,6 @@ export function useScenarioChat() {
         sample_rate: sampleRate,
       };
       wsRef.current.send(JSON.stringify(message));
-    } else {
-      console.error("[WebSocket] Not connected");
     }
   }, []);
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { MicButton, Button, MalangEE } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
@@ -208,86 +207,6 @@ export default function ScenarioSelectPage() {
             className={currentState === 3 ? "pointer-events-none opacity-50" : ""}
           />
         </div>
-
-          {/* 임시 테스트 링크들 */}
-          <div className="mt-6 flex flex-col gap-2 items-center border-t pt-4">
-            <p className="text-xs font-bold text-gray-600 mb-1">테스트용 링크</p>
-
-            {/* 상황별 테스트 */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              <button
-                onClick={() => {
-                  setCurrentState(0);
-                  setIsListening(false);
-                  setShowInactivityMessage(false);
-                }}
-                className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full transition"
-              >
-                초기 상태
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentState(1);
-                  setIsListening(true);
-                  setShowInactivityMessage(false);
-                }}
-                className="text-xs px-3 py-1 bg-blue-100 hover:bg-blue-200 rounded-full transition"
-              >
-                듣는 중
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentState(2);
-                  setIsListening(false);
-                  setShowInactivityMessage(false);
-                }}
-                className="text-xs px-3 py-1 bg-red-100 hover:bg-red-200 rounded-full transition"
-              >
-                인식 실패
-              </button>
-              <button
-                onClick={() => {
-                  setCurrentState(3);
-                  setIsListening(false);
-                  setShowInactivityMessage(false);
-                }}
-                className="text-xs px-3 py-1 bg-green-100 hover:bg-green-200 rounded-full transition"
-              >
-                인식 성공
-              </button>
-              <button
-                onClick={() => {
-                  setShowInactivityMessage(true);
-                  setIsListening(true);
-                }}
-                className="text-xs px-3 py-1 bg-yellow-100 hover:bg-yellow-200 rounded-full transition"
-              >
-                비활동 메시지
-              </button>
-            </div>
-
-            {/* 팝업 테스트 */}
-            <div className="flex flex-wrap gap-2 justify-center mt-2">
-              <button
-                onClick={() => setShowLoginPopup(true)}
-                className="text-xs px-3 py-1 bg-purple-100 hover:bg-purple-200 rounded-full transition"
-              >
-                로그인 권유 팝업
-              </button>
-              <button
-                onClick={() => setShowWaitPopup(true)}
-                className="text-xs px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded-full transition"
-              >
-                응답 대기 팝업
-              </button>
-              <button
-                onClick={() => setShowEndChatPopup(true)}
-                className="text-xs px-3 py-1 bg-pink-100 hover:bg-pink-200 rounded-full transition"
-              >
-                대화 종료 팝업
-              </button>
-            </div>
-          </div>
 
       </FullLayout>
 

@@ -12,22 +12,16 @@ const AUTH_QUERY_KEY = ["auth", "user"];
 export function useCurrentUser() {
   const hasToken = tokenStorage.exists();
 
-  console.log("[useCurrentUser] hasToken:", hasToken);
-
   return useQuery<User>({
     queryKey: AUTH_QUERY_KEY,
     queryFn: async () => {
-      console.log("[useCurrentUser] queryFn 실행");
       try {
         const user = await authApi.getCurrentUser();
-        console.log("[useCurrentUser] 사용자 조회 성공:", user);
         return user;
       } catch (error: unknown) {
         // 401/403 에러면 토큰 제거 (인증 실패)
         const status = (error as { status?: number })?.status;
-        console.log("[useCurrentUser] 에러 발생, status:", status, error);
         if (status === 401 || status === 403) {
-          console.log("[useCurrentUser] 401/403 에러, 토큰 제거");
           tokenStorage.remove();
         }
         throw error;
