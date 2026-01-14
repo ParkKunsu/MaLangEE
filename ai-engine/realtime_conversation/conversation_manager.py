@@ -96,10 +96,10 @@ class ConversationManager:
         # {{KEY_INFO_1}}    -> place (장소)
         # {{KEY_INFO_2}}    -> partner (대화 상대)
         # {{KEY_INFO_3}}    -> goal (목표)
-        filled_prompt = self.raw_system_prompt.replace("{{SESSION_TITLE}}", context_data.get("title", "Free Conversation")) \
-                                              .replace("{{KEY_INFO_1}}", context_data.get("place", "Anywhere")) \
-                                              .replace("{{KEY_INFO_2}}", context_data.get("partner", "Friend")) \
-                                              .replace("{{KEY_INFO_3}}", context_data.get("goal", "Just chat"))
+        filled_prompt = self.raw_system_prompt.replace("{{SESSION_TITLE}}", context_data.get("title") or "Free Conversation") \
+                                              .replace("{{KEY_INFO_1}}", context_data.get("place") or "Anywhere") \
+                                              .replace("{{KEY_INFO_2}}", context_data.get("partner") or "Friend") \
+                                              .replace("{{KEY_INFO_3}}", context_data.get("goal") or "Just chat")
         
         # Base Layer 업데이트
         self.instruction_base = filled_prompt

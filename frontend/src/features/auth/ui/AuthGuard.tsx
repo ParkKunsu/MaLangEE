@@ -37,7 +37,6 @@ export const AuthGuard: FC<AuthGuardProps> = ({
   useEffect(() => {
     if (!hasToken && !hasRedirected.current) {
       hasRedirected.current = true;
-      console.log("[AuthGuard] 토큰 없음, 리다이렉트:", redirectTo);
       router.replace(redirectTo);
     }
   }, [hasToken, redirectTo, router]);
@@ -46,30 +45,25 @@ export const AuthGuard: FC<AuthGuardProps> = ({
   useEffect(() => {
     if (hasToken && !isLoading && !isAuthenticated && !hasRedirected.current) {
       hasRedirected.current = true;
-      console.log("[AuthGuard] 인증 실패, 리다이렉트:", redirectTo);
       router.replace(redirectTo);
     }
   }, [hasToken, isAuthenticated, isLoading, redirectTo, router]);
 
   // 토큰이 없으면 빈 화면 (리다이렉트 대기)
   if (!hasToken) {
-    console.log("[AuthGuard] 토큰 없음, null 반환");
     return null;
   }
 
   // 로딩 중
   if (isLoading) {
-    console.log("[AuthGuard] 로딩 중");
     return fallback ?? <AuthGuardLoadingFallback />;
   }
 
   // 인증되지 않음 (리다이렉트 실행 또는 예정)
   if (!isAuthenticated) {
-    console.log("[AuthGuard] 인증 안됨, null 반환");
     return null;
   }
 
-  console.log("[AuthGuard] 인증 완료, children 렌더링");
   return <>{children}</>;
 };
 

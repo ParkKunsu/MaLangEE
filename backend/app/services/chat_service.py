@@ -5,6 +5,7 @@ from app.db.models import ConversationSession, User
 from realtime_conversation.connection_handler import ConnectionHandler
 from fastapi import WebSocket
 from fastapi import WebSocket
+from sqlalchemy.future import select
 from app.core.config import settings
 from realtime_conversation.session_manager import SessionManager
 
@@ -71,6 +72,7 @@ class ChatService:
         - 최신 세션 정보 및 히스토리 조회
         - ConnectionHandler 시작
         """
+        print(f"[DEBUG] start_ai_session called. session_id={session_id}, user_id={user_id}")
         # 1. OpenAI API Key 확인
         api_key = settings.OPENAI_API_KEY
         
@@ -95,7 +97,21 @@ class ChatService:
             session_obj = await self.chat_repo.get_session_by_id(session_id)
             
             if not session_obj:
-                print(f"Session {session_id} not found.")
+                print(f"Session {session_id} not found via get_session_by_id.")
+                
+                # [DEBUG] 혹시 삭제된 세션인지, 아니면 정말 없는지 확인
+                try:
+                    stmt = select(ConversationSession).where(ConversationSession.session_id == session_id)
+                    result = await self.chat_repo.db.execute(stmt)
+                    debug_session = result.scalars().first()
+                    
+                    if debug_session:
+                        print(f"[DEBUG] Session FOUND but match failed. check: deleted={debug_session.deleted}, user_id={debug_session.user_id}")
+                    else:
+                        print(f"[DEBUG] Session REALLY NOT FOUND in DB. session_id={session_id}")
+                except Exception as e:
+                    print(f"[DEBUG] DB Check failed: {e}")
+
                 await websocket.close(code=4004, reason="Session not found")
                 return
 

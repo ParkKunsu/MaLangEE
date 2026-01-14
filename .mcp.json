@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "figma-developer-mcp": {
-      "command": "bash",
-      "args": [".claude/scripts/figma-mcp.sh"]
-    }
-  }
-}

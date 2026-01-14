@@ -19,6 +19,14 @@ vi.mock("../hook", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// Mock tokenStorage
+const mockTokenExists = vi.fn();
+vi.mock("../model", () => ({
+  tokenStorage: {
+    exists: () => mockTokenExists(),
+  },
+}));
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -40,6 +48,7 @@ describe("AuthGuard", () => {
   });
 
   it("should show loading state while checking authentication", () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: true,
@@ -57,6 +66,7 @@ describe("AuthGuard", () => {
   });
 
   it("should render children when authenticated", async () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
@@ -74,7 +84,8 @@ describe("AuthGuard", () => {
     });
   });
 
-  it("should redirect to login when not authenticated", async () => {
+  it("should redirect to login when no token exists", async () => {
+    mockTokenExists.mockReturnValue(false);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
@@ -92,7 +103,8 @@ describe("AuthGuard", () => {
     });
   });
 
-  it("should redirect to custom path when specified", async () => {
+  it("should redirect to custom path when specified and no token", async () => {
+    mockTokenExists.mockReturnValue(false);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
@@ -111,6 +123,7 @@ describe("AuthGuard", () => {
   });
 
   it("should render custom fallback when provided", () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: true,

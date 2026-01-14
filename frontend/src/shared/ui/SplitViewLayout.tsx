@@ -51,7 +51,7 @@ export const SplitViewLayout = ({
             <>
               <div className="text-lg font-semibold text-[#5F51D9]">
                 <Link href={"/chat-history"} className="inline-block">
-                <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+                <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={30} />
                 </Link>
               </div>
               <div className="flex items-center gap-6">

@@ -1,6 +1,7 @@
 "use client";
 
 import { FC, ReactNode, useState } from "react";
+import Image from "next/image";
 import { History, LogOut } from "lucide-react";
 import { useAuth } from "@/features/auth/hook/use-auth";
 import { PopupLayout } from "../PopupLayout";
@@ -44,7 +45,7 @@ export const GlassCard: FC<GlassCardProps> = ({
   const defaultHeaderLeft = (
     <div className="scenario-logo">
       <Link href={"/chat-history"} className="inline-block">
-      <img src={"/images/logo.png"} alt="MalangEE Logo" width={100} height={"auto"} />
+      <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={30} />
       </Link>
     </div>
   );

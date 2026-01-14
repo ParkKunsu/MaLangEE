@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
+import Image from "next/image";
 import { AuthGuard } from "@/features/auth";
 import { Mic } from "lucide-react";
 import { MalangEE } from "@/shared/ui";
@@ -16,7 +16,6 @@ export default function TopicSelectPage() {
 
   const handleEndConversation = () => {
     // TODO: 대화 종료 로직 구현
-    console.log("대화 종료");
   };
 
   return (
@@ -40,7 +39,7 @@ export default function TopicSelectPage() {
               className="text-xl font-semibold text-brand"
               style={{ letterSpacing: "-0.3px" }}
             >
-              <img src={"/images/logo.png"} alt="MalangEE Logo" />
+              <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={30} />
             </div>
             <button
               onClick={handleEndConversation}

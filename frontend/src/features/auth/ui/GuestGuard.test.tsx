@@ -19,6 +19,14 @@ vi.mock("../hook", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
+// Mock tokenStorage
+const mockTokenExists = vi.fn();
+vi.mock("../model", () => ({
+  tokenStorage: {
+    exists: () => mockTokenExists(),
+  },
+}));
+
 const createTestQueryClient = () =>
   new QueryClient({
     defaultOptions: {
@@ -40,6 +48,7 @@ describe("GuestGuard", () => {
   });
 
   it("should show loading state while checking authentication", () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: true,
@@ -56,7 +65,8 @@ describe("GuestGuard", () => {
     expect(screen.queryByText("Guest Content")).not.toBeInTheDocument();
   });
 
-  it("should render children when not authenticated", async () => {
+  it("should render children when no token exists", async () => {
+    mockTokenExists.mockReturnValue(false);
     mockUseAuth.mockReturnValue({
       isAuthenticated: false,
       isLoading: false,
@@ -74,7 +84,8 @@ describe("GuestGuard", () => {
     });
   });
 
-  it("should redirect to dashboard when authenticated", async () => {
+  it("should redirect to chat-history when authenticated", async () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       isLoading: false,
@@ -88,11 +99,12 @@ describe("GuestGuard", () => {
     );
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith("/dashboard");
+      expect(mockReplace).toHaveBeenCalledWith("/chat-history");
     });
   });
 
   it("should redirect to custom path when specified", async () => {
+    mockTokenExists.mockReturnValue(true);
     mockUseAuth.mockReturnValue({
       isAuthenticated: true,
       isLoading: false,

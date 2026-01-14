@@ -1,17 +1,16 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
 import { Button } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useGetChatSessions } from "@/features/chat";
+import { useCurrentUser } from "@/features/auth";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatDetailPopup } from "./ChatDetailPopup";
 import { NicknameChangePopup } from "./NicknameChangePopup";
 
 const ITEMS_PER_PAGE = 10;
-const DEBUG_MODE = process.env.NODE_ENV === "development";
 
 interface UserProfile {
   nickname: string;
@@ -22,136 +21,68 @@ interface UserProfile {
 export default function DashboardPage() {
   const router = useRouter();
   const [displayPage, setDisplayPage] = useState(1);
-  const [allSessions, setAllSessions] = useState<ChatHistoryItem[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(!DEBUG_MODE);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
 
-  // 프로덕션 모드에서 API 호출 (디버그 모드에서는 무시됨)
-  const { data: sessions } = useGetChatSessions(0, 20);
+  // 실제 API 호출
+  const { data: sessions, isLoading: isSessionsLoading } = useGetChatSessions(0, 100);
+  const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
+
+  // 세션 데이터를 UI 형식으로 변환 (useMemo 사용)
+  const allSessions = useMemo<ChatHistoryItem[]>(() => {
+    if (!sessions || !Array.isArray(sessions)) return [];
+
+    return sessions.map((session) => {
+      const startDate = new Date(session.started_at);
+      const dateString = startDate.toLocaleDateString("ko-KR").replace(/\. /g, ".");
+
+      // 총 시간 포맷팅
+      const totalHours = Math.floor(session.total_duration_sec / 3600);
+      const totalMinutes = Math.floor((session.total_duration_sec % 3600) / 60);
+      const totalSeconds = Math.floor(session.total_duration_sec % 60);
+
+      // 사용자 말한 시간 포맷팅
+      const userHours = Math.floor(session.user_speech_duration_sec / 3600);
+      const userMinutes = Math.floor((session.user_speech_duration_sec % 3600) / 60);
+      const userSeconds = Math.floor(session.user_speech_duration_sec % 60);
+
+      const totalDurationStr = `${String(totalHours).padStart(2, "0")}:${String(totalMinutes).padStart(2, "0")}:${String(totalSeconds).padStart(2, "0")}`;
+      const userDurationStr = `${String(userHours).padStart(2, "0")}:${String(userMinutes).padStart(2, "0")}:${String(userSeconds).padStart(2, "0")}`;
+
+      return {
+        id: session.session_id,
+        date: dateString,
+        title: session.title || "대화 세션",
+        duration: `${userDurationStr} / ${totalDurationStr}`,
+        totalDurationSec: session.total_duration_sec,
+        userSpeechDurationSec: session.user_speech_duration_sec,
+      };
+    });
+  }, [sessions]);
 
   // 화면에 표시할 세션 데이터 계산
   const visibleSessions = allSessions.slice(0, displayPage * ITEMS_PER_PAGE);
   const hasMore = visibleSessions.length < allSessions.length;
 
-  // 사용자 프로필 테스트 데이터 생성 함수
-  const generateUserProfileTestData = (): UserProfile => {
-    const nicknameList = ["Sophie", "Alex", "Emma", "James", "Lisa", "David", "Maria", "Chris"];
-    const randomNickname = nicknameList[Math.floor(Math.random() * nicknameList.length)];
+  // 사용자 프로필 계산 (세션 데이터에서 합산)
+  const userProfile: UserProfile | null = useMemo(() => {
+    if (!currentUser) return null;
 
-    // 총 말랭이와 함께한 시간: 100시간 ~ 500시간
-    const totalDurationSec = Math.floor(Math.random() * 400 * 3600) + 100 * 3600;
-    // 내가 말한 시간: 전체의 40~70%
-    const userDurationSec = Math.floor(totalDurationSec * (0.4 + Math.random() * 0.3));
+    const totalDurationSec = allSessions.reduce((sum, s) => sum + s.totalDurationSec, 0);
+    const userDurationSec = allSessions.reduce((sum, s) => sum + s.userSpeechDurationSec, 0);
 
     return {
-      nickname: randomNickname,
+      nickname: currentUser.nickname || currentUser.login_id,
       totalDurationSec,
       userDurationSec,
     };
-  };
+  }, [currentUser, allSessions]);
 
-  // 테스트 데이터 생성 함수
-  const generateTestData = (): ChatHistoryItem[] => {
-    const testTitles = [
-      "Ordering coke at Mcdonald's",
-      "Planning Birthday Party",
-      "Opinion About Mandatory Military...",
-      "Zootopia 2 Review",
-      "Fancy Restaurant on Christmas wit...",
-      "Buying T-shirts in Shopping Mall",
-      "Introducing My Grand Parents",
-      "Restaurant with someone to eat a...",
-      "Hotel Booking Conversation",
-      "Flight Reservation Dialog",
-      "Coffee Shop Order",
-      "Movie Theater Reservation",
-      "Restaurant Complaint",
-      "Hotel Check-in Process",
-      "Taxi Booking Service",
-      "Bank Account Opening",
-      "Insurance Claim Discussion",
-      "Job Interview Preparation",
-      "University Application Consultation",
-      "Travel Itinerary Planning",
-    ];
-
-    return Array.from({ length: 50 }, (_, index) => {
-      const daysAgo = Math.floor(index / 2);
-      const date = new Date();
-      date.setDate(date.getDate() - daysAgo);
-      const dateString = date.toLocaleDateString("ko-KR").replace(/\. /g, ".");
-
-      const totalSec = Math.floor(Math.random() * 3600) + 600; // 10분~1시간
-      const userSpeechSec = Math.floor(totalSec * (0.4 + Math.random() * 0.3)); // 40~70%
-
-      const formatTime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
-        const secs = seconds % 60;
-        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-      };
-
-      return {
-        id: `test-session-${index + 1}`,
-        date: dateString,
-        title: testTitles[index % testTitles.length],
-        duration: `${formatTime(userSpeechSec)} / ${formatTime(totalSec)}`,
-        totalDurationSec: totalSec,
-        userSpeechDurationSec: userSpeechSec,
-      };
-    });
-  };
-
-  // 세션 데이터를 UI 형식으로 변환 (프로덕션 모드에서만)
-  useEffect(() => {
-    if (!DEBUG_MODE && sessions && Array.isArray(sessions)) {
-      const transformed: ChatHistoryItem[] = sessions.map((session) => {
-        const startDate = new Date(session.started_at);
-        const dateString = startDate.toLocaleDateString("ko-KR").replace(/\. /g, ".");
-
-        // 총 시간 포맷팅
-        const totalHours = Math.floor(session.total_duration_sec / 3600);
-        const totalMinutes = Math.floor((session.total_duration_sec % 3600) / 60);
-        const totalSeconds = session.total_duration_sec % 60;
-
-        // 사용자 말한 시간 포맷팅
-        const userHours = Math.floor(session.user_speech_duration_sec / 3600);
-        const userMinutes = Math.floor((session.user_speech_duration_sec % 3600) / 60);
-        const userSeconds = session.user_speech_duration_sec % 60;
-
-        const totalDurationStr = `${String(totalHours).padStart(2, "0")}:${String(totalMinutes).padStart(2, "0")}:${String(totalSeconds).padStart(2, "0")}`;
-        const userDurationStr = `${String(userHours).padStart(2, "0")}:${String(userMinutes).padStart(2, "0")}:${String(userSeconds).padStart(2, "0")}`;
-
-        return {
-          id: session.session_id,
-          date: dateString,
-          title: session.title,
-          duration: `${userDurationStr} / ${totalDurationStr}`,
-          totalDurationSec: session.total_duration_sec,
-          userSpeechDurationSec: session.user_speech_duration_sec,
-        };
-      });
-
-      setAllSessions(transformed);
-      setIsInitialLoading(false);
-    }
-  }, [sessions]);
-
-  // 테스트 데이터 초기 로드 (디버그 모드에서만)
-  useEffect(() => {
-    if (DEBUG_MODE) {
-      //const testData: ChatHistoryItem[] = [];
-      const testData: ChatHistoryItem[] = generateTestData();
-      const testUserProfile = generateUserProfileTestData();
-      setAllSessions(testData);
-      setUserProfile(testUserProfile);
-    }
-  }, []);
+  // 로딩 상태
+  const isInitialLoading = isSessionsLoading || isUserLoading;
 
   // 스크롤 감지 함수
   const handleScroll = useCallback(() => {
