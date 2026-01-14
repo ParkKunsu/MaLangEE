@@ -195,7 +195,7 @@ After=syslog.target network.target postgresql.service
 User=$DEPLOY_USER
 WorkingDirectory=$BACKEND_DIR
 # Poetry를 통한 Uvicorn 실행
-ExecStart=$POETRY_PATH run uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT
+ExecStart=$POETRY_PATH run uvicorn app.main:app --host 0.0.0.0 --port $BACKEND_PORT --proxy-headers --forwarded-allow-ips '127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16'
 SuccessExitStatus=143
 Restart=always
 RestartSec=10
