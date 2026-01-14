@@ -10,13 +10,13 @@
 
 ### 🟢 A. Authenticated User (회원용)
 로그인한 유저가 대화 세션에 접속할 때 사용합니다.
-- **URL**: `ws://{HOST}/api/v1/chat/ws/chat/{session_id}`
+- **URL**: `ws://49.50.137.35:8080/api/v1/chat/ws/chat/{session_id}`
 - **Method**: WebSocket
 - **Auth**: 필수 (Query Param or Header)
 
 ### 🟡 B. Guest User (비회원/데모용)
 로그인하지 않은 유저가 체험하기 대화 세션에 접속할 때 사용합니다.
-- **URL**: `ws://{HOST}/api/v1/chat/ws/guest-chat/{session_id}`
+- **URL**: `ws://49.50.137.35:8080/api/v1/chat/ws/guest-chat/{session_id}`
 - **Method**: WebSocket
 - **Auth**: 없음
 
@@ -42,7 +42,7 @@
 ```javascript
 // Token은 쿼리 파라미터로 전달
 const socket = new WebSocket(
-  `ws://api.malangee.com/api/v1/chat/ws/chat/SESSION_123?token=${accessToken}&voice=shimmer&show_text=true`
+  `ws://49.50.137.35:8080/api/v1/chat/ws/chat/SESSION_123?token=${accessToken}&voice=shimmer&show_text=true`
 );
 ```
 
@@ -50,14 +50,14 @@ const socket = new WebSocket(
 ```javascript
 // 인증 토큰 없음, 게스트 전용 엔드포인트 사용
 const socket = new WebSocket(
-  `ws://api.malangee.com/api/v1/chat/ws/guest-chat/SESSION_999?voice=alloy`
+  `ws://49.50.137.35:8080/api/v1/chat/ws/guest-chat/SESSION_999?voice=alloy`
 );
 ```
 
 ### Case 3: 기존 설정 그대로 접속 (파라미터 생략)
 ```javascript
 const socket = new WebSocket(
-  `ws://api.malangee.com/api/v1/chat/ws/chat/SESSION_123?token=${accessToken}`
+  `ws://49.50.137.35:8080/api/v1/chat/ws/chat/SESSION_123?token=${accessToken}`
 );
 ```
 
@@ -230,7 +230,7 @@ AI 발화의 텍스트가 완성되었습니다.
 ```javascript
 // 'coral' 목소리로 시작
 const socket = new WebSocket(
-  "ws://api.malangee.com/api/v1/chat/ws/chat/SESSION_123?voice=coral"
+  "ws://49.50.137.35:8080/api/v1/chat/ws/chat/SESSION_123?voice=coral"
 );
 ```
 
