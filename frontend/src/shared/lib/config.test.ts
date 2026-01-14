@@ -18,7 +18,8 @@ describe("config", () => {
   });
 
   it("returns apiBasePath for apiUrl in development mode", async () => {
-    process.env.NODE_ENV = "development";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (process.env as any).NODE_ENV = "development";
     vi.resetModules();
 
     const { config } = await import("./config");
@@ -26,7 +27,8 @@ describe("config", () => {
   });
 
   it("returns full URL for apiUrl in production mode", async () => {
-    process.env.NODE_ENV = "production";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (process.env as any).NODE_ENV = "production";
     process.env.NEXT_PUBLIC_API_URL = "https://api.example.com";
     vi.resetModules();
 
@@ -34,13 +36,6 @@ describe("config", () => {
     expect(config.apiUrl).toBe("https://api.example.com/api/v1");
   });
 
-  it("reads NEXT_PUBLIC_LOCALHOST_URL from env", async () => {
-    process.env.NEXT_PUBLIC_LOCALHOST_URL = "http://localhost:3000";
-    vi.resetModules();
-
-    const { config } = await import("./config");
-    expect(config.localhostUrl).toBe("http://localhost:3000");
-  });
 
   it("reads NEXT_PUBLIC_API_URL from env", async () => {
     process.env.NEXT_PUBLIC_API_URL = "https://api.test.com";

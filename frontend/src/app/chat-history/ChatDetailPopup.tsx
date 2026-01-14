@@ -6,6 +6,7 @@ import { ChatTranscriptPopup } from "./ChatTranscriptPopup";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import { Button } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat";
+import { AuthGuard } from "@/features/auth";
 
 interface ChatDetailPopupProps {
   session: ChatHistoryItem;
@@ -16,7 +17,7 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
   const [showTranscript, setShowTranscript] = useState(false);
 
   // 실제 API에서 세션 상세 정보 조회
-  const { data: sessionDetail, isLoading } = useGetChatSession(session.id);
+  const { data: sessionDetail, isLoading, isError, error } = useGetChatSession(session.id);
 
   // 메시지 데이터 변환
   const messages = useMemo(() => {
@@ -25,7 +26,7 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
       const timestamp = new Date(msg.timestamp);
       const timeStr = `${String(timestamp.getHours()).padStart(2, "0")}:${String(timestamp.getMinutes()).padStart(2, "0")}`;
       return {
-        speaker: msg.role === "assistant" ? "말랭이" : "사용자",
+        speaker: msg.role === "assistant" ? "말랭이" : "나",
         content: msg.content,
         timestamp: timeStr,
       };
@@ -44,11 +45,22 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
   );
 
   return (
-    <>
+
       <PopupLayout onClose={onClose} headerContent={headerContent} maxWidth="2xl">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#5F51D9] border-t-transparent" />
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-4">
+              <p className="text-red-500 font-medium text-center">
+                대화 내용을 불러오는 중 오류가 발생했습니다.
+                <br />
+                {error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다."}
+              </p>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                닫기
+              </Button>
             </div>
           ) : (
             <>
@@ -91,7 +103,6 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
           onClose={() => setShowTranscript(false)}
         />
       )}
-    </>
   );
 };
 

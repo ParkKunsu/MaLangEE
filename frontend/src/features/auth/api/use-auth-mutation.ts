@@ -14,11 +14,12 @@ export function useLogin() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: LoginFormData) =>
-      authApi.login(data.username, data.password),
+    mutationFn: (data: LoginFormData) => authApi.login(data.username, data.password),
     onSuccess: (data) => {
+      console.log("[useLogin] 로그인 성공, 토큰 저장");
       tokenStorage.set(data.access_token);
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
+      console.log("[useLogin] /chat-history로 이동");
       router.push("/chat-history");
     },
   });
@@ -95,16 +96,14 @@ export function useCheckNickname() {
  * 닉네임 변경 mutation
  */
 export function useUpdateNickname() {
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: NicknameUpdateFormData) =>
       authApi.updateCurrentUser({ nickname: data.new_nickname }),
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(AUTH_QUERY_KEY, updatedUser);
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
-      router.push("/topic-select");
     },
   });
 }
-

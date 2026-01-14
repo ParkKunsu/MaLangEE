@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
 import { Button } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useGetChatSessions } from "@/features/chat";
-import { useCurrentUser } from "@/features/auth";
+import { AuthGuard, useAuth, useCurrentUser } from "@/features/auth";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatDetailPopup } from "./ChatDetailPopup";
 import { NicknameChangePopup } from "./NicknameChangePopup";
@@ -26,6 +27,7 @@ export default function DashboardPage() {
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
+  const { logout } = useAuth();
 
   // 실제 API 호출
   const { data: sessions, isLoading: isSessionsLoading } = useGetChatSessions(0, 100);
@@ -122,9 +124,19 @@ export default function DashboardPage() {
     <div className="w-full max-w-sm tracking-tight">
       {/* Added wrapper width and tracking */}
       <div className="mb-4 flex items-center justify-between">
-        <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
-        <Button variant="secondary" size="auto" onClick={() => setShowNicknamePopup(true)}>
-          닉네임 변경
+        <div className="flex items-center gap-2">
+          <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
+          <button
+            type="button"
+            onClick={() => setShowNicknamePopup(true)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6A667A] transition-colors hover:text-[#5F51D9]"
+            aria-label="닉네임 변경"
+          >
+            <Pencil size={16} stroke="gray" />
+          </button>
+        </div>
+        <Button variant="secondary" size="auto" onClick={logout}>
+          로그아웃
         </Button>
       </div>
       <div className="mt-4 space-y-1">
@@ -168,14 +180,14 @@ export default function DashboardPage() {
           <div className="border-3 h-8 w-8 animate-spin rounded-full border-[#5F51D9] border-t-transparent"></div>
         </div>
       ) : allSessions.length === 0 ? (
-        <div className="flex min-h-[350px] w-full items-center justify-center text-xl text-gray-500">
+        <div className="flex min-h-112.5 w-full items-center justify-center text-xl text-gray-500">
           말랭이와 대화한 이력이 없어요.
         </div>
       ) : (
         <>
           {/* 목록 헤더: 날짜 / 주제 / 말한시간 / 대화시간 */}
           <div className="mb-2 flex w-full items-center border-b border-[#D5D2DE] px-0 py-4 ">
-            <div className="flex min-w-[80px] flex-col items-center  text-sm text-[#6A667A]">
+            <div className="flex min-w-20 flex-col items-center  text-sm text-[#6A667A]">
               날짜
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-between  gap-2">
@@ -187,7 +199,7 @@ export default function DashboardPage() {
           </div>
           <div
             ref={scrollContainerRef}
-            className="left-0 flex max-h-[350px] w-full flex-col items-start justify-start overflow-y-auto pr-2"
+            className="left-0 flex min-h-112.5 w-full flex-col items-start justify-start overflow-y-auto pr-2"
           >
             {visibleSessions.map((item) => (
               <div
@@ -199,7 +211,7 @@ export default function DashboardPage() {
                 className="hover:bg-white-50 flex w-full cursor-pointer items-center gap-4 border-b border-[#D5D2DE] px-0 py-4 transition-all"
               >
                 {/* 날짜 */}
-                <div className="flex min-w-[80px] flex-col items-center justify-center text-sm text-[#6A667A]">
+                <div className="flex min-w-20 flex-col items-center justify-center text-sm text-[#6A667A]">
                   {item.date}
                 </div>
 
@@ -239,13 +251,16 @@ export default function DashboardPage() {
   );
 
   return (
-    <>
+    <AuthGuard>
       <SplitViewLayout
         leftChildren={leftContent}
         rightChildren={rightContent}
+        showHeader={false} //{!showNicknamePopup && !showDetailPopup}
+        maxWidth="md:max-w-7xl"
         leftColSpan={4}
         rightColSpan={8}
-        showHeader={false} //{!showNicknamePopup && !showDetailPopup}
+        glassClassName="p-6 md:p-10"
+        glassMaxWidth="max-w-full md:max-w-2xl lg:max-w-4xl"
       />
 
       {/* 대화 상세 팝업 */}
@@ -263,6 +278,6 @@ export default function DashboardPage() {
           }}
         />
       )}
-    </>
+    </AuthGuard>
   );
 }

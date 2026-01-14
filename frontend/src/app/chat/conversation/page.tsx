@@ -250,7 +250,7 @@ export default function ConversationPage() {
 
   return (
     <>
-      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+      <FullLayout showHeader={true} >
         {/* Connection Status */}
         {!chatState.isConnected && (
           <div className="mb-4 rounded-lg bg-yellow-100 px-4 py-2 text-center text-yellow-700">

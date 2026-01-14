@@ -186,7 +186,7 @@ export default function ScenarioSelectPage() {
 
   return (
     <>
-      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+      <FullLayout showHeader={true} >
         {/* Character */}
         <div className="character-box">
           <MalangEE status={showInactivityMessage ? "humm" : "default"} size={150} />

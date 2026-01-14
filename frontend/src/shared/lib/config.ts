@@ -4,8 +4,6 @@
  */
 
 export const config = {
-  // 로컬호스트 URL (개발 환경용)
-  localhostUrl: process.env.NEXT_PUBLIC_LOCALHOST_URL,
 
   // 백엔드 API 기본 URL
   apiBaseUrl: process.env.NEXT_PUBLIC_API_URL,

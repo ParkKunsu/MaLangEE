@@ -7,6 +7,7 @@ import { Button, MalangEE } from "@/shared/ui";
 import { useCurrentUser } from "@/features/auth/api/use-current-user";
 import { useGetChatSessions } from "@/features/chat/api/use-chat-sessions";
 import "@/shared/styles/scenario.css";
+import { AuthGuard } from "@/features/auth";
 
 export default function WelcomeBackPage() {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function WelcomeBackPage() {
 
   if (isLoading) {
     return (
-      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+      <FullLayout showHeader={true} >
         <div className="character-box">
           <MalangEE size={150} />
         </div>
@@ -67,53 +68,58 @@ export default function WelcomeBackPage() {
   }
 
   return (
-    <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
-      {/* Character */}
-      <div className="character-box">
-        <MalangEE size={150} />
-      </div>
+    <AuthGuard>
+      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+        {/* Character */}
+        <div className="character-box">
+          <MalangEE size={150} />
+        </div>
 
-      {/* Text Group */}
-      <div className="text-group text-center" style={{ opacity: textOpacity }}>
-        <p className="scenario-desc">{userNickname}님, 기다리고 있었어요!</p>
-        <h1 className="scenario-title">
-          {isConfirmed ? (
-            <>
-              {lastSession?.title}을
-              <br />
-              같이 재현해 볼까요?
-            </>
-          ) : (
-            <> 지난번에 했던
-              {lastSession?.title},
-              <br/>이 주제로 다시 이야기해볼까요?</>
-          )}
-        </h1>
-      </div>
+        {/* Text Group */}
+        <div className="text-group text-center" style={{ opacity: textOpacity }}>
+          <p className="scenario-desc">{userNickname}님, 기다리고 있었어요!</p>
+          <h1 className="scenario-title">
+            {isConfirmed ? (
+              <>
+                {lastSession?.title}을
+                <br />
+                같이 재현해 볼까요?
+              </>
+            ) : (
+              <>
+                {" "}
+                지난번에 했던
+                {lastSession?.title},
+                <br />이 주제로 다시 이야기해볼까요?
+              </>
+            )}
+          </h1>
+        </div>
 
-      {/* Buttons */}
-      <div className="mt-8 flex w-full max-w-md flex-col gap-4">
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          onClick={handleContinueChat}
-          disabled={isConfirmed}
-          isLoading={isConfirmed}
-        >
-          {isConfirmed ? "시작 중..." : "대화 시작하기"}
-        </Button>
+        {/* Buttons */}
+        <div className="mt-8 flex w-full max-w-md flex-col gap-4">
+          <Button
+            variant="primary"
+            size="xl"
+            fullWidth
+            onClick={handleContinueChat}
+            disabled={isConfirmed}
+            isLoading={isConfirmed}
+          >
+            {isConfirmed ? "시작 중..." : "대화 시작하기"}
+          </Button>
 
-        <Button
-          variant="outline-purple"
-          size="xl"
-          fullWidth
-          onClick={handleNewTopic}
-          disabled={isConfirmed}
-        >
-          새로운 주제 고르기
-        </Button>
-      </div>
-    </FullLayout>
+          <Button
+            variant="outline-purple"
+            size="xl"
+            fullWidth
+            onClick={handleNewTopic}
+            disabled={isConfirmed}
+          >
+            새로운 주제 고르기
+          </Button>
+        </div>
+      </FullLayout>
+    </AuthGuard>
   );
 }

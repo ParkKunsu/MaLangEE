@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type FC, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FC, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { tokenStorage } from "../model";
 import { useAuth } from "../hook";
@@ -29,9 +29,14 @@ export const AuthGuard: FC<AuthGuardProps> = ({
   fallback,
 }) => {
   const router = useRouter();
+  const [isMounted, setIsMounted] = useState(false);
   const hasToken = tokenStorage.exists();
   const { isAuthenticated, isLoading } = useAuth();
   const hasRedirected = useRef(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // 토큰이 없으면 즉시 리다이렉트
   useEffect(() => {
@@ -48,6 +53,11 @@ export const AuthGuard: FC<AuthGuardProps> = ({
       router.replace(redirectTo);
     }
   }, [hasToken, isAuthenticated, isLoading, redirectTo, router]);
+
+  // 하이드레이션 오류 방지를 위해 마운트 전에는 서버와 동일하게 null 반환
+  if (!isMounted) {
+    return null;
+  }
 
   // 토큰이 없으면 빈 화면 (리다이렉트 대기)
   if (!hasToken) {

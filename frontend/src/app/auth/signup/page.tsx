@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useForm, type Resolver } from "react-hook-form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import { MalangEE } from "@/shared/ui";
@@ -61,7 +61,7 @@ export default function RegisterPage() {
 
   // 중복 확인 훅
   const loginIdCheck = useLoginIdCheck(watchLoginId);
-  const nicknameCheck = useNicknameCheck(watchNickname);
+  const nicknameCheck = useNicknameCheck(watchNickname, { minLength: 2 });
   const passwordCheck = usePasswordValidation(watch("password"));
 
   // 회원가입 mutation (로컬에서 처리하여 리다이렉트 제어)
@@ -81,10 +81,6 @@ export default function RegisterPage() {
 
   // 로그인 뮤테이션 (팝업에서 시도)
   const loginMutation = useLogin();
-  const [savedCredentials, setSavedCredentials] = useState<{
-    username: string;
-    password: string;
-  } | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const registerPending = registerMutation.status === "pending";
 
@@ -115,8 +111,7 @@ export default function RegisterPage() {
       return;
     }
 
-    // 성공 시 팝업을 띄우기 위해 자격증명 저장 후 mutate 호출
-    setSavedCredentials({ username: data.login_id, password: data.password });
+    // 성공 시 팝업을 띄우기 위해 mutate 호출
     registerMutation.mutate(data, {
       onSuccess: () => {
         setShowSuccess(true);
@@ -133,136 +128,124 @@ export default function RegisterPage() {
     !loginIdCheck.isAvailable ||
     !nicknameCheck.isAvailable;
 
-  // 비밀번호 체크는 usePasswordValidation 훅으로 처리
+  // 비밀번호 실시간 유효성 체크 연동
+  useEffect(() => {
+    if (passwordCheck.error) {
+      setValidationError(passwordCheck.error);
+    } else if (validationError && validationError.includes("비밀번호")) {
+      setValidationError(null);
+    }
+  }, [passwordCheck.error, validationError]);
 
-  return (
-    <FullLayout showHeader={false} maxWidth="md:max-w-[450px]">
-      <div className="w-full space-y-8">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold leading-snug md:text-4xl">회원가입</h1>
-        </div>
+  const leftContent = <div className="hidden md:flex" />;
 
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+  const rightContent = (
+    <div className="mx-auto w-full space-y-7 px-6 md:space-y-9 md:px-0">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold leading-snug md:text-4xl mb-15">회원가입</h1>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 sm:gap-6">
+        <div className="flex flex-col gap-4 sm:gap-5">
           {/* 아이디 입력 */}
-          <div className="flex flex-col gap-2">
-            <label
-              className="text-sm font-medium text-[#1F1C2B]"
+          <div className="relative">
+            <input
+              id="login_id"
+              type="text"
+              placeholder="아이디"
+              {...register("login_id")}
+              className="border-border-light text-text-primary placeholder:text-placeholder focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-white px-5 text-base shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
-            >
-              아이디
-            </label>
-            <div className="relative">
-              <input
-                id="login_id"
-                type="text"
-                placeholder="아이디를 입력해주세요"
-                {...register("login_id")}
-                className="h-[56px] w-full rounded-full border border-[#d4d0df] bg-white px-5 text-base text-[#1F1C2B] shadow-[0_2px_6px_rgba(0,0,0,0.03)] placeholder:text-[#8c869c] focus:border-[#7B6CF6] focus:outline-none focus:ring-2 focus:ring-[#cfc5ff]"
-                style={{ letterSpacing: "-0.2px" }}
-              />
-              {loginIdCheck.isChecking && (
-                <p className="mt-2 px-1 text-sm text-blue-500">확인 중...</p>
+            />
+            {loginIdCheck.isChecking && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
+            )}
+            {errors.login_id && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">{errors.login_id.message}</p>
+            )}
+            {loginIdCheck.error && !errors.login_id && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">
+                {getCheckErrorMessage(loginIdCheck.error)}
+              </p>
+            )}
+            {!loginIdCheck.isChecking &&
+              !loginIdCheck.error &&
+              loginIdCheck.isAvailable &&
+              watchLoginId && (
+                <p className="mt-2 whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 아이디입니다</p>
               )}
-              {errors.login_id && (
-                <p className="mt-2 px-1 text-sm text-red-500">{errors.login_id.message}</p>
-              )}
-              {loginIdCheck.error && !errors.login_id && (
-                <p className="mt-2 px-1 text-sm text-red-500">
-                  {getCheckErrorMessage(loginIdCheck.error)}
-                </p>
-              )}
-              {!loginIdCheck.isChecking &&
-                !loginIdCheck.error &&
-                loginIdCheck.isAvailable &&
-                watchLoginId && (
-                  <p className="mt-2 px-1 text-sm text-green-600">사용 가능한 아이디입니다</p>
-                )}
-            </div>
           </div>
 
           {/* 비밀번호 입력 */}
-          <div className="flex flex-col gap-2">
-            <label
-              className="text-sm font-medium text-[#1F1C2B]"
+          <div className="relative">
+            <input
+              id="password"
+              type="password"
+              placeholder="비밀번호 (영문+숫자 10자리 이상)"
+              {...register("password")}
+              className="border-border-light text-text-primary placeholder:text-placeholder focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-white px-5 text-base shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
-            >
-              비밀번호
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type="password"
-                placeholder="영문+숫자 조합 10자리 이상 입력해주세요"
-                {...register("password")}
-                className="h-[56px] w-full rounded-full border border-[#d4d0df] bg-white px-5 text-base text-[#1F1C2B] shadow-[0_2px_6px_rgba(0,0,0,0.03)] placeholder:text-[#8c869c] focus:border-[#7B6CF6] focus:outline-none focus:ring-2 focus:ring-[#cfc5ff]"
-                style={{ letterSpacing: "-0.2px" }}
-              />
-              {passwordCheck.isChecking && (
-                <p className="mt-2 px-1 text-sm text-blue-500">확인 중...</p>
+            />
+            {passwordCheck.isChecking && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
+            )}
+            {errors.password && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">{errors.password.message}</p>
+            )}
+            {passwordCheck.error && !errors.password && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">{passwordCheck.error}</p>
+            )}
+            {!passwordCheck.isChecking &&
+              !passwordCheck.error &&
+              passwordCheck.isValid &&
+              watch("password") && (
+                <p className="mt-2 whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
               )}
-              {errors.password && (
-                <p className="mt-2 px-1 text-sm text-red-500">{errors.password.message}</p>
-              )}
-              {passwordCheck.error && !errors.password && (
-                <p className="mt-2 px-1 text-sm text-red-500">{passwordCheck.error}</p>
-              )}
-              {!passwordCheck.isChecking &&
-                !passwordCheck.error &&
-                passwordCheck.isValid &&
-                watch("password") && (
-                  <p className="mt-2 px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
-                )}
-              {/* 서버/submit 관련 validationError가 비밀번호 관련이면 하단에 표시 */}
-              {validationError && validationError.includes("비밀번호") && (
-                <p className="mt-2 px-1 text-sm text-red-500">{validationError}</p>
-              )}
-            </div>
+            {/* 서버/submit 관련 validationError가 비밀번호 관련이면 하단에 표시 */}
+            {validationError && validationError.includes("비밀번호") && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">{validationError}</p>
+            )}
           </div>
 
           {/* 닉네임 입력 */}
-          <div className="flex flex-col gap-2">
-            <label
-              className="text-sm font-medium text-[#1F1C2B]"
+          <div className="relative">
+            <input
+              id="nickname"
+              type="text"
+              placeholder="닉네임"
+              {...register("nickname")}
+              maxLength={6}
+              className="border-border-light text-text-primary placeholder:text-placeholder focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-white px-5 text-base shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
-            >
-              닉네임
-            </label>
-            <div className="relative">
-              <input
-                id="nickname"
-                type="text"
-                placeholder="닉네임을 입력해주세요"
-                {...register("nickname")}
-                className="h-[56px] w-full rounded-full border border-[#d4d0df] bg-white px-5 text-base text-[#1F1C2B] shadow-[0_2px_6px_rgba(0,0,0,0.03)] placeholder:text-[#8c869c] focus:border-[#7B6CF6] focus:outline-none focus:ring-2 focus:ring-[#cfc5ff]"
-                style={{ letterSpacing: "-0.2px" }}
-              />
-              {nicknameCheck.isChecking && (
-                <p className="mt-2 px-1 text-sm text-blue-500">확인 중...</p>
+            />
+            {nicknameCheck.isChecking && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
+            )}
+            {errors.nickname && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">{errors.nickname.message}</p>
+            )}
+            {nicknameCheck.error && !errors.nickname && (
+              <p className="mt-2 whitespace-nowrap px-1 text-sm text-red-500">
+                {getCheckErrorMessage(nicknameCheck.error)}
+              </p>
+            )}
+            {!nicknameCheck.isChecking &&
+              !nicknameCheck.error &&
+              nicknameCheck.isAvailable &&
+              watchNickname && (
+                <p className="mt-2 whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 닉네임입니다</p>
               )}
-              {errors.nickname && (
-                <p className="mt-2 px-1 text-sm text-red-500">{errors.nickname.message}</p>
-              )}
-              {nicknameCheck.error && !errors.nickname && (
-                <p className="mt-2 px-1 text-sm text-red-500">
-                  {getCheckErrorMessage(nicknameCheck.error)}
-                </p>
-              )}
-              {!nicknameCheck.isChecking &&
-                !nicknameCheck.error &&
-                nicknameCheck.isAvailable &&
-                watchNickname && (
-                  <p className="mt-2 px-1 text-sm text-green-600">사용 가능한 닉네임입니다</p>
-                )}
-            </div>
           </div>
+        </div>
 
-          {/* validationError가 비밀번호 관련이 아닐 때만 폼 하단에 표시 */}
-          {validationError && !validationError.includes("비밀번호") && (
-            <p className="px-1 text-sm text-red-500" style={{ letterSpacing: "-0.1px" }}>
-              *{validationError}
-            </p>
-          )}
+        {/* validationError가 비밀번호 관련이 아닐 때만 폼 하단에 표시 */}
+        {validationError && !validationError.includes("비밀번호") && (
+          <p className="whitespace-nowrap px-1 text-sm text-red-500" style={{ letterSpacing: "-0.1px" }}>
+            *{validationError}
+          </p>
+        )}
 
+        <div className="flex flex-col gap-4 sm:gap-5">
           <Button
             type="submit"
             variant="primary"
@@ -280,8 +263,20 @@ export default function RegisterPage() {
               로그인
             </Link>
           </p>
-        </form>
-      </div>
+        </div>
+      </form>
+    </div>
+  );
+
+  return (
+    <>
+      <FullLayout
+        showHeader={false}
+        maxWidth="md:max-w-5xl"
+        glassMaxWidth="max-w-full md:max-w-[550px]"
+      >
+        {rightContent}
+      </FullLayout>
 
       {/* 회원가입 성공 팝업 */}
       {showSuccess && (
@@ -289,7 +284,7 @@ export default function RegisterPage() {
           <div className="flex flex-col items-center gap-6 py-2">
             <MalangEE size={120} />
             <div className="text-xl font-bold text-[#5F51D9]">회원이 된걸 축하해요!</div>
-            {loginError && <p className="text-sm text-red-500">{loginError}</p>}
+            {loginError && <p className="whitespace-nowrap text-sm text-red-500">{loginError}</p>}
             <Button
               variant="primary"
               size="md"
@@ -297,31 +292,7 @@ export default function RegisterPage() {
               isLoading={loginMutation.isPending}
               onClick={() => {
                 setLoginError(null);
-
-                //로그인 페이지로 이동
                 window.location.href = "/auth/login";
-                return;
-
-                /* 바로 로그인 하는 경우
-                if (!savedCredentials) {
-                  // 자격증명이 없으면 로그인 페이지로 이동
-                  window.location.href = "/auth/login";
-                  return;
-                }
-
-                loginMutation.mutate(
-                  {
-                    username: savedCredentials.username,
-                    password: savedCredentials.password,
-                  },
-                  {
-                    onError: (error) => {
-                      if (error instanceof Error) setLoginError(error.message);
-                      else setLoginError("로그인에 실패했습니다");
-                    },
-                  }
-                );
-                */
               }}
             >
               로그인하기
@@ -329,6 +300,6 @@ export default function RegisterPage() {
           </div>
         </PopupLayout>
       )}
-    </FullLayout>
+    </>
   );
 }

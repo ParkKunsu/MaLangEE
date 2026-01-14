@@ -1,4 +1,4 @@
-﻿# Repository Guidelines
+﻿﻿# Repository Guidelines
 
 ## 프로젝트 구조 & 라우트
 - `src/app`: Next.js App Router. 라우트: [`/`](/), [`/auth/login`](/auth/login), [`/auth/signup`](/auth/signup), [`/auth/scenario-select`](/auth/scenario-select), [`/topic-select`](/topic-select), [`/chat/conversation`](/chat/conversation), [`/chat/complete`](/chat/complete), [`/chat/subtitle-settings`](/chat/subtitle-settings), [`/chat/voice-selection`](/chat/voice-selection), [`/chat/welcome-back`](/chat/welcome-back), [`/chat-history`](/chat-history), [`/logout`](/logout).
@@ -30,7 +30,7 @@
 - 채팅 상세/대본 팝업: 현재는 샘플 데이터로 렌더링(실 API 미연동).
 
 ## 환경 변수
-- 사용 중: `NEXT_PUBLIC_LOCALHOST_URL`, `NEXT_PUBLIC_API_URL` (`src/shared/lib/config.ts`).
+- 사용 중: `NEXT_PUBLIC_API_URL` (`src/shared/lib/config.ts`).
 - 템플릿에만 존재: `FIGMA_API_KEY`, `OPEN_AI_API` (현재 프론트 코드에서 참조 없음).
 - `.env.example`을 `.env.local`로 복사해 사용하며 커밋 금지.
 

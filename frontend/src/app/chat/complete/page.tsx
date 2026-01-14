@@ -6,6 +6,7 @@ import { Clock, Mic } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
 import { FullLayout } from "@/shared/ui/FullLayout";
 import "@/shared/styles/scenario.css";
+import { AuthGuard } from "@/features/auth";
 
 export default function ChatCompletePage() {
   const router = useRouter();
@@ -43,7 +44,8 @@ export default function ChatCompletePage() {
   };
 
   return (
-    <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]">
+<AuthGuard>
+    <FullLayout showHeader={true} >
       {/* Character */}
       <div className="character-box">
         <MalangEE size={150} />
@@ -83,17 +85,17 @@ export default function ChatCompletePage() {
 
       {/* Button */}
       <div className="mt-4">
-      <div className="flex w-full justify-center">
-        <Button
-          onClick={handleGoHome}
-          className="h-14 w-[40%] min-w-[280px] rounded-full bg-[#7666f5] text-lg font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition-all hover:bg-[#6758e8]"
-        >
-          처음으로 돌아가기
-        </Button>
+        <div className="flex w-full justify-center">
+          <Button
+            onClick={handleGoHome}
+            className="h-14 w-[40%] min-w-[280px] rounded-full bg-[#7666f5] text-lg font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition-all hover:bg-[#6758e8]"
+          >
+            처음으로 돌아가기
+          </Button>
+        </div>
       </div>
-      </div>
-
     </FullLayout>
+</AuthGuard>
   );
 }
 
