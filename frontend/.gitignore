@@ -48,7 +48,8 @@ coverage/
 
 # env
 .env.local
+.mcp.json
 
 # Node.js (root level - frontend has its own)
 node_modules/
-yarn.lock
+yarn.lock.mcp.json
