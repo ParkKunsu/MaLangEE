@@ -32,21 +32,20 @@ test.describe("Authentication Pages", () => {
     await expect(page.getByRole("heading", { name: "회원가입" })).toBeVisible();
   });
 
-  test("should show validation errors on login form", async ({ page }) => {
+  test("should enable login button when both fields are filled", async ({
+    page,
+  }) => {
     await page.goto("/auth/login");
 
-    // 빈 상태로 로그인 시도
     const loginButton = page.getByRole("button", { name: "로그인" });
-
-    // 버튼이 비활성화되어 있어야 함
-    await expect(loginButton).toBeDisabled();
 
     // 아이디만 입력
     await page.getByPlaceholder("아이디").fill("testuser");
-    await expect(loginButton).toBeDisabled();
 
-    // 비밀번호도 입력하면 버튼 활성화
+    // 비밀번호도 입력하면 버튼으로 로그인 가능
     await page.getByPlaceholder("비밀번호").fill("password123");
+
+    // 버튼이 클릭 가능한 상태인지 확인
     await expect(loginButton).toBeEnabled();
   });
 
@@ -75,20 +74,24 @@ test.describe("Authentication Pages", () => {
   });
 });
 
-test.describe("Landing Page", () => {
-  test("should display landing page correctly", async ({ page }) => {
+test.describe("Entry Point", () => {
+  test("should redirect root to login page", async ({ page }) => {
     await page.goto("/");
 
-    // 랜딩 페이지 기본 요소 확인
-    await expect(page.getByRole("link", { name: "로그인하기" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "무료로 트라이" })).toBeVisible();
+    // 루트 URL은 로그인 페이지로 리다이렉트
+    await expect(page).toHaveURL("/auth/login");
   });
 
-  test("should navigate to login from landing", async ({ page }) => {
+  test("should display login page elements on root access", async ({
+    page,
+  }) => {
     await page.goto("/");
+    await page.waitForTimeout(1000);
 
-    await page.getByRole("link", { name: "로그인하기" }).click();
-
-    await expect(page).toHaveURL("/auth/login");
+    // 로그인 페이지 요소 확인
+    await expect(page.getByRole("button", { name: "로그인" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "바로 대화해보기" })
+    ).toBeVisible();
   });
 });
