@@ -25,15 +25,7 @@ class ChatRepository:
             else:
                 scenario_state_json = json.dumps(session_data.scenario_state_json, ensure_ascii=False)
 
-        scenario_completed_at = None
-        if session_data.scenario_completed_at:
-            if isinstance(session_data.scenario_completed_at, datetime):
-                scenario_completed_at = session_data.scenario_completed_at
-            else:
-                try:
-                    scenario_completed_at = datetime.fromisoformat(session_data.scenario_completed_at)
-                except ValueError:
-                    scenario_completed_at = None
+        scenario_completed_at = session_data.scenario_completed_at
 
         if db_session:
             if db_session.deleted:
