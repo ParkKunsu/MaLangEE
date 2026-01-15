@@ -225,3 +225,7 @@ scripts/secrets.sh
 # Node.js (root level - frontend has its own)
 node_modules/
 yarn.lock
+
+# AI Rules
+.git_rules
+.agent/
