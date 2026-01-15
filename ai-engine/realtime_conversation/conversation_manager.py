@@ -49,10 +49,6 @@ class ConversationManager:
         #    (예: "사용자가 말이 빠르니 너도 자연스럽게 빨리 말해")
         self.instruction_dynamic = ""
 
-        # 3. Dynamic: 백엔드 로직(WPM 분석 등)에 의해 자동으로 추가되는 상태 기반 지시사항
-        #    (예: "사용자가 말이 빠르니 너도 자연스럽게 빨리 말해")
-        self.instruction_dynamic = ""
-
         # [Refactor] Load Default Config from JSON
         self.default_config = {}
         config_path = os.path.join(current_dir, "session_config_default.json")
