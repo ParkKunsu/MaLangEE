@@ -16,6 +16,7 @@ interface SplitViewLayoutProps {
   rightClassName?: string;
   glassClassName?: string;
   glassMaxWidth?: string; // GlassCard의 최대 너비 (기본값: max-w-[550px])
+  gap?: string; // 그리드 간격 클래스 (기본값: gap-8)
 }
 
 export const SplitViewLayout = ({
@@ -26,10 +27,11 @@ export const SplitViewLayout = ({
   leftColSpan = 5,
   rightColSpan = 7,
   showHeader = true, // 기본값 true
-  leftClassName = "p-10",
+  leftClassName = "w-full px-4 py-8 md:p-10",
   rightClassName = "",
   glassClassName = "p-6 md:p-10",
   glassMaxWidth = "max-w-full md:max-w-2xl lg:max-w-4xl", // 기본값
+  gap = "gap-0 md:gap-8", // 기본값 (모바일 0, 데스크탑 8)
 }: SplitViewLayoutProps) => {
   const colSpans: Record<number, string> = {
     4: "md:col-span-4",
@@ -51,22 +53,20 @@ export const SplitViewLayout = ({
 
   return (
     <div className={`main-page glass-page relative min-h-screen w-full overflow-hidden ${bgClass}`}>
-      <div className={`relative z-10 mx-auto w-full px-4 md:px-10 ${maxWidth || "md:max-w-5xl"}`}>
-        <div className="mx-auto grid w-full grid-cols-1 gap-8 md:grid-cols-12">
+      <div className={`relative z-10 mx-auto w-full px-0 md:px-10 ${maxWidth || "md:max-w-5xl"}`}>
+        <div className={`mx-auto grid w-full grid-cols-1 ${gap} md:grid-cols-12`}>
           {/* Left Content Section */}
           <div
-            className={`flex flex-col justify-center gap-6 ${colSpans[leftColSpan] || "md:col-span-6"} ${leftClassName}`}
+            className={`flex flex-col items-center justify-center gap-6 text-center md:items-start md:text-left ${colSpans[leftColSpan] || "md:col-span-6"} ${leftClassName}`}
           >
             <>
-              <div className="text-lg font-semibold text-[#5F51D9]">
+              <div className="text-lg font-semibold text-[#5F51D9] mb-4">
                 <Link href={"/chat-history"} className="inline-block">
-                  <Image src="/images/logo.png" alt="MalangEE Logo" width={120} height={50} />
+                  <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={50} />
                 </Link>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center justify-center">
-                  <MalangEE size={150} />
-                </div>
+              <div className="flex items-center justify-center">
+                <MalangEE size={120} />
               </div>
             </>
             {leftChildren && <div className="space-y-2">{leftChildren}</div>}

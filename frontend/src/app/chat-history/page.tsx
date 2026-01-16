@@ -47,7 +47,7 @@ export default function DashboardPage() {
     return data.pages.flatMap((page) =>
       page.sessions.map((session) => {
         const startDate = new Date(session.started_at);
-        const dateString = startDate.toLocaleDateString("ko-KR").replace(/\. /g, ".");
+        const dateString = `${startDate.getFullYear()}.${String(startDate.getMonth() + 1).padStart(2, "0")}.${String(startDate.getDate()).padStart(2, "0")}`;
 
         // 총 시간 포맷팅
         const totalHours = Math.floor(session.total_duration_sec / 3600);
@@ -152,14 +152,14 @@ export default function DashboardPage() {
           로그아웃
         </Button>
       </div>
-      <div className="mt-4 space-y-1">
+      <div className="mt-5 space-y-1">
         <div className="flex items-center justify-between">
           <span className="text-sm">말랭이와 함께한 시간</span>
           <span className="text-sm font-bold">
             {userProfile ? formatDuration(userProfile.totalDurationSec) : "0시간 0분 0초"}
           </span>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="mt-2 flex items-center justify-between">
           <span className="text-sm">내가 말한 시간</span>
           <span className="text-sm font-bold">
             {userProfile ? formatDuration(userProfile.userDurationSec) : "0시간 0분 0초"}
@@ -169,7 +169,8 @@ export default function DashboardPage() {
       <Button
         variant="solid"
         size="md"
-        className="mt-6"
+        fullWidth
+        className="mt-10"
         onClick={() => router.push("/chat/welcome-back")}
       >
         말랭이랑 새로운 대화를 해볼까요?
@@ -272,9 +273,10 @@ export default function DashboardPage() {
         leftChildren={leftContent}
         rightChildren={rightContent}
         showHeader={false} //{!showNicknamePopup && !showDetailPopup}
-        maxWidth="md:max-w-7xl"
-        leftColSpan={4}
-        rightColSpan={8}
+        maxWidth="md:max-w-6xl"
+        leftColSpan={5}
+        rightColSpan={7}
+        //gap="md:gap-10"
         glassClassName="p-6 md:p-10"
         glassMaxWidth="max-w-full md:max-w-2xl lg:max-w-4xl"
       />
@@ -301,20 +303,10 @@ export default function DashboardPage() {
             <MalangEE status="humm" size={120} />
             <div className="text-xl font-bold text-[#1F1C2B]">정말 로그아웃 하실건가요?</div>
             <div className="flex w-full gap-3">
-              <Button
-                variant="outline-purple"
-                size="md"
-                fullWidth
-                onClick={handleLogoutCancel}
-              >
+              <Button variant="outline-purple" size="md" fullWidth onClick={handleLogoutCancel}>
                 닫기
               </Button>
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                onClick={handleLogoutConfirm}
-              >
+              <Button variant="primary" size="md" fullWidth onClick={handleLogoutConfirm}>
                 로그아웃
               </Button>
             </div>

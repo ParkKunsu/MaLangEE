@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { authApi } from "../api";
 import { registerSchema } from "../model/schema";
 
@@ -37,43 +37,46 @@ export function useLoginIdCheck(
   const abortControllerRef = useRef<AbortController | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const runCheck = async (val: string, signal: AbortSignal) => {
-    if (!val || val.length < minLength) {
-      setError(null);
-      setIsAvailable(null);
-      setIsChecking(false);
-      return;
-    }
+  const runCheck = useCallback(
+    async (val: string, signal: AbortSignal) => {
+      if (!val || val.length < minLength) {
+        setError(null);
+        setIsAvailable(null);
+        setIsChecking(false);
+        return;
+      }
 
-    setIsChecking(true);
-    try {
-      const result = await authApi.checkLoginId(val);
-      if (signal.aborted) return;
+      setIsChecking(true);
+      try {
+        const result = await authApi.checkLoginId(val);
+        if (signal.aborted) return;
 
-      setIsAvailable(result.is_available);
-      setError(result.is_available ? null : "이미 사용중인 아이디입니다");
-    } catch (error) {
-      if (signal.aborted) return;
+        setIsAvailable(result.is_available);
+        setError(result.is_available ? null : "이미 사용중인 아이디입니다");
+      } catch (error) {
+        if (signal.aborted) return;
 
-      console.error("아이디 중복 확인 오류:", error);
+        console.error("아이디 중복 확인 오류:", error);
 
-      let errorMessage = "아이디 확인 중 오류가 발생했습니다";
-      if (error instanceof Error) {
-        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-          errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
-        } else {
-          errorMessage = error.message || errorMessage;
+        let errorMessage = "아이디 확인 중 오류가 발생했습니다";
+        if (error instanceof Error) {
+          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+            errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        }
+
+        setError(errorMessage);
+        setIsAvailable(null);
+      } finally {
+        if (!signal.aborted) {
+          setIsChecking(false);
         }
       }
-
-      setError(errorMessage);
-      setIsAvailable(null);
-    } finally {
-      if (!signal.aborted) {
-        setIsChecking(false);
-      }
-    }
-  };
+    },
+    [minLength]
+  );
 
   const trigger = () => {
     if (timerRef.current) {
@@ -113,7 +116,7 @@ export function useLoginIdCheck(
       if (timerRef.current) clearTimeout(timerRef.current);
       abortController.abort();
     };
-  }, [value, debounceMs, minLength]);
+  }, [value, debounceMs, minLength, runCheck]);
 
   return { error, isChecking, isAvailable, trigger };
 }
@@ -133,41 +136,44 @@ export function useNicknameCheck(
   const abortControllerRef = useRef<AbortController | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const runCheck = async (val: string, signal: AbortSignal) => {
-    if (!val || val.length < minLength) {
-      setError(null);
-      setIsAvailable(null);
-      setIsChecking(false);
-      return;
-    }
+  const runCheck = useCallback(
+    async (val: string, signal: AbortSignal) => {
+      if (!val || val.length < minLength) {
+        setError(null);
+        setIsAvailable(null);
+        setIsChecking(false);
+        return;
+      }
 
-    setIsChecking(true);
-    try {
-      const result = await authApi.checkNickname(val);
-      if (signal.aborted) return;
+      setIsChecking(true);
+      try {
+        const result = await authApi.checkNickname(val);
+        if (signal.aborted) return;
 
-      setIsAvailable(result.is_available);
-      setError(result.is_available ? null : "이미 사용중인 닉네임입니다");
-    } catch (error) {
-      if (signal.aborted) return;
+        setIsAvailable(result.is_available);
+        setError(result.is_available ? null : "이미 사용중인 닉네임입니다");
+      } catch (error) {
+        if (signal.aborted) return;
 
-      console.error("닉네임 중복 확인 오류:", error);
-      let errorMessage = "닉네임 확인 중 오류가 발생했습니다";
-      if (error instanceof Error) {
-        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-          errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
-        } else {
-          errorMessage = error.message || errorMessage;
+        console.error("닉네임 중복 확인 오류:", error);
+        let errorMessage = "닉네임 확인 중 오류가 발생했습니다";
+        if (error instanceof Error) {
+          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+            errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+          } else {
+            errorMessage = error.message || errorMessage;
+          }
+        }
+        setError(errorMessage);
+        setIsAvailable(null);
+      } finally {
+        if (!signal.aborted) {
+          setIsChecking(false);
         }
       }
-      setError(errorMessage);
-      setIsAvailable(null);
-    } finally {
-      if (!signal.aborted) {
-        setIsChecking(false);
-      }
-    }
-  };
+    },
+    [minLength]
+  );
 
   const trigger = () => {
     if (timerRef.current) {
@@ -205,7 +211,7 @@ export function useNicknameCheck(
       if (timerRef.current) clearTimeout(timerRef.current);
       abortController.abort();
     };
-  }, [value, debounceMs, minLength]);
+  }, [value, debounceMs, minLength, runCheck]);
 
   return { error, isChecking, isAvailable, trigger };
 }

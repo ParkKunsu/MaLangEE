@@ -293,6 +293,13 @@
   flex-direction: column;
   justify-content: space-between;
   transition: all 0.5s ease;
+  padding: 40px;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding: 40px 15px 15px;
+  }
 }
 
 @supports (min-height: 100dvh) {
@@ -314,9 +321,8 @@
   box-shadow: 0 8px 32px 0 rgba(123, 108, 246, 0.2);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-radius: 40px;
+  border-radius: 35px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 70px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -327,7 +333,7 @@
 
 @media (max-width: 768px) {
   .glass-card {
-    padding: 0;
+    border-radius: 40px 40px 0 0;
   }
 }
 

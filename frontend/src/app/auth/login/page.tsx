@@ -136,7 +136,7 @@ export default function LoginPage() {
               type="text"
               placeholder="아이디"
               {...register("username")}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
+              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2 lowercase"
               style={{ letterSpacing: "-0.2px" }}
             />
             {errors.username && (

@@ -50,11 +50,17 @@ export default function RegisterPage() {
     handleSubmit,
     formState: { errors },
     watch,
+    setFocus,
   } = useForm<RegisterFormData>({
     resolver: safeZodResolver,
     mode: "onBlur",
     reValidateMode: "onBlur",
   });
+
+  // 페이지 로딩 시 아이디 입력창에 포커스
+  useEffect(() => {
+    setFocus("login_id");
+  }, [setFocus]);
 
   const watchLoginId = watch("login_id");
   const watchNickname = watch("nickname");
@@ -141,95 +147,98 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 sm:gap-6">
         <div className="flex flex-col gap-4 sm:gap-5">
           {/* 아이디 입력 */}
-          <div className="relative">
-            <input
-              id="login_id"
-              type="text"
-              placeholder="아이디"
-              {...register("login_id", {
-                onBlur: () => loginIdCheck.trigger(),
-              })}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
-              style={{ letterSpacing: "-0.2px" }}
-            />
-            <div className="mt-0 ">
-              {errors.login_id ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.login_id.message}</p>
-              ) : loginIdCheck.isChecking ? (
-                <p className="whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
-              ) : loginIdCheck.error ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">
-                  {getCheckErrorMessage(loginIdCheck.error)}
-                </p>
-              ) : !loginIdCheck.isChecking && loginIdCheck.isAvailable && watchLoginId ? (
-                <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 아이디입니다</p>
-              ) : null}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="login_id" className="text-text-primary px-1 text-sm font-medium" style={{ letterSpacing: "-0.2px" }}>
+              아이디
+            </label>
+            <div className="relative">
+              <input
+                id="login_id"
+                type="text"
+                placeholder="아이디 (영문 또는 숫자 4~20자리)"
+                {...register("login_id", {
+                  onBlur: () => loginIdCheck.trigger(),
+                  onChange: (e) => {
+                    // 입력 즉시 소문자로 변환
+                    e.target.value = e.target.value.toLowerCase();
+                  }
+                })}
+                className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2 lowercase"
+                style={{ letterSpacing: "-0.2px" }}
+              />
+              <div className="mt-2 min-h-5">
+                {errors.login_id ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.login_id.message}</p>
+                ) : loginIdCheck.error ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">
+                    {getCheckErrorMessage(loginIdCheck.error)}
+                  </p>
+                ) : !loginIdCheck.isChecking && loginIdCheck.isAvailable && watchLoginId ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 아이디입니다</p>
+                ) : null}
+              </div>
             </div>
           </div>
 
           {/* 비밀번호 입력 */}
-          <div className="relative">
-            <input
-              id="password"
-              type="password"
-              placeholder="비밀번호 (영문+숫자 10자리 이상)"
-              {...register("password")}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
-              style={{ letterSpacing: "-0.2px" }}
-            />
-            <div className="mt-0  ">
-              {errors.password ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.password.message}</p>
-              ) : passwordCheck.isChecking ? (
-                <p className="whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
-              ) : passwordCheck.error ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">{passwordCheck.error}</p>
-              ) : !passwordCheck.isChecking && passwordCheck.isValid && watch("password") ? (
-                <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
-              ) : validationError && validationError.includes("비밀번호") ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">{validationError}</p>
-              ) : null}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-text-primary px-1 text-sm font-medium" style={{ letterSpacing: "-0.2px" }}>
+              비밀번호
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type="password"
+                placeholder="비밀번호 (영문+숫자 10자리 이상)"
+                {...register("password")}
+                className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
+                style={{ letterSpacing: "-0.2px" }}
+              />
+              <div className="mt-2 min-h-5">
+                {errors.password ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.password.message}</p>
+                ) : passwordCheck.error ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">{passwordCheck.error}</p>
+                ) : !passwordCheck.isChecking && passwordCheck.isValid && watch("password") ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 비밀번호입니다</p>
+                ) : validationError && validationError.includes("비밀번호") ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">{validationError}</p>
+                ) : null}
+              </div>
             </div>
           </div>
 
           {/* 닉네임 입력 */}
-          <div className="relative">
-            <input
-              id="nickname"
-              type="text"
-              placeholder="닉네임"
-              {...register("nickname", {
-                onBlur: () => nicknameCheck.trigger(),
-              })}
-              maxLength={6}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
-              style={{ letterSpacing: "-0.2px" }}
-            />
-            <div className="mt-0 ">
-              {errors.nickname ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.nickname.message}</p>
-              ) : nicknameCheck.isChecking ? (
-                <p className="whitespace-nowrap px-1 text-sm text-blue-500">확인 중...</p>
-              ) : nicknameCheck.error ? (
-                <p className="whitespace-nowrap px-1 text-sm text-red-500">
-                  {getCheckErrorMessage(nicknameCheck.error)}
-                </p>
-              ) : !nicknameCheck.isChecking && nicknameCheck.isAvailable && watchNickname ? (
-                <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 닉네임입니다</p>
-              ) : null}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="nickname" className="text-text-primary px-1 text-sm font-medium" style={{ letterSpacing: "-0.2px" }}>
+              닉네임
+            </label>
+            <div className="relative">
+              <input
+                id="nickname"
+                type="text"
+                placeholder="닉네임"
+                {...register("nickname", {
+                  onBlur: () => nicknameCheck.trigger(),
+                })}
+                maxLength={6}
+                className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-14 w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
+                style={{ letterSpacing: "-0.2px" }}
+              />
+              <div className="mt-2 min-h-5">
+                {errors.nickname ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">{errors.nickname.message}</p>
+                ) : nicknameCheck.error ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-red-500">
+                    {getCheckErrorMessage(nicknameCheck.error)}
+                  </p>
+                ) : !nicknameCheck.isChecking && nicknameCheck.isAvailable && watchNickname ? (
+                  <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 닉네임입니다</p>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
-
-        {/* validationError가 필드 레벨 에러들(ID, 닉네임, 비번)과 중복되지 않을 때만 폼 하단에 표시 */}
-        {validationError &&
-         !errors.login_id && !loginIdCheck.error &&
-         !errors.nickname && !nicknameCheck.error &&
-         !errors.password && !passwordCheck.error && (
-          <p className="whitespace-nowrap px-1 text-sm text-red-500" style={{ letterSpacing: "-0.1px" }}>
-            *{validationError}
-          </p>
-        )}
 
         <div className="flex flex-col gap-4 sm:gap-5">
           <Button
@@ -258,7 +267,7 @@ export default function RegisterPage() {
     <>
       <FullLayout
         showHeader={false}
-        maxWidth="md:max-w-3xl"
+        maxWidth="md:max-w-2xl"
       >
         {rightContent}
       </FullLayout>
