@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
-import { Button } from "@/shared/ui";
+import { Button, MalangEE, PopupLayout } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useInfiniteChatSessions } from "@/features/chat/api/use-chat-sessions";
 import { AuthGuard, useAuth, useCurrentUser } from "@/features/auth";
@@ -25,6 +25,7 @@ export default function DashboardPage() {
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const { logout } = useAuth();
 
   // 사용자 정보 조회
@@ -118,22 +119,36 @@ export default function DashboardPage() {
     return `${hours}시간 ${minutes}분 ${secs}초`;
   };
 
+  const handleLogoutClick = () => {
+    setShowLogoutPopup(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutPopup(false);
+    logout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutPopup(false);
+  };
+
   // 왼쪽 컨텐츠
   const leftContent = (
     <div className="w-full max-w-sm tracking-tight">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="auto"
             onClick={() => setShowNicknamePopup(true)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6A667A] transition-colors hover:text-[#5F51D9]"
+            className="h-8 w-8 rounded-full p-0 text-[#6A667A] hover:bg-transparent hover:text-[#5F51D9]"
             aria-label="닉네임 변경"
           >
-            <Pencil size={16} stroke="gray" />
-          </button>
+            <Pencil size={16} stroke="currentColor" />
+          </Button>
         </div>
-        <Button variant="secondary" size="auto" onClick={logout}>
+        <Button variant="secondary" size="auto" onClick={handleLogoutClick}>
           로그아웃
         </Button>
       </div>
@@ -196,7 +211,7 @@ export default function DashboardPage() {
 
           </div>
           <div
-            className="left-0 flex w-full h-[400px] flex-col items-start justify-start overflow-y-auto pr-2"
+            className="left-0 flex w-full h-100 flex-col items-start justify-start overflow-y-auto pr-2"
           >
             {allSessions.map((item) => (
               <div
@@ -231,7 +246,7 @@ export default function DashboardPage() {
 
             {/* 로딩 트리거 및 스피너 */}
             {hasNextPage && (
-              <div ref={loadMoreRef} className="flex w-full items-center justify-center py-4 min-h-[20px]">
+              <div ref={loadMoreRef} className="flex w-full items-center justify-center py-4 min-h-5">
                 {isFetchingNextPage && (
                   <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#5F51D9] border-t-transparent"></div>
                 )}
@@ -277,6 +292,34 @@ export default function DashboardPage() {
             // 사용자 프로필 새로고침이 필요한 경우 여기에 로직 추가
           }}
         />
+      )}
+
+      {/* 로그아웃 확인 팝업 */}
+      {showLogoutPopup && (
+        <PopupLayout onClose={handleLogoutCancel} showCloseButton={false} maxWidth="sm">
+          <div className="flex flex-col items-center gap-6 py-2">
+            <MalangEE status="humm" size={120} />
+            <div className="text-xl font-bold text-[#1F1C2B]">정말 로그아웃 하실건가요?</div>
+            <div className="flex w-full gap-3">
+              <Button
+                variant="outline-purple"
+                size="md"
+                fullWidth
+                onClick={handleLogoutCancel}
+              >
+                닫기
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={handleLogoutConfirm}
+              >
+                로그아웃
+              </Button>
+            </div>
+          </div>
+        </PopupLayout>
       )}
     </AuthGuard>
   );

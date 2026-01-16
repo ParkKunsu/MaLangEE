@@ -34,23 +34,24 @@ export default function LoginPage() {
   const router = useRouter();
   const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const [activeTitleIndex, setActiveTitleIndex] = useState(0);
-  const titleRotationMs = 3000;
+  const titleRotationMs = 4000;
+
 
   const titleMessages = [
     {
-      top: "Free Talking AI Chat-bot",
-      headingLine1: "말랑이와 함께",
-      headingLine2: "매일 말하는 영어습관",
+      top: "Talk like there",
+      headingLine1: "그 상황에",
+      headingLine2: "있는 것처럼 말해요",
     },
     {
-      top: "Speak More, Worry Less",
-      headingLine1: "틀려도 괜찮아요",
-      headingLine2: "자연스럽게 말해봐요",
+      top: "Need help? Get hints",
+      headingLine1: "막히면",
+      headingLine2: "말랭이가 힌트를 줘요",
     },
     {
-      top: "AI와 함께하는 회화",
-      headingLine1: "오늘의 주제로",
-      headingLine2: "쉽고 가볍게 대화해요",
+      top: "Your pace, your talk",
+      headingLine1: "말랭이가",
+      headingLine2: "내 템포에 맞춰줘요",
     },
   ];
 
@@ -89,11 +90,11 @@ export default function LoginPage() {
   const leftContent = (
     <div className="space-y-7 md:space-y-9">
       <div className="space-y-2" id={"title-wrapper"} key={activeTitleIndex}>
-        <p className="text-xl text-brand-400 title-rotate mb-4" style={{ letterSpacing: "-0.2px" }}>
+        <p className="text-brand-400 title-rotate mb-4 text-xl" style={{ letterSpacing: "-0.2px" }}>
           {titleMessages[activeTitleIndex].top}
         </p>
         <h1
-          className="text-4xl font-bold leading-snug tracking-tight title-rotate"
+          className="title-rotate text-4xl font-bold leading-snug tracking-tight"
           style={{ letterSpacing: "-0.96px" }}
         >
           {titleMessages[activeTitleIndex].headingLine1}
@@ -106,10 +107,11 @@ export default function LoginPage() {
         {titleMessages.map((_, index) => (
           <div
             key={index}
+            onClick={() => setActiveTitleIndex(index)}
             className={
               index === activeTitleIndex
-                ? "h-3 w-10 rounded-full bg-brand transition-all duration-300"
-                : "h-3 w-3 rounded-full bg-white/90 transition-all duration-300"
+                ? "bg-brand h-3 w-10 cursor-pointer rounded-full transition-all duration-300"
+                : "h-3 w-3 cursor-pointer rounded-full bg-white/90 transition-all duration-300"
             }
           />
         ))}

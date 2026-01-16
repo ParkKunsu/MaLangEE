@@ -55,6 +55,7 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
   });
 
   const watchNewNickname = watch("new_nickname");
+  const watchCurrentNickname = watch("current_nickname");
 
   // 현재 사용자 닉네임을 기존 닉네임 필드에 자동 설정
   useEffect(() => {
@@ -72,13 +73,24 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
   // 닉네임 변경 mutation
   const updateNicknameMutation = useUpdateNickname();
 
+  // 기존 닉네임과 동일한지 실시간 체크
+  const isSameAsCurrent = !!(watchNewNickname && watchCurrentNickname && watchNewNickname === watchCurrentNickname);
+
+  useEffect(() => {
+    if (isSameAsCurrent) {
+      setValidationError("현재 사용중인 닉네임이에요");
+    } else {
+      setValidationError(null);
+    }
+  }, [isSameAsCurrent]);
+
   const onSubmit = (data: NicknameUpdateFormData) => {
     setValidationError(null);
     setSuccessMessage(null);
 
     // 현재 닉네임과 새로운 닉네임이 같은지 확인
     if (data.current_nickname === data.new_nickname) {
-      setValidationError("기존 닉네임과 동일합니다");
+      setValidationError("현재 사용중인 닉네임이에요");
       return;
     }
 
@@ -113,12 +125,14 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
     });
   };
 
-  const isSubmitDisabled =
+  const isSubmitDisabled = !!(
     updateNicknameMutation.isPending ||
-    nicknameCheck.isChecking ||
-    !!nicknameCheck.error ||
-    !nicknameCheck.isAvailable ||
-    !!successMessage;
+    (nicknameCheck.isChecking && !isSameAsCurrent) ||
+    (!!nicknameCheck.error && !isSameAsCurrent) ||
+    (!nicknameCheck.isAvailable && !isSameAsCurrent) ||
+    !!successMessage ||
+    isSameAsCurrent
+  );
 
   return (
     <PopupLayout onClose={onClose} title={successMessage ? "" : "닉네임 변경"} maxWidth="md" showCloseButton={!successMessage}>
@@ -173,37 +187,50 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
                 className="h-12 w-full rounded-full border border-[#d4d0df] bg-white px-5 text-sm text-[#1F1C2B] shadow-[0_2px_6px_rgba(0,0,0,0.03)] placeholder:text-[#8c869c] focus:border-[#7B6CF6] focus:outline-none focus:ring-2 focus:ring-[#cfc5ff]"
                 style={{ letterSpacing: "-0.2px" }}
               />
-              {nicknameCheck.isChecking && (
-                <p className="mt-1 px-1 text-xs text-blue-500">확인 중...</p>
-              )}
-              {errors.new_nickname && (
-                <p className="mt-1 px-1 text-xs text-red-500">{errors.new_nickname.message}</p>
-              )}
-              {nicknameCheck.error && !errors.new_nickname && (
-                <p className="mt-1 px-1 text-xs text-red-500">{nicknameCheck.error}</p>
-              )}
-              {!nicknameCheck.isChecking &&
-                !nicknameCheck.error &&
-                nicknameCheck.isAvailable &&
-                watchNewNickname && (
-                  <p className="mt-1 px-1 text-xs text-green-600">사용 가능한 닉네임입니다</p>
+              
+              {/* 메시지 표시 영역 통합 */}
+              <div className="mt-1 px-1 min-h-[20px]">
+                {/* 1. 확인 중 */}
+                {nicknameCheck.isChecking && !isSameAsCurrent && (
+                  <p className="text-xs text-blue-500">확인 중...</p>
                 )}
+                
+                {/* 2. 폼 유효성 에러 (글자수 등) */}
+                {errors.new_nickname && (
+                  <p className="text-xs text-red-500">{errors.new_nickname.message}</p>
+                )}
+                
+                {/* 3. API 중복 에러 (본인 닉네임 아닐 때만) */}
+                {nicknameCheck.error && !errors.new_nickname && !isSameAsCurrent && (
+                  <p className="text-xs text-red-500">{nicknameCheck.error}</p>
+                )}
+                
+                {/* 4. 사용 가능 메시지 (본인 닉네임 아닐 때만) */}
+                {!nicknameCheck.isChecking &&
+                  !nicknameCheck.error &&
+                  nicknameCheck.isAvailable &&
+                  watchNewNickname &&
+                  !isSameAsCurrent && (
+                    <p className="text-xs text-green-600">사용 가능한 닉네임입니다</p>
+                  )}
+
+                {/* 5. 본인 닉네임 에러 (validationError) */}
+                {validationError && (
+                  <p className="text-xs text-red-500" style={{ letterSpacing: "-0.1px" }}>
+                    *{validationError}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-
-          {validationError && (
-            <p className="px-1 text-xs text-red-500" style={{ letterSpacing: "-0.1px" }}>
-              *{validationError}
-            </p>
-          )}
 
           <Button
             type="submit"
             variant="primary"
             size="md"
             fullWidth
-            disabled={isSubmitDisabled}
-            isLoading={updateNicknameMutation.isPending}
+            disabled={!!isSubmitDisabled}
+            isLoading={!!updateNicknameMutation.isPending}
           >
             {updateNicknameMutation.isPending ? "변경 중..." : "변경하기"}
           </Button>

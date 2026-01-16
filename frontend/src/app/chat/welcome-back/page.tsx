@@ -20,8 +20,8 @@ function WelcomeBackPage() {
 
   // 가장 최근 세션
   const lastSession = useMemo(() => {
-    if (!sessions || sessions.length === 0) return null;
-    return sessions[0];
+    if (!sessions || !sessions.sessions || sessions.sessions.length === 0) return null;
+    return sessions.sessions[0];
   }, [sessions]);
 
   // 대화 기록이 없으면 시나리오 선택 페이지로 리다이렉트
