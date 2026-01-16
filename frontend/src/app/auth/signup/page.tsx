@@ -267,7 +267,7 @@ export default function RegisterPage() {
     <>
       <FullLayout
         showHeader={false}
-        maxWidth="md:max-w-2xl"
+        maxWidth="md:max-w-[500px]"
       >
         {rightContent}
       </FullLayout>

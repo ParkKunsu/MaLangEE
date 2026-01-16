@@ -6,7 +6,7 @@ import { ChatTranscriptPopup } from "./ChatTranscriptPopup";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import { Button } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat";
-import { AuthGuard } from "@/features/auth";
+import { useRouter } from "next/navigation";
 
 interface ChatDetailPopupProps {
   session: ChatHistoryItem;
@@ -14,6 +14,7 @@ interface ChatDetailPopupProps {
 }
 
 export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClose }) => {
+  const router = useRouter();
   const [showTranscript, setShowTranscript] = useState(false);
 
   // 실제 API에서 세션 상세 정보 조회
@@ -102,15 +103,23 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
                     ? `이 대화에서는 ${messages.length}개의 메시지가 오갔습니다. ${session.title} 주제로 효과적인 의사소통이 진행되었습니다.`
                     : "대화 내용이 없습니다."}
                 </p>
-                <Button
-                  variant="solid"
-                  size="sm"
-                  onClick={() => setShowTranscript(true)}
-                  disabled={messages.length === 0}
-                  className="shrink-0"
-                >
-                  전문보기
-                </Button>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    variant="solid"
+                    size="sm"
+                    onClick={() => setShowTranscript(true)}
+                    disabled={messages.length === 0}
+                  >
+                    전문보기
+                  </Button>
+                  <Button
+                    variant="outline-purple"
+                    size="sm"
+                    onClick={() => router.push("/chat/welcome-back")}
+                  >
+                    다시 대화하기
+                  </Button>
+                </div>
               </div>
             </div>
 

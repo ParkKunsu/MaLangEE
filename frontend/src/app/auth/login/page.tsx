@@ -136,7 +136,7 @@ export default function LoginPage() {
               type="text"
               placeholder="아이디"
               {...register("username")}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2 lowercase"
+              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 bg-background h-[56px] w-full rounded-full border px-5 text-base lowercase focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
             />
             {errors.username && (
@@ -152,7 +152,7 @@ export default function LoginPage() {
               type="password"
               placeholder="비밀번호"
               {...register("password")}
-              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
+              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 bg-background h-[56px] w-full rounded-full border px-5 text-base focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
             />
             {errors.password && (
@@ -218,11 +218,11 @@ export default function LoginPage() {
         leftChildren={leftContent}
         rightChildren={rightContent}
         showHeader={false}
-        maxWidth="md:max-w-7xl"
-        leftColSpan={5}
-        rightColSpan={7}
+        maxWidth="md:max-w-5xl"
+        leftColSpan={6}
+        rightColSpan={6}
         glassClassName="p-6 md:p-10"
-        glassMaxWidth="max-w-full md:max-w-2xl lg:max-w-4xl"
+        glassMaxWidth="max-w-full md:max-w-2xl lg:max-w-3xl"
       />
 
       {showComingSoonModal && (
