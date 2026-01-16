@@ -90,11 +90,11 @@ export default function LoginPage() {
   const leftContent = (
     <div className="space-y-7 md:space-y-9">
       <div className="space-y-2" id={"title-wrapper"} key={activeTitleIndex}>
-        <p className="text-brand-400 title-rotate mb-4 text-xl" style={{ letterSpacing: "-0.2px" }}>
+        <p className="text-brand title-rotate mb-4 text-xl font-medium" style={{ letterSpacing: "-0.2px" }}>
           {titleMessages[activeTitleIndex].top}
         </p>
         <h1
-          className="title-rotate text-4xl font-bold leading-snug tracking-tight"
+          className="title-rotate text-text-primary text-4xl font-bold leading-snug tracking-tight"
           style={{ letterSpacing: "-0.96px" }}
         >
           {titleMessages[activeTitleIndex].headingLine1}
@@ -122,7 +122,7 @@ export default function LoginPage() {
   // 오른쪽 콘텐츠(로그인 폼)
   const rightContent = (
     <div className="mx-auto w-full space-y-7 md:space-y-9">
-      <p className="mb-15 text-3xl font-semibold leading-snug md:text-4xl">
+      <p className="text-text-primary mb-15 text-3xl font-semibold leading-snug md:text-4xl">
         Hello,
         <br />
         I&#39;m MalangEE
@@ -136,7 +136,7 @@ export default function LoginPage() {
               type="text"
               placeholder="아이디"
               {...register("username")}
-              className="border-border-light text-text-primary placeholder:text-placeholder focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-white px-5 text-base shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2"
+              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
             />
             {errors.username && (
@@ -152,7 +152,7 @@ export default function LoginPage() {
               type="password"
               placeholder="비밀번호"
               {...register("password")}
-              className="border-border-light text-text-primary placeholder:text-placeholder focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-white px-5 text-base shadow-[0_2px_6px_rgba(0,0,0,0.03)] focus:outline-none focus:ring-2"
+              className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 h-[56px] w-full rounded-full border bg-background px-5 text-base focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
             />
             {errors.password && (
@@ -174,7 +174,7 @@ export default function LoginPage() {
           </a>
           <Link
             href="/auth/signup"
-            className="hover:text-brand"
+            className="hover:text-brand font-medium"
             style={{ letterSpacing: "-0.1px" }}
           >
             회원가입
@@ -218,7 +218,7 @@ export default function LoginPage() {
         leftChildren={leftContent}
         rightChildren={rightContent}
         showHeader={false}
-        maxWidth="md:max-w-6xl"
+        maxWidth="md:max-w-7xl"
         leftColSpan={5}
         rightColSpan={7}
         glassClassName="p-6 md:p-10"
@@ -226,8 +226,8 @@ export default function LoginPage() {
       />
 
       {showComingSoonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="to-brand-50/80 relative mx-4 w-full max-w-sm rounded-[24px] border border-white/60 bg-gradient-to-br from-white/90 via-white/80 shadow-[0_20px_80px_rgba(125,106,246,0.3)] backdrop-blur-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dim-light backdrop-blur-sm">
+          <div className="relative mx-4 w-full max-w-sm rounded-3xl border border-border bg-card shadow-xl backdrop-blur-2xl">
             <div className="space-y-6 px-8 py-8">
               <div className="space-y-2">
                 <p className="text-text-primary text-center text-2xl font-semibold">준비중입니다</p>

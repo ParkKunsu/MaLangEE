@@ -18,6 +18,8 @@ interface UseDuplicateCheckResult {
   isChecking: boolean;
   /** 사용 가능 여부 (null이면 아직 확인 안됨) */
   isAvailable: boolean | null;
+  /** 즉시 확인 실행 */
+  trigger: () => void;
 }
 
 /**
@@ -27,12 +29,64 @@ export function useLoginIdCheck(
   value: string,
   options: UseDuplicateCheckOptions = {}
 ): UseDuplicateCheckResult {
-  const { debounceMs = 500, minLength = 1 } = options;
+  const { debounceMs = 1000, minLength = 4 } = options;
 
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const runCheck = async (val: string, signal: AbortSignal) => {
+    if (!val || val.length < minLength) {
+      setError(null);
+      setIsAvailable(null);
+      setIsChecking(false);
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const result = await authApi.checkLoginId(val);
+      if (signal.aborted) return;
+
+      setIsAvailable(result.is_available);
+      setError(result.is_available ? null : "이미 사용중인 아이디입니다");
+    } catch (error) {
+      if (signal.aborted) return;
+
+      console.error("아이디 중복 확인 오류:", error);
+
+      let errorMessage = "아이디 확인 중 오류가 발생했습니다";
+      if (error instanceof Error) {
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      }
+
+      setError(errorMessage);
+      setIsAvailable(null);
+    } finally {
+      if (!signal.aborted) {
+        setIsChecking(false);
+      }
+    }
+  };
+
+  const trigger = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    runCheck(value, abortController.signal);
+  };
 
   useEffect(() => {
     // 이전 요청 취소
@@ -51,56 +105,17 @@ export function useLoginIdCheck(
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const timer = setTimeout(async () => {
-      if (abortController.signal.aborted) return;
-
-      setIsChecking(true);
-      try {
-        const result = await authApi.checkLoginId(value);
-        if (abortController.signal.aborted) return;
-
-        setIsAvailable(result.is_available);
-        setError(result.is_available ? null : "이미 사용중인 아이디입니다");
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        
-        // 에러 상세 정보 로깅 (개발 환경에서 디버깅용)
-        console.error("아이디 중복 확인 오류:", error);
-        
-        // 에러 타입에 따라 다른 메시지 표시
-        let errorMessage = "아이디 확인 중 오류가 발생했습니다";
-        if (error instanceof Error) {
-          // 네트워크 에러인 경우
-          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-            errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
-          } else if (error.message.includes("401")) {
-            errorMessage = "인증이 필요합니다.";
-          } else if (error.message.includes("404")) {
-            errorMessage = "API 엔드포인트를 찾을 수 없습니다.";
-          } else if (error.message.includes("500")) {
-            errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-          } else {
-            // 기타 에러는 원본 메시지 사용
-            errorMessage = error.message || errorMessage;
-          }
-        }
-        
-        setError(errorMessage);
-        setIsAvailable(null);
-      } finally {
-        if (!abortController.signal.aborted) {
-          setIsChecking(false);
-        }
-      }
+    timerRef.current = setTimeout(() => {
+      runCheck(value, abortController.signal);
     }, debounceMs);
 
     return () => {
-      clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
       abortController.abort();
     };
   }, [value, debounceMs, minLength]);
 
-  return { error, isChecking, isAvailable };
+  return { error, isChecking, isAvailable, trigger };
 }
 
 /**
@@ -110,12 +125,62 @@ export function useNicknameCheck(
   value: string,
   options: UseDuplicateCheckOptions = {}
 ): UseDuplicateCheckResult {
-  const { debounceMs = 500, minLength = 1 } = options;
+  const { debounceMs = 1000, minLength = 2 } = options;
 
   const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const runCheck = async (val: string, signal: AbortSignal) => {
+    if (!val || val.length < minLength) {
+      setError(null);
+      setIsAvailable(null);
+      setIsChecking(false);
+      return;
+    }
+
+    setIsChecking(true);
+    try {
+      const result = await authApi.checkNickname(val);
+      if (signal.aborted) return;
+
+      setIsAvailable(result.is_available);
+      setError(result.is_available ? null : "이미 사용중인 닉네임입니다");
+    } catch (error) {
+      if (signal.aborted) return;
+
+      console.error("닉네임 중복 확인 오류:", error);
+      let errorMessage = "닉네임 확인 중 오류가 발생했습니다";
+      if (error instanceof Error) {
+        if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
+          errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      }
+      setError(errorMessage);
+      setIsAvailable(null);
+    } finally {
+      if (!signal.aborted) {
+        setIsChecking(false);
+      }
+    }
+  };
+
+  const trigger = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    runCheck(value, abortController.signal);
+  };
 
   useEffect(() => {
     if (abortControllerRef.current) {
@@ -132,56 +197,17 @@ export function useNicknameCheck(
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    const timer = setTimeout(async () => {
-      if (abortController.signal.aborted) return;
-
-      setIsChecking(true);
-      try {
-        const result = await authApi.checkNickname(value);
-        if (abortController.signal.aborted) return;
-
-        setIsAvailable(result.is_available);
-        setError(result.is_available ? null : "이미 사용중인 닉네임입니다");
-      } catch (error) {
-        if (abortController.signal.aborted) return;
-        
-        // 에러 상세 정보 로깅 (개발 환경에서 디버깅용)
-        console.error("닉네임 중복 확인 오류:", error);
-        
-        // 에러 타입에 따라 다른 메시지 표시
-        let errorMessage = "닉네임 확인 중 오류가 발생했습니다";
-        if (error instanceof Error) {
-          // 네트워크 에러인 경우
-          if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
-            errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";
-          } else if (error.message.includes("401")) {
-            errorMessage = "인증이 필요합니다.";
-          } else if (error.message.includes("404")) {
-            errorMessage = "API 엔드포인트를 찾을 수 없습니다.";
-          } else if (error.message.includes("500")) {
-            errorMessage = "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
-          } else {
-            // 기타 에러는 원본 메시지 사용
-            errorMessage = error.message || errorMessage;
-          }
-        }
-        
-        setError(errorMessage);
-        setIsAvailable(null);
-      } finally {
-        if (!abortController.signal.aborted) {
-          setIsChecking(false);
-        }
-      }
+    timerRef.current = setTimeout(() => {
+      runCheck(value, abortController.signal);
     }, debounceMs);
 
     return () => {
-      clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
       abortController.abort();
     };
   }, [value, debounceMs, minLength]);
 
-  return { error, isChecking, isAvailable };
+  return { error, isChecking, isAvailable, trigger };
 }
 
 /**
@@ -247,3 +273,4 @@ export function usePasswordValidation(
 
   return { error, isChecking, isValid };
 }
+

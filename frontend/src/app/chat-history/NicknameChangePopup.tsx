@@ -125,7 +125,7 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
     });
   };
 
-  const isSubmitDisabled = !!(
+  const isSubmitDisabled = (
     updateNicknameMutation.isPending ||
     (nicknameCheck.isChecking && !isSameAsCurrent) ||
     (!!nicknameCheck.error && !isSameAsCurrent) ||
@@ -182,44 +182,33 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
                 id="new_nickname"
                 type="text"
                 placeholder="새로운 닉네임을 입력해주세요"
-                {...register("new_nickname")}
+                {...register("new_nickname", {
+                  onBlur: () => nicknameCheck.trigger(),
+                })}
                 maxLength={6}
                 className="h-12 w-full rounded-full border border-[#d4d0df] bg-white px-5 text-sm text-[#1F1C2B] shadow-[0_2px_6px_rgba(0,0,0,0.03)] placeholder:text-[#8c869c] focus:border-[#7B6CF6] focus:outline-none focus:ring-2 focus:ring-[#cfc5ff]"
                 style={{ letterSpacing: "-0.2px" }}
               />
               
-              {/* 메시지 표시 영역 통합 */}
-              <div className="mt-1 px-1 min-h-[20px]">
-                {/* 1. 확인 중 */}
-                {nicknameCheck.isChecking && !isSameAsCurrent && (
-                  <p className="text-xs text-blue-500">확인 중...</p>
-                )}
-                
-                {/* 2. 폼 유효성 에러 (글자수 등) */}
-                {errors.new_nickname && (
+              {/* 메시지 표시 영역 통합 (단일 우선순위 체인으로 변경하여 무조건 한 줄만 표시) */}
+              <div className="mt-1 px-1 min-h-5">
+                {errors.new_nickname ? (
                   <p className="text-xs text-red-500">{errors.new_nickname.message}</p>
-                )}
-                
-                {/* 3. API 중복 에러 (본인 닉네임 아닐 때만) */}
-                {nicknameCheck.error && !errors.new_nickname && !isSameAsCurrent && (
-                  <p className="text-xs text-red-500">{nicknameCheck.error}</p>
-                )}
-                
-                {/* 4. 사용 가능 메시지 (본인 닉네임 아닐 때만) */}
-                {!nicknameCheck.isChecking &&
-                  !nicknameCheck.error &&
-                  nicknameCheck.isAvailable &&
-                  watchNewNickname &&
-                  !isSameAsCurrent && (
-                    <p className="text-xs text-green-600">사용 가능한 닉네임입니다</p>
-                  )}
-
-                {/* 5. 본인 닉네임 에러 (validationError) */}
-                {validationError && (
+                ) : validationError ? (
                   <p className="text-xs text-red-500" style={{ letterSpacing: "-0.1px" }}>
                     *{validationError}
                   </p>
-                )}
+                ) : nicknameCheck.isChecking && !isSameAsCurrent ? (
+                  <p className="text-xs text-blue-500">확인 중...</p>
+                ) : nicknameCheck.error && !isSameAsCurrent ? (
+                  <p className="text-xs text-red-500">{nicknameCheck.error}</p>
+                ) : !nicknameCheck.isChecking &&
+                  !nicknameCheck.error &&
+                  nicknameCheck.isAvailable &&
+                  watchNewNickname &&
+                  !isSameAsCurrent ? (
+                  <p className="text-xs text-green-600">사용 가능한 닉네임입니다</p>
+                ) : null}
               </div>
             </div>
           </div>
@@ -229,8 +218,8 @@ export const NicknameChangePopup: React.FC<NicknameChangePopupProps> = ({ onClos
             variant="primary"
             size="md"
             fullWidth
-            disabled={!!isSubmitDisabled}
-            isLoading={!!updateNicknameMutation.isPending}
+            disabled={isSubmitDisabled}
+            isLoading={updateNicknameMutation.isPending}
           >
             {updateNicknameMutation.isPending ? "변경 중..." : "변경하기"}
           </Button>

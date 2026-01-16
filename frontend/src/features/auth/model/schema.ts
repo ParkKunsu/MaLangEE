@@ -4,49 +4,48 @@ import { z } from "zod";
 // Request Schemas
 // ============================================
 
+const loginIdValidation = z
+  .string()
+  .min(4, "아이디는 4~20자 사이로 입력해주세요")
+  .max(20, "아이디는 4~20자 사이로 입력해주세요")
+  .regex(/^[a-zA-Z0-9]+$/, "영문 또는 숫자만 입력 가능합니다");
+
+const nicknameValidation = z
+  .string()
+  .min(2, "닉네임은 2~6자 사이로 입력해주세요")
+  .max(6, "닉네임은 2~6자 사이로 입력해주세요")
+  .regex(/^[a-zA-Z가-힣]+$/, "영문 또는 한글만 입력 가능합니다");
+
 export const loginSchema = z.object({
   username: z.string().min(1, "아이디를 입력해주세요"),
   password: z.string().min(1, "비밀번호를 입력해주세요"),
 });
 
 export const registerSchema = z.object({
-  login_id: z.string().min(1, "아이디를 입력해주세요"),
+  login_id: loginIdValidation,
   password: z
     .string()
     .min(10, "영문+숫자 조합 10자리 이상 입력해주세요")
     .regex(/^(?=.*[a-zA-Z])(?=.*\d)/, "영문과 숫자를 포함해야 합니다"),
-  nickname: z
-    .string()
-    .min(2, "닉네임은 2~6자 사이로 입력해주세요")
-    .max(6, "닉네임은 2~6자 사이로 입력해주세요"),
+  nickname: nicknameValidation,
 });
 
 export const loginIdCheckSchema = z.object({
-  login_id: z.string().min(1),
+  login_id: loginIdValidation,
 });
 
 export const nicknameCheckSchema = z.object({
-  nickname: z
-    .string()
-    .min(2, "닉네임은 2~6자 사이로 입력해주세요")
-    .max(6, "닉네임은 2~6자 사이로 입력해주세요"),
+  nickname: nicknameValidation,
 });
 
 export const userUpdateSchema = z.object({
-  nickname: z
-    .string()
-    .min(2, "닉네임은 2~6자 사이로 입력해주세요")
-    .max(6, "닉네임은 2~6자 사이로 입력해주세요")
-    .optional(),
+  nickname: nicknameValidation.optional(),
   password: z.string().optional(),
 });
 
 export const nicknameUpdateSchema = z.object({
   current_nickname: z.string().min(1, "기존 닉네임을 입력해주세요"),
-  new_nickname: z
-    .string()
-    .min(2, "닉네임은 2~6자 사이로 입력해주세요")
-    .max(6, "닉네임은 2~6자 사이로 입력해주세요"),
+  new_nickname: nicknameValidation,
 });
 
 // ============================================
