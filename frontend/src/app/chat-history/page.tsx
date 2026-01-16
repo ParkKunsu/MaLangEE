@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
 import { Button } from "@/shared/ui";
 import { useRouter } from "next/navigation";
-import { useGetChatSessions } from "@/features/chat";
+import { useInfiniteChatSessions } from "@/features/chat/api/use-chat-sessions";
 import { AuthGuard, useAuth, useCurrentUser } from "@/features/auth";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatDetailPopup } from "./ChatDetailPopup";
@@ -21,55 +21,62 @@ interface UserProfile {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [displayPage, setDisplayPage] = useState(1);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
   const { logout } = useAuth();
 
-  // 실제 API 호출
+  // 사용자 정보 조회
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
-  const { data: sessions, isLoading: isSessionsLoading } = useGetChatSessions(0, 100, currentUser?.id);
 
-  // 세션 데이터를 UI 형식으로 변환 (useMemo 사용)
+  // 무한 스크롤 쿼리 사용
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isSessionsLoading,
+  } = useInfiniteChatSessions(ITEMS_PER_PAGE, currentUser?.id);
+
+  // 전체 세션 데이터 플랫트닝
   const allSessions = useMemo<ChatHistoryItem[]>(() => {
-    if (!sessions || !Array.isArray(sessions)) return [];
+    if (!data) return [];
 
-    return sessions.map((session) => {
-      const startDate = new Date(session.started_at);
-      const dateString = startDate.toLocaleDateString("ko-KR").replace(/\. /g, ".");
+    return data.pages.flatMap((page) =>
+      page.sessions.map((session) => {
+        const startDate = new Date(session.started_at);
+        const dateString = startDate.toLocaleDateString("ko-KR").replace(/\. /g, ".");
 
-      // 총 시간 포맷팅
-      const totalHours = Math.floor(session.total_duration_sec / 3600);
-      const totalMinutes = Math.floor((session.total_duration_sec % 3600) / 60);
-      const totalSeconds = Math.floor(session.total_duration_sec % 60);
+        // 총 시간 포맷팅
+        const totalHours = Math.floor(session.total_duration_sec / 3600);
+        const totalMinutes = Math.floor((session.total_duration_sec % 3600) / 60);
+        const totalSeconds = Math.floor(session.total_duration_sec % 60);
 
-      // 사용자 말한 시간 포맷팅
-      const userHours = Math.floor(session.user_speech_duration_sec / 3600);
-      const userMinutes = Math.floor((session.user_speech_duration_sec % 3600) / 60);
-      const userSeconds = Math.floor(session.user_speech_duration_sec % 60);
+        // 사용자 말한 시간 포맷팅
+        const userHours = Math.floor(session.user_speech_duration_sec / 3600);
+        const userMinutes = Math.floor((session.user_speech_duration_sec % 3600) / 60);
+        const userSeconds = Math.floor(session.user_speech_duration_sec % 60);
 
-      const totalDurationStr = `${String(totalHours).padStart(2, "0")}:${String(totalMinutes).padStart(2, "0")}:${String(totalSeconds).padStart(2, "0")}`;
-      const userDurationStr = `${String(userHours).padStart(2, "0")}:${String(userMinutes).padStart(2, "0")}:${String(userSeconds).padStart(2, "0")}`;
+        const totalDurationStr = `${String(totalHours).padStart(2, "0")}:${String(totalMinutes).padStart(2, "0")}:${String(totalSeconds).padStart(2, "0")}`;
+        const userDurationStr = `${String(userHours).padStart(2, "0")}:${String(userMinutes).padStart(2, "0")}:${String(userSeconds).padStart(2, "0")}`;
 
-      return {
-        id: session.session_id,
-        date: dateString,
-        title: session.title || "대화 세션",
-        duration: `${userDurationStr} / ${totalDurationStr}`,
-        totalDurationSec: session.total_duration_sec,
-        userSpeechDurationSec: session.user_speech_duration_sec,
-      };
-    });
-  }, [sessions]);
+        return {
+          id: session.session_id,
+          date: dateString,
+          title: session.title || "대화 세션",
+          duration: `${userDurationStr} / ${totalDurationStr}`,
+          totalDurationSec: session.total_duration_sec,
+          userSpeechDurationSec: session.user_speech_duration_sec,
+        };
+      })
+    );
+  }, [data]);
 
-  // 화면에 표시할 세션 데이터 계산
-  const visibleSessions = allSessions.slice(0, displayPage * ITEMS_PER_PAGE);
-  const hasMore = visibleSessions.length < allSessions.length;
+  // 전체 건수 (API가 total을 제공하는 경우 사용, 아니면 현재 로드된 개수)
+  const totalCount = data?.pages[0]?.total ?? allSessions.length;
 
-  // 사용자 프로필 계산 (세션 데이터에서 합산)
+  // 사용자 프로필 계산 (현재 로드된 세션 데이터 기준)
   const userProfile: UserProfile | null = useMemo(() => {
     if (!currentUser) return null;
 
@@ -86,31 +93,23 @@ export default function DashboardPage() {
   // 로딩 상태
   const isInitialLoading = isSessionsLoading || isUserLoading;
 
-  // 스크롤 감지 함수
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current || isLoadingMore || !hasMore) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-
-    // 스크롤이 하단에 도달했을 때 (마진: 50px)
-    if (scrollTop + clientHeight >= scrollHeight - 50) {
-      setIsLoadingMore(true);
-      // 데이터 로딩
-      setTimeout(() => {
-        setDisplayPage((prev) => prev + 1);
-        setIsLoadingMore(false);
-      }, 300);
-    }
-  }, [isLoadingMore, hasMore]);
-
-  // 스크롤 이벤트 리스너 등록
+  // Intersection Observer를 이용한 무한 스크롤 트리거
   useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener("scroll", handleScroll);
-      return () => scrollContainer.removeEventListener("scroll", handleScroll);
-    }
-  }, [handleScroll]);
+    if (!loadMoreRef.current || !hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -122,7 +121,6 @@ export default function DashboardPage() {
   // 왼쪽 컨텐츠
   const leftContent = (
     <div className="w-full max-w-sm tracking-tight">
-      {/* Added wrapper width and tracking */}
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
@@ -140,8 +138,6 @@ export default function DashboardPage() {
         </Button>
       </div>
       <div className="mt-4 space-y-1">
-        {" "}
-        {/* Reduced space-y */}
         <div className="flex items-center justify-between">
           <span className="text-sm">말랭이와 함께한 시간</span>
           <span className="text-sm font-bold">
@@ -168,19 +164,20 @@ export default function DashboardPage() {
 
   // 오른쪽 컨텐츠
   const rightContent = (
-    <div className="w-full tracking-tight">
+    <div className="flex w-full flex-1 flex-col min-h-0 tracking-tight">
       {/* 제목 */}
       <div className="mb-4 mt-0 flex w-full justify-start">
         <h2 className="text-2xl font-bold text-[#1F1C2B]">대화 내역</h2>
       </div>
       {/* 대화 목록 */}
 
+      <div className="flex w-full flex-1 flex-col min-h-0">
       {allSessions.length === 0 && isInitialLoading ? (
-        <div className="flex w-full items-center justify-center">
+        <div className="flex w-full flex-1 items-center justify-center">
           <div className="border-3 h-8 w-8 animate-spin rounded-full border-[#5F51D9] border-t-transparent"></div>
         </div>
       ) : allSessions.length === 0 ? (
-        <div className="flex min-h-112.5 w-full items-center justify-center text-xl text-gray-500">
+        <div className="flex w-full flex-1 items-center justify-center text-xl text-gray-500">
           말랭이와 대화한 이력이 없어요.
         </div>
       ) : (
@@ -199,10 +196,9 @@ export default function DashboardPage() {
 
           </div>
           <div
-            ref={scrollContainerRef}
-            className="left-0 flex min-h-112.5 w-full flex-col items-start justify-start overflow-y-auto pr-2"
+            className="left-0 flex w-full h-[400px] flex-col items-start justify-start overflow-y-auto pr-2"
           >
-            {visibleSessions.map((item) => (
+            {allSessions.map((item) => (
               <div
                 key={item.id}
                 onClick={() => {
@@ -233,23 +229,25 @@ export default function DashboardPage() {
               </div>
             ))}
 
-            {/* 로딩 상태 표시 */}
-            {isLoadingMore && hasMore && (
-              <div className="flex w-full items-center justify-center py-4">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#5F51D9] border-t-transparent"></div>
+            {/* 로딩 트리거 및 스피너 */}
+            {hasNextPage && (
+              <div ref={loadMoreRef} className="flex w-full items-center justify-center py-4 min-h-[20px]">
+                {isFetchingNextPage && (
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#5F51D9] border-t-transparent"></div>
+                )}
               </div>
             )}
 
             {/* 데이터가 없거나 모두 로드됨 */}
-            {!hasMore && allSessions.length > 0 && (
+            {!hasNextPage && allSessions.length > 0 && (
               <div className="flex w-full items-center justify-center py-4 text-xs text-gray-500">
-                모든 데이터를 불러왔습니다 (조회된 데이터: {allSessions.length}건 / 페이지:{" "}
-                {displayPage})
+                모든 데이터를 불러왔습니다 (전체: {totalCount}건 / 조회: {allSessions.length}건)
               </div>
             )}
           </div>
         </>
       )}
+      </div>
     </div>
   );
 
@@ -277,7 +275,6 @@ export default function DashboardPage() {
           onClose={() => setShowNicknamePopup(false)}
           onSuccess={() => {
             // 사용자 프로필 새로고침이 필요한 경우 여기에 로직 추가
-            // 현재는 디버그 모드에서 테스트 데이터를 사용하므로 별도 처리 없음
           }}
         />
       )}

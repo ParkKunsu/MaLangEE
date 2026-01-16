@@ -65,6 +65,20 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Wave Animation for AI Speaking Indicator */
+@keyframes wave {
+  0%, 100% {
+    height: 20px;
+  }
+  50% {
+    height: 40px;
+  }
+}
+
+.animate-wave {
+  animation: wave 1s ease-in-out infinite;
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -333,6 +347,8 @@
   align-items: center;
   justify-content: center;
   text-align: left;
+  min-height: 0;
+  width: 100%;
 }
 
 /* Footer section */
