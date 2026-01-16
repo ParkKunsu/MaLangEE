@@ -16,7 +16,7 @@ export const FullLayout = ({
   showHeader = false, // 기본값 true
   withBackground = true,
   headerRight,
-  maxWidth = "md:max-w-5xl",
+  maxWidth = "max-w-full md:max-w-2xl lg:max-w-3xl",
 }: FullLayoutProps) => {
   useEffect(() => {
     // body에 배경 클래스 적용
