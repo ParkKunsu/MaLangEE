@@ -96,7 +96,7 @@ export default function WelcomeBackPage() {
 
   return (
     <>
-      <FullLayout showHeader={true} maxWidth="md:max-w-[60vw]" headerRight={headerRightContent}>
+      <FullLayout showHeader={true} headerRight={headerRightContent}>
         {/* Character */}
         <div className="character-box">
           <MalangEE size={150} />
