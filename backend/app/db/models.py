@@ -20,12 +20,40 @@ class User(Base):
     
     sessions = relationship("ConversationSession", back_populates="owner")
 
+class ScenarioDefinition(Base):
+    """
+    공유 주제(시나리오) 정의 테이블 (메뉴판)
+    """
+    __tablename__ = "scenario_definitions"
+    
+    id = Column(String, primary_key=True) # e.g. "airport_01"
+    title = Column(String, nullable=False) # e.g. "공항 체크인"
+    description = Column(Text, nullable=True)
+    
+    # [Refactor] Structural Columns for Prompt Template
+    place = Column(String, nullable=True) # e.g. "Airport Check-in Counter"
+    partner = Column(String, nullable=True) # e.g. "Airport Staff"
+    goal = Column(String, nullable=True) # e.g. "Get a window seat"
+    
+    level = Column(Integer, default=1)
+    category = Column(String, nullable=True) # e.g. "Travel"
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 1:N 관계 (시나리오 -> 세션들)
+    sessions = relationship("ConversationSession", back_populates="scenario_definition")
+
 class ConversationSession(Base):
     """대화 세션 테이블"""
     __tablename__ = "conversation_sessions"
 
     session_id = Column(String, primary_key=True, index=True)
     title = Column(String, nullable=True)
+    
+    # [New] Linked Scenario
+    scenario_id = Column(String, ForeignKey("scenario_definitions.id"), nullable=True)
+    scenario_definition = relationship("ScenarioDefinition", back_populates="sessions")
+
     started_at = Column(String, nullable=False)
     ended_at = Column(String, nullable=False)
     
@@ -38,6 +66,9 @@ class ConversationSession(Base):
     scenario_state_json = Column(Text, nullable=True)
     scenario_completed_at = Column(DateTime(timezone=True), nullable=True)
     deleted = Column(Boolean, default=False)
+    
+    # Analytics State
+    is_analyzed = Column(Boolean, default=False) # 통계 집계 완료 여부
     
     # [New] User Preferences
     voice = Column(String, nullable=True)
