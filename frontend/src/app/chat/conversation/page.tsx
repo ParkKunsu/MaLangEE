@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MicButton, Button, MalangEE, MalangEEStatus } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
-import "@/shared/styles/scenario.css";
-import { FullLayout } from "@/shared/ui/FullLayout";
 import { useRouter } from "next/navigation";
 import { useScenarioChat } from "@/features/chat";
 
@@ -342,122 +340,119 @@ export default function ConversationPage() {
 
   return (
     <>
-      <FullLayout showHeader={true} >
-        {/* Connection Status */}
-        {!chatState.isConnected && (
-          <div className="mb-4 rounded-lg bg-yellow-100 px-4 py-2 text-center text-yellow-700">
-            WebSocket 연결 중...
+      {/* Connection Status */}
+      {!chatState.isConnected && (
+        <div className="mb-4 rounded-lg bg-yellow-100 px-4 py-2 text-center text-yellow-700">
+          WebSocket 연결 중...
+        </div>
+      )}
+      {chatState.error && (
+        <div className="mb-4 rounded-lg bg-red-100 px-4 py-2 text-center text-red-700">
+          {chatState.error}
+        </div>
+      )}
+
+      {/* Character */}
+      <div className="character-box relative">
+        <MalangEE status={getMalangEEStatus()} size={150} />
+
+        {/* Hint Bubble */}
+        {conversationState === "user-turn" && (
+          <div className="absolute -bottom-[55px] left-1/2 z-10 -translate-x-1/2">
+            <button
+              onClick={handleHintClick}
+              className="relative rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-6 py-3 shadow-lg transition-all hover:bg-yellow-100"
+            >
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="h-0 w-0 border-b-[12px] border-l-[12px] border-r-[12px] border-b-yellow-300 border-l-transparent border-r-transparent"></div>
+                <div className="absolute left-1/2 top-[2px] h-0 w-0 -translate-x-1/2 border-b-[10px] border-l-[10px] border-r-[10px] border-b-yellow-50 border-l-transparent border-r-transparent"></div>
+              </div>
+
+              {showHint ? (
+                <p className="whitespace-nowrap text-sm text-gray-700">{hintMessage}</p>
+              ) : (
+                <p className="whitespace-nowrap text-sm italic text-gray-500">
+                  Lost your words? <br /> (tap for a hint)
+                </p>
+              )}
+            </button>
           </div>
         )}
-        {chatState.error && (
-          <div className="mb-4 rounded-lg bg-red-100 px-4 py-2 text-center text-red-700">
-            {chatState.error}
-          </div>
-        )}
+      </div>
 
-        {/* Character */}
-        <div className="character-box relative">
-          <MalangEE status={getMalangEEStatus()} size={150} />
+      {/* AI Message Display */}
+      {subtitleEnabled && (
+        <div className="text-group mt-4 text-center" style={{ opacity: textOpacity }}>
+          <h1 className="scenario-title">{displayMessage}</h1>
+        </div>
+      )}
 
-          {/* Hint Bubble */}
-          {conversationState === "user-turn" && (
-            <div className="absolute -bottom-[55px] left-1/2 z-10 -translate-x-1/2">
-              <button
-                onClick={handleHintClick}
-                className="relative rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-6 py-3 shadow-lg transition-all hover:bg-yellow-100"
-              >
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <div className="h-0 w-0 border-b-[12px] border-l-[12px] border-r-[12px] border-b-yellow-300 border-l-transparent border-r-transparent"></div>
-                  <div className="absolute left-1/2 top-[2px] h-0 w-0 -translate-x-1/2 border-b-[10px] border-l-[10px] border-r-[10px] border-b-yellow-50 border-l-transparent border-r-transparent"></div>
-                </div>
+      {/* User Transcript */}
+      {chatState.userTranscript && (
+        <div className="mt-2 text-center">
+          <p className="text-sm text-gray-500">You said: {chatState.userTranscript}</p>
+        </div>
+      )}
 
-                {showHint ? (
-                  <p className="whitespace-nowrap text-sm text-gray-700">{hintMessage}</p>
-                ) : (
-                  <p className="whitespace-nowrap text-sm italic text-gray-500">
-                    Lost your words? <br /> (tap for a hint)
-                  </p>
-                )}
-              </button>
+      {/* Status Indicator */}
+      <div className="mb-3">
+        <div
+          className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${!chatState.isConnected
+            ? "bg-yellow-100 text-yellow-700"
+            : conversationState === "ai-speaking"
+              ? "bg-blue-100 text-blue-700"
+              : conversationState === "user-speaking"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-700"
+            }`}
+        >
+          {conversationState === "ai-speaking" && chatState.isConnected && (
+            <div className="flex gap-1">
+              <span className="h-4 w-1 animate-pulse bg-blue-500"></span>
+              <span
+                className="h-4 w-1 animate-pulse bg-blue-500"
+                style={{ animationDelay: "0.2s" }}
+              ></span>
+              <span
+                className="h-4 w-1 animate-pulse bg-blue-500"
+                style={{ animationDelay: "0.4s" }}
+              ></span>
             </div>
           )}
+          <p className="scenario-desc">{getStatusText()}</p>
         </div>
+      </div>
 
-        {/* AI Message Display */}
-        {subtitleEnabled && (
-          <div className="text-group mt-4 text-center" style={{ opacity: textOpacity }}>
-            <h1 className="scenario-title">{displayMessage}</h1>
-          </div>
-        )}
+      {/* Mic Button */}
+      <div className="relative mt-2">
+        <MicButton
+          isListening={conversationState === "user-speaking"}
+          onClick={handleMicClick}
+          size="md"
+          className={
+            !chatState.isConnected
+              ? "pointer-events-none opacity-50"
+              : ""
+          }
+          isMuted={isMuted}
+        />
+      </div>
 
-        {/* User Transcript */}
-        {chatState.userTranscript && (
-          <div className="mt-2 text-center">
-            <p className="text-sm text-gray-500">You said: {chatState.userTranscript}</p>
-          </div>
-        )}
-
-        {/* Status Indicator */}
-        <div className="mb-3">
-          <div
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${!chatState.isConnected
-              ? "bg-yellow-100 text-yellow-700"
-              : conversationState === "ai-speaking"
-                ? "bg-blue-100 text-blue-700"
-                : conversationState === "user-speaking"
-                  ? "bg-green-100 text-green-700"
-                  : "bg-gray-100 text-gray-700"
-              }`}
-          >
-            {conversationState === "ai-speaking" && chatState.isConnected && (
-              <div className="flex gap-1">
-                <span className="h-4 w-1 animate-pulse bg-blue-500"></span>
-                <span
-                  className="h-4 w-1 animate-pulse bg-blue-500"
-                  style={{ animationDelay: "0.2s" }}
-                ></span>
-                <span
-                  className="h-4 w-1 animate-pulse bg-blue-500"
-                  style={{ animationDelay: "0.4s" }}
-                ></span>
-              </div>
-            )}
-            <p className="scenario-desc">{getStatusText()}</p>
-          </div>
+      {/* AI Speaking Wave Animation */}
+      {conversationState === "ai-speaking" && chatState.isConnected && (
+        <div className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 justify-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-primary-600 animate-wave w-1 rounded-full"
+              style={{
+                height: "20px",
+                animationDelay: `${i * 0.1}s`,
+              }}
+            />
+          ))}
         </div>
-
-        {/* Mic Button */}
-        <div className="relative mt-2">
-          <MicButton
-            isListening={conversationState === "user-speaking"}
-            onClick={handleMicClick}
-            size="md"
-            className={
-              !chatState.isConnected
-                ? "pointer-events-none opacity-50"
-                : ""
-            }
-            isMuted={isMuted}
-          />
-        </div>
-
-        {/* AI Speaking Wave Animation */}
-        {conversationState === "ai-speaking" && chatState.isConnected && (
-          <div className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 justify-center gap-1">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-primary-600 animate-wave w-1 rounded-full"
-                style={{
-                  height: "20px",
-                  animationDelay: `${i * 0.1}s`,
-                }}
-              />
-            ))}
-          </div>
-        )}
-
-      </FullLayout>
+      )}
 
       {/* Login Popup */}
       {showLoginPopup && (

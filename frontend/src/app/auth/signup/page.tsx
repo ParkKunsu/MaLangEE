@@ -273,7 +273,6 @@ export default function RegisterPage() {
       <FullLayout
         showHeader={false}
         maxWidth="md:max-w-5xl"
-        glassMaxWidth="max-w-full md:max-w-[550px]"
       >
         {rightContent}
       </FullLayout>

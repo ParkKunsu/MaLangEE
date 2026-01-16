@@ -4,9 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Clock, Mic } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
-import { FullLayout } from "@/shared/ui/FullLayout";
-import "@/shared/styles/scenario.css";
-import { AuthGuard } from "@/features/auth";
 
 export default function ChatCompletePage() {
   const router = useRouter();
@@ -44,8 +41,7 @@ export default function ChatCompletePage() {
   };
 
   return (
-<AuthGuard>
-    <FullLayout showHeader={true} >
+    <>
       {/* Character */}
       <div className="character-box">
         <MalangEE size={150} />
@@ -94,8 +90,6 @@ export default function ChatCompletePage() {
           </Button>
         </div>
       </div>
-    </FullLayout>
-</AuthGuard>
+    </>
   );
 }
-

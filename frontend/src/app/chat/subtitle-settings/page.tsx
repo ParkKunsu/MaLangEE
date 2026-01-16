@@ -3,9 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, MalangEE } from "@/shared/ui";
-import "@/shared/styles/scenario.css";
-import { FullLayout } from "@/shared/ui/FullLayout";
-import { AuthGuard } from "@/features/auth";
 
 export default function SubtitleSettingsPage() {
   const router = useRouter();
@@ -22,8 +19,7 @@ export default function SubtitleSettingsPage() {
   };
 
   return (
-<AuthGuard>
-    <FullLayout showHeader={true} >
+    <>
       {/* Character */}
       <div className="character-box">
         <MalangEE size={150} />
@@ -51,8 +47,6 @@ export default function SubtitleSettingsPage() {
           자막 없이 진행하기
         </Button>
       </div>
-    </FullLayout>
-</AuthGuard>
+    </>
   );
 }
-

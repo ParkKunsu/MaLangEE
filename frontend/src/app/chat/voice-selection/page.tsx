@@ -4,9 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
-import "@/shared/styles/scenario.css";
-import { FullLayout } from "@/shared/ui/FullLayout";
-import { AuthGuard } from "@/features/auth";
 
 // 목소리 옵션 타입
 interface VoiceOption {
@@ -52,70 +49,67 @@ export default function VoiceSelectionPage() {
   const currentVoice = voiceOptions[currentVoiceIndex];
 
   return (
-    <AuthGuard>
-      <FullLayout showHeader={true}>
-        {/* Character */}
-        <div className="character-box">
-          <MalangEE size={150} />
-        </div>
+    <>
+      {/* Character */}
+      <div className="character-box">
+        <MalangEE size={150} />
+      </div>
 
-        {/* Text Group */}
-        <div className="text-group text-center" style={{ opacity: textOpacity }}>
-          <h1 className="scenario-title">말랭이 목소리 톤을 선택해 주세요.</h1>
-        </div>
+      {/* Text Group */}
+      <div className="text-group text-center" style={{ opacity: textOpacity }}>
+        <h1 className="scenario-title">말랭이 목소리 톤을 선택해 주세요.</h1>
+      </div>
 
-        {/* Voice Carousel */}
-        <div className="mt-4 w-full max-w-md">
-          <div className="flex items-center justify-center gap-6">
-            {/* Previous Button */}
-            <button
-              onClick={handlePrevVoice}
-              className="flex h-10 w-10 items-center justify-center text-gray-400 transition-all hover:text-gray-600"
-              aria-label="이전 목소리"
-            >
-              <ChevronLeft size={32} strokeWidth={2.5} />
-            </button>
-
-            {/* Voice Display */}
-            <div className="flex flex-1 flex-col items-center gap-3 py-4 text-center">
-              <h2 className="text-3xl font-bold text-gray-900">{currentVoice.name}</h2>
-              <p className="text-sm text-gray-500">{currentVoice.description}</p>
-
-              {/* Indicator Dots */}
-              <div className="mt-2 flex justify-center gap-2">
-                {voiceOptions.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`h-3 rounded-full transition-all ${
-                      index === currentVoiceIndex ? "w-10 bg-[#7B6CF6]" : "w-3 bg-gray-300"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Next Button */}
-            <button
-              onClick={handleNextVoice}
-              className="flex h-10 w-10 items-center justify-center text-gray-400 transition-all hover:text-gray-600"
-              aria-label="다음 목소리"
-            >
-              <ChevronRight size={32} strokeWidth={2.5} />
-            </button>
-          </div>
-        </div>
-
-        {/* Start Button */}
-        <div className="mt-10 w-full max-w-md">
-          <Button
-            onClick={handleStartChat}
-            className="h-14 w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
+      {/* Voice Carousel */}
+      <div className="mt-4 w-full max-w-md">
+        <div className="flex items-center justify-center gap-6">
+          {/* Previous Button */}
+          <button
+            onClick={handlePrevVoice}
+            className="flex h-10 w-10 items-center justify-center text-gray-400 transition-all hover:text-gray-600"
+            aria-label="이전 목소리"
           >
-            대화 시작하기
-          </Button>
+            <ChevronLeft size={32} strokeWidth={2.5} />
+          </button>
+
+          {/* Voice Display */}
+          <div className="flex flex-1 flex-col items-center gap-3 py-4 text-center">
+            <h2 className="text-3xl font-bold text-gray-900">{currentVoice.name}</h2>
+            <p className="text-sm text-gray-500">{currentVoice.description}</p>
+
+            {/* Indicator Dots */}
+            <div className="mt-2 flex justify-center gap-2">
+              {voiceOptions.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-3 rounded-full transition-all ${
+                    index === currentVoiceIndex ? "w-10 bg-[#7B6CF6]" : "w-3 bg-gray-300"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Next Button */}
+          <button
+            onClick={handleNextVoice}
+            className="flex h-10 w-10 items-center justify-center text-gray-400 transition-all hover:text-gray-600"
+            aria-label="다음 목소리"
+          >
+            <ChevronRight size={32} strokeWidth={2.5} />
+          </button>
         </div>
-      </FullLayout>
-    </AuthGuard>
+      </div>
+
+      {/* Start Button */}
+      <div className="mt-10 w-full max-w-md">
+        <Button
+          onClick={handleStartChat}
+          className="h-14 w-full rounded-full bg-[#7666f5] text-base font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition hover:bg-[#6758e8] disabled:opacity-60"
+        >
+          대화 시작하기
+        </Button>
+      </div>
+    </>
   );
 }
-

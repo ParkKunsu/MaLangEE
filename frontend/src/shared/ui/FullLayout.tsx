@@ -41,7 +41,7 @@ export const FullLayout = ({
 
       <div
         className={
-          maxWidth
+          typeof maxWidth === "string" && maxWidth.trim().length > 0
             ? `w-full sm:w-[90vw] ${maxWidth}`
             : `w-full sm:w-[90vw] md:min-w-[960px] md:max-w-[80vw]`
         }
