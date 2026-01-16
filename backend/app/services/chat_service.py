@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 from app.core.config import settings
 from app.db.models import ConversationSession, User
 from app.repositories.chat_repository import ChatRepository
-from app.schemas.chat import SessionCreate, SessionResponse, SessionSummary
+from app.schemas.chat import SessionCreate, SessionResponse, SessionSummary, SessionStartRequest
 from fastapi import WebSocket
 from realtime_conversation.connection_handler import ConnectionHandler
 from realtime_conversation.session_manager import SessionManager
@@ -19,6 +19,46 @@ class ChatService:
 
     async def save_chat_log(self, session_data: SessionCreate, user_id: int = None) -> ConversationSession:
         return await self.chat_repo.create_session_log(session_data, user_id)
+
+    async def create_new_session(self, session_in: SessionStartRequest, user_id: Optional[int]) -> ConversationSession:
+        import uuid
+        from datetime import datetime
+        
+        # 1. Smart Fill: Scenario ID가 있으면 DB에서 정보 조회
+        place = session_in.scenario_place
+        partner = session_in.scenario_partner
+        goal = session_in.scenario_goal
+        
+        if session_in.scenario_id:
+            scenario = await self.chat_repo.get_scenario_definition(session_in.scenario_id)
+            if scenario:
+                place = scenario.place
+                partner = scenario.partner
+                goal = scenario.goal
+        
+        # 2. Generate Session Data
+        new_session_id = str(uuid.uuid4())
+        now_str = datetime.utcnow().isoformat()
+        
+        session_data = SessionCreate(
+            session_id=new_session_id,
+            title=f"Scenario Session ({now_str[:10]})", # 임시 제목
+            started_at=now_str,
+            ended_at=now_str, # 초기엔 start=end
+            total_duration_sec=0.0,
+            user_speech_duration_sec=0.0,
+            messages=[], # 빈 메시지
+            
+            # Scenario Data (Smart Filled)
+            scenario_id=session_in.scenario_id,
+            scenario_place=place,
+            scenario_partner=partner,
+            scenario_goal=goal,
+            voice=session_in.voice,
+            show_text=session_in.show_text
+        )
+        
+        return await self.save_chat_log(session_data, user_id)
 
     async def map_session_to_user(self, session_id: str, user_id: int) -> bool:
         return await self.chat_repo.update_session_owner(session_id, user_id)
@@ -186,6 +226,20 @@ class ChatService:
                         # Tracker가 이를 채워서 보내준다면 업데이트될 것임.
                         await self.save_chat_log(session_data, user_id)
                         print(f"Session {session_data.session_id} saved (User: {user_id})")
+                        
+                        # [Real-time Analytics Trigger]
+                        # 세션 종료 즉시 분석을 수행합니다.
+                        # 별도 세션을 사용하여 메인 로직에 영향 최소화
+                        try:
+                            from app.analytics.processor import AnalyticsProcessor
+                            from app.db.database import AsyncSessionLocal
+                            async with AsyncSessionLocal() as db:
+                                processor = AnalyticsProcessor(db)
+                                await processor.process_session_analytics(session_data.session_id)
+                                print(f"Real-time analytics completed for {session_data.session_id}")
+                        except Exception as e:
+                            print(f"Real-time analytics failed: {e}")
+
                     except Exception as e:
                         print(f"Failed to auto-save session log: {e}")
             finally:

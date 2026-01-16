@@ -38,6 +38,12 @@ reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/login"
 )
 
+# Optional Auth (비회원 가능)
+reusable_oauth2_optional = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/auth/login",
+    auto_error=False 
+)
+
 # 공통 인증 로직 (내부 헬퍼)
 async def _authenticate_user(
     token_str: str,
@@ -70,6 +76,22 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+async def get_current_user_optional(
+    token_str: str = Depends(reusable_oauth2_optional),
+    auth_service: AuthService = Depends(get_auth_service),
+    user_service: UserService = Depends(get_user_service)
+) -> Optional[models.User]:
+    """
+    토큰이 있으면 유저 반환, 없거나 유효하지 않으면 None 반환 (401 에러 아님)
+    """
+    if not token_str:
+        return None
+        
+    try:
+        return await _authenticate_user(token_str, auth_service, user_service)
+    except:
+        return None
 
 # WebSocket Auth Dependency
 async def get_current_user_ws(

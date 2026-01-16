@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from sqlalchemy.orm import selectinload
-from app.db.models import ConversationSession, ChatMessage
+from app.db.models import ConversationSession, ChatMessage, ScenarioDefinition
 from app.schemas.chat import SessionCreate
 
 class ChatRepository:
@@ -87,7 +87,8 @@ class ChatRepository:
                 scenario_completed_at=scenario_completed_at,
                 voice=session_data.voice,
                 show_text=session_data.show_text,
-                user_id=user_id
+                user_id=user_id,
+                scenario_id=session_data.scenario_id
             )
             self.db.add(db_session)
             
@@ -162,6 +163,14 @@ class ChatRepository:
             await self.db.refresh(session)
             return True
         return False
+
+    async def get_scenario_definition(self, scenario_id: str):
+        """
+        시나리오 정의를 조회합니다.
+        """
+        stmt = select(ScenarioDefinition).where(ScenarioDefinition.id == scenario_id)
+        result = await self.db.execute(stmt)
+        return result.scalars().first()
 
     async def update_preferences(self, session_id: str, voice: Optional[str], show_text: Optional[bool]) -> bool:
         """

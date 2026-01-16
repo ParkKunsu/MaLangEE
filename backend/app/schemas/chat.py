@@ -26,6 +26,9 @@ class SessionCreate(SessionBase):
     
     # [Type Note] DB stores as DateTime object. Using 'datetime' ensures correct mapping and Swagger ($date-time).
     scenario_completed_at: Optional[datetime] = None
+    
+    # [New] Linked Scenario ID
+    scenario_id: Optional[str] = None
     deleted: Optional[bool] = None
     voice: Optional[str] = None
     show_text: Optional[bool] = None
@@ -71,3 +74,15 @@ class HintResponse(BaseModel):
     """
     hints: List[str]
     session_id: str
+
+class SessionStartRequest(BaseModel):
+    """
+    세션 시작 요청 스키마 (POST /sessions)
+    """
+    scenario_id: Optional[str] = None
+    scenario_place: Optional[str] = None
+    scenario_partner: Optional[str] = None
+    scenario_goal: Optional[str] = None
+    
+    voice: Optional[str] = None
+    show_text: Optional[bool] = None
