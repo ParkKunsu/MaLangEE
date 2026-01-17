@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { tokenStorage } from "@/features/auth/model";
 import { FullLayout } from "@/shared/ui/FullLayout";
 import { Button, MalangEE, PopupLayout } from "@/shared/ui";
@@ -13,6 +13,7 @@ interface ChatLayoutProps {
 
 export default function ChatLayout({ children }: ChatLayoutProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [showEndChatPopup, setShowEndChatPopup] = useState(false);
   const [hasToken, setHasToken] = useState(false);
 
@@ -22,7 +23,13 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
   }, []);
 
   const handleEndChat = () => {
-    setShowEndChatPopup(true);
+    // conversation 페이지에서는 custom event 발생 (대화 종료)
+    if (pathname === "/chat/conversation") {
+      window.dispatchEvent(new CustomEvent("end-conversation"));
+    } else {
+      // 다른 페이지에서는 기존 로그아웃 팝업 표시
+      setShowEndChatPopup(true);
+    }
   };
 
   const handleEndChatConfirm = () => {

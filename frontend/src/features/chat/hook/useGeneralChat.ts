@@ -16,6 +16,7 @@ export type GeneralChatMessageType =
   | "response.text.done"
   | "input_audio_buffer.speech_started"
   | "input_audio_buffer.speech_stopped"
+  | "disconnected"
   | "error";
 
 export interface GeneralChatMessage {
@@ -30,6 +31,13 @@ export interface GeneralChatMessage {
     voice: string;
   };
   message?: string;         // error
+  reason?: string;          // disconnected
+  report?: {                // disconnected - 세션 리포트
+    session_id: string;
+    total_duration_sec: number;
+    user_speech_duration_sec: number;
+    messages: any[];
+  };
 }
 
 export interface GeneralChatState {
@@ -257,6 +265,18 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             // 대화 항목 추가 (필요시 처리)
             break;
 
+          case "disconnected":
+            // 서버에서 세션 종료 응답 받음
+            console.log("[WebSocket] Session ended:", payload.report);
+            if (payload.report) {
+              console.log("[WebSocket] Session report:", {
+                duration: payload.report.total_duration_sec,
+                userSpeech: payload.report.user_speech_duration_sec,
+                messages: payload.report.messages.length
+              });
+            }
+            break;
+
           case "error":
             setState((prev) => ({ ...prev, error: payload.message || "Unknown error" }));
             break;
@@ -328,11 +348,27 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
     }
-    wsRef.current?.close();
-    wsRef.current = null;
-    audioContextRef.current?.close();
-    audioContextRef.current = null;
-    stopAudio();
+
+    // WebSocket이 열려있으면 disconnect 메시지 전송
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log("[WebSocket] Sending disconnect message");
+      wsRef.current.send(JSON.stringify({ type: "disconnect" }));
+
+      // 서버 응답을 기다린 후 연결 종료 (1초 대기)
+      setTimeout(() => {
+        wsRef.current?.close();
+        wsRef.current = null;
+        audioContextRef.current?.close();
+        audioContextRef.current = null;
+        stopAudio();
+      }, 1000);
+    } else {
+      // WebSocket이 이미 닫혀있으면 바로 정리
+      wsRef.current = null;
+      audioContextRef.current?.close();
+      audioContextRef.current = null;
+      stopAudio();
+    }
   }, [stopAudio]);
 
   /**
