@@ -7,7 +7,7 @@ import {PopupLayout} from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
 import {FullLayout} from "@/shared/ui/FullLayout";
 import {useScenarioChat} from "@/features/chat";
-import {useInactivityTimer} from "@/shared/hooks";
+import {useInactivityTimer, useAudioRecorder} from "@/shared/hooks";
 import {Step1} from "@/app/scenario-select/steps/Step1";
 import {Step2} from "@/app/scenario-select/steps/Step2";
 import {Step3} from "@/app/scenario-select/steps/Step3";
@@ -40,8 +40,7 @@ export default function ScenarioSelectPage() {
     const aiSpeakingRef = useRef(false);
     const lastAiMessageRef = useRef("");
     const localSpeakingRef = useRef(false);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const streamRef = useRef<MediaStream | null>(null);
+    
     const {
         state: chatState,
         connect,
@@ -105,88 +104,12 @@ export default function ScenarioSelectPage() {
         }
     }, []);
 
-    const startRecording = useCallback(async () => {
-        if (streamRef.current) return;
-        const getMediaStream = async (constraints: MediaStreamConstraints): Promise<MediaStream> => {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                return navigator.mediaDevices.getUserMedia(constraints);
-            }
-            const legacyApi = (navigator as any).webkitGetUserMedia ||
-                (navigator as any).mozGetUserMedia ||
-                (navigator as any).msGetUserMedia;
-            if (legacyApi) {
-                return new Promise((resolve, reject) => {
-                    legacyApi.call(navigator, constraints, resolve, reject);
-                });
-            }
-            throw new Error("MEDIA_API_NOT_SUPPORTED");
-        };
-
-        try {
-            const constraints = {
-                audio: {
-                    sampleRate: {ideal: 16000},
-                    channelCount: {ideal: 1},
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                },
-            };
-
-            let stream: MediaStream;
-            try {
-                stream = await getMediaStream(constraints);
-            } catch (err) {
-                console.warn("[Recording] Preferred constraints failed. Trying basic fallback...", err);
-                stream = await getMediaStream({audio: true});
-            }
-
-            streamRef.current = stream;
-
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-            audioContextRef.current = new AudioContextClass({sampleRate: 16000});
-
-            const source = audioContextRef.current.createMediaStreamSource(stream);
-            const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-
-            processor.onaudioprocess = (e) => {
-                const inputData = e.inputBuffer.getChannelData(0);
-                const float32Data = new Float32Array(inputData);
-                let sum = 0;
-                for (let i = 0; i < float32Data.length; i += 1) {
-                    sum += float32Data[i] * float32Data[i];
-                }
-                const rms = Math.sqrt(sum / float32Data.length);
-                updateLocalSpeaking(rms);
-                sendAudioChunk(float32Data);
-            };
-
-            source.connect(processor);
-            processor.connect(audioContextRef.current.destination);
-        } catch (error) {
-            console.error("[Recording] Failed to start:", error);
-            if (error instanceof Error && (error.message === "MEDIA_API_NOT_SUPPORTED" || error.name === "NotAllowedError")) {
-                alert("마이크 사용이 필요합니다.\nHTTPS 연결(또는 localhost)인지 확인하고 마이크 권한을 허용해주세요.");
-            }
-            setIsListening(false);
-            setIsLocalSpeaking(false);
-            localSpeakingRef.current = false;
-            clearLocalSpeakingTimer();
-        }
-    }, [sendAudioChunk, updateLocalSpeaking]);
-
-    const stopRecording = useCallback(() => {
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((track) => track.stop());
-            streamRef.current = null;
-        }
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-        setIsLocalSpeaking(false);
-        localSpeakingRef.current = false;
-        clearLocalSpeakingTimer();
-    }, []);
+    // 오디오 레코더 훅 사용
+    const { startRecording, stopRecording } = useAudioRecorder({
+        onAudioData: sendAudioChunk,
+        onVolumeChange: updateLocalSpeaking,
+        sampleRate: 16000
+    });
 
     useEffect(() => {
         connect();
@@ -221,15 +144,25 @@ export default function ScenarioSelectPage() {
     useEffect(() => {
         // Phase가 topic일 때 시나리오가 선택되면 결과 팝업 표시
         if (stepIndex === 1 && phase === "topic") {
-            if (chatState.isCompleted) {
+            if (chatState.isCompleted && chatState.scenarioResult) {
                 resetTimers();
                 setIsListening(false);
                 stopRecording();
+                
+                // 시나리오 결과 로컬 스토리지에 저장
+                if (typeof window !== "undefined") {
+                    const { conversationGoal, conversationPartner, place } = chatState.scenarioResult;
+                    if (conversationGoal) localStorage.setItem("conversationGoal", conversationGoal);
+                    if (conversationPartner) localStorage.setItem("conversationPartner", conversationPartner);
+                    if (place) localStorage.setItem("place", place);
+                }
+
                 setShowScenarioResultPopup(true);
             }
         }
     }, [
         chatState.isCompleted,
+        chatState.scenarioResult,
         phase,
         stepIndex,
         stopRecording,

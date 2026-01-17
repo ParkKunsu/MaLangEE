@@ -1,6 +1,7 @@
 "use client";
 
-import React, { type ReactNode } from "react";
+import React, { type ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 interface PopupLayoutProps {
@@ -30,9 +31,22 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
   showCloseButton = true,
   headerContent,
 }) => {
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // 팝업이 열릴 때 body 스크롤 방지
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -66,6 +80,7 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

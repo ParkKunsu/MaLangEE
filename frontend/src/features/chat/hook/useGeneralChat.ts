@@ -87,6 +87,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const connectionIdRef = useRef(0);
   const handleMessageRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null); // 볼륨 제어용 GainNode
+  const speakingEndTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 말하기 종료 지연 타이머
+  const isPausedRef = useRef(false); // 일시정지 상태
 
   // 재연결 관련 refs
   const reconnectCountRef = useRef(0);
@@ -126,6 +129,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
       }
     }
 
+    // 토큰 유무에 따라 엔드포인트 분기 (회원/비회원)
     const endpoint = token
       ? `/api/v1/chat/ws/chat/${sessionId}`
       : `/api/v1/chat/ws/guest-chat/${sessionId}`;
@@ -171,6 +175,12 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
    * 오디오 재생 중단 (Barge-in)
    */
   const stopAudio = useCallback(() => {
+    // 말하기 종료 타이머 클리어
+    if (speakingEndTimeoutRef.current) {
+      clearTimeout(speakingEndTimeoutRef.current);
+      speakingEndTimeoutRef.current = null;
+    }
+
     activeSourcesRef.current.forEach(source => {
       try { source.stop(); } catch (e) {}
     });
@@ -230,10 +240,23 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
    * 오디오 청크 재생 (스케줄링)
    */
   const playChunk = useCallback((base64: string, sampleRate: number) => {
+    // 일시정지 상태면 재생하지 않음
+    if (isPausedRef.current) return;
+
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
       nextStartTimeRef.current = audioContextRef.current.currentTime;
+      
+      // GainNode 생성 및 연결 (볼륨 제어용)
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+    }
+
+    // 말하기 종료 타이머가 있다면 취소 (연속 재생 시 끊김 방지)
+    if (speakingEndTimeoutRef.current) {
+      clearTimeout(speakingEndTimeoutRef.current);
+      speakingEndTimeoutRef.current = null;
     }
 
     const ctx = audioContextRef.current;
@@ -249,7 +272,13 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    
+    // GainNode를 통해 출력 연결
+    if (gainNodeRef.current) {
+      source.connect(gainNodeRef.current);
+    } else {
+      source.connect(ctx.destination);
+    }
 
     const startTime = Math.max(nextStartTimeRef.current, ctx.currentTime);
     source.start(startTime);
@@ -260,10 +289,40 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     source.onended = () => {
       activeSourcesRef.current = activeSourcesRef.current.filter(s => s !== source);
       if (activeSourcesRef.current.length === 0) {
-        setState(prev => ({ ...prev, isAiSpeaking: false }));
+        // 즉시 false로 변경하지 않고 약간의 지연을 두어 자연스러운 상태 유지
+        speakingEndTimeoutRef.current = setTimeout(() => {
+          setState(prev => ({ ...prev, isAiSpeaking: false }));
+          speakingEndTimeoutRef.current = null;
+        }, 300);
       }
     };
   }, []);
+
+  /**
+   * 음소거 토글 함수
+   */
+  const toggleMute = useCallback((isMuted: boolean) => {
+    if (gainNodeRef.current && audioContextRef.current) {
+      // 0.1초 동안 부드럽게 볼륨 조절 (클릭 노이즈 방지)
+      const currentTime = audioContextRef.current.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(currentTime);
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(isMuted ? 0 : 1, currentTime + 0.1);
+    }
+  }, []);
+
+  /**
+   * 일시정지 토글 함수
+   */
+  const togglePause = useCallback((isPaused: boolean) => {
+    isPausedRef.current = isPaused;
+    if (isPaused) {
+      // 일시정지 시 현재 재생 중인 오디오 중단
+      stopAudio();
+      // 마이크 입력도 차단해야 하므로 isUserSpeaking 상태 초기화
+      setState(prev => ({ ...prev, isUserSpeaking: false }));
+    }
+  }, [stopAudio]);
 
   /**
    * WebSocket 메시지 핸들러
@@ -272,7 +331,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     (event: MessageEvent) => {
       try {
         const payload: GeneralChatMessage = JSON.parse(event.data);
-        console.log("[WebSocket] Received:", payload.type, payload);
+        //console.log("[WebSocket] Received:", payload.type, payload);
 
         setState(prev => ({ ...prev, lastEvent: payload.type }));
 
@@ -317,6 +376,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             break;
 
           case "speech.started":
+            // 일시정지 상태면 무시
+            if (isPausedRef.current) return;
+
             // 사용자 발화 시작 감지 시 AI 음성 즉시 중단 (Barge-in)
             console.log("[WebSocket] Barge-in triggered");
             stopAudio();
@@ -324,12 +386,18 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             break;
 
           case "speech.stopped":
+            // 일시정지 상태면 무시
+            if (isPausedRef.current) return;
+
             setState(prev => ({ ...prev, isUserSpeaking: false }));
             // [Fix] 사용자 발화 종료 → AI 응답 대기 타임아웃 시작
             startResponseTimeout();
             break;
 
           case "audio.delta":
+            // 일시정지 상태면 무시
+            if (isPausedRef.current) return;
+
             if (payload.delta) {
               const rate = payload.sample_rate || 24000;
               // [Fix] AI 응답 시작 → 응답 대기 타임아웃 취소
@@ -424,6 +492,8 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
           return;
         }
         setState((prev) => ({ ...prev, isConnected: true, error: null, lastEvent: "open" }));
+        // 소켓 연결 상태 이벤트 발송
+        window.dispatchEvent(new CustomEvent("socket-status", { detail: { isConnected: true } }));
       };
 
       ws.onmessage = (event) => {
@@ -435,6 +505,8 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
         if (connectionIdRef.current !== currentConnectionId) return;
 
         setState((prev) => ({ ...prev, isConnected: false, isReady: false, lastEvent: `close (${event.code})` }));
+        // 소켓 연결 상태 이벤트 발송
+        window.dispatchEvent(new CustomEvent("socket-status", { detail: { isConnected: false } }));
         wsRef.current = null;
 
         if (!isManuallyClosedRef.current && reconnectCountRef.current < maxReconnectAttempts) {
@@ -469,6 +541,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (responseTimeoutRef.current) {
       clearTimeout(responseTimeoutRef.current);
     }
+    if (speakingEndTimeoutRef.current) {
+      clearTimeout(speakingEndTimeoutRef.current);
+    }
 
     // WebSocket이 열려있으면 disconnect 메시지 전송
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -482,6 +557,8 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
         audioContextRef.current?.close();
         audioContextRef.current = null;
         stopAudio();
+        // 소켓 연결 상태 이벤트 발송
+        window.dispatchEvent(new CustomEvent("socket-status", { detail: { isConnected: false } }));
       }, 1000);
     } else {
       // WebSocket이 이미 닫혀있으면 바로 정리
@@ -489,6 +566,8 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
       audioContextRef.current?.close();
       audioContextRef.current = null;
       stopAudio();
+      // 소켓 연결 상태 이벤트 발송
+      window.dispatchEvent(new CustomEvent("socket-status", { detail: { isConnected: false } }));
     }
   }, [stopAudio]);
 
@@ -496,6 +575,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
    * 오디오 청크 전송 (input_audio_chunk)
    */
   const sendAudioChunk = useCallback((audioData: Float32Array) => {
+    // 일시정지 상태면 전송하지 않음
+    if (isPausedRef.current) return;
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       const pcm16 = float32ToPCM16(audioData);
       let binary = "";
@@ -516,6 +598,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+      // GainNode 초기화
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
     }
     if (audioContextRef.current.state === "suspended") {
       audioContextRef.current.resume();
@@ -538,5 +623,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     disconnect,
     sendAudioChunk,
     initAudio,
+    toggleMute, // 외부 노출
+    togglePause, // 외부 노출
   };
 }

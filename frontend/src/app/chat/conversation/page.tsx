@@ -73,7 +73,7 @@ export default function ConversationPage() {
     setIsMounted(true);
   }, []);
 
-  const { state: chatState, connect, disconnect, sendAudioChunk, initAudio } = useGeneralChat({
+  const { state: chatState, connect, disconnect, sendAudioChunk, initAudio, toggleMute, togglePause } = useGeneralChat({
     sessionId,
     voice: selectedVoice,
     showText: subtitleEnabled,
@@ -87,7 +87,8 @@ export default function ConversationPage() {
   // 마이크 녹음 관련
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [isMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   // 팝업 상태
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -130,6 +131,9 @@ export default function ConversationPage() {
 
   // 비활동 타이머 시작 (15초 후 메시지 표시)
   const startInactivityTimer = () => {
+    // 일시정지 상태면 타이머 시작 안 함
+    if (isPaused) return;
+
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(() => {
       setShowInactivityMessage(true);
@@ -146,6 +150,9 @@ export default function ConversationPage() {
   };
 
   const startWaitTimer = () => {
+    // 일시정지 상태면 타이머 시작 안 함
+    if (isPaused) return;
+
     clearWaitTimer();
     waitTimerRef.current = setTimeout(() => {
       setShowWaitPopup(true);
@@ -170,6 +177,9 @@ export default function ConversationPage() {
 
   // 마이크 녹음 시작
   const startRecording = useCallback(async () => {
+    // 일시정지 상태면 녹음 시작 안 함
+    if (isPaused) return;
+
     // 헬퍼: 다양한 브라우저 환경 호환성 확보
     const getMediaStream = async (constraints: MediaStreamConstraints): Promise<MediaStream> => {
       // 1. 최신 표준 API
@@ -220,6 +230,9 @@ export default function ConversationPage() {
       const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
 
       processor.onaudioprocess = (e) => {
+        // 일시정지 상태면 오디오 처리 안 함
+        if (isPaused) return;
+
         const inputData = e.inputBuffer.getChannelData(0);
 
         // [Debug] 마이크 입력 확인 (1초에 수십 번 찍히므로 샘플링하여 출력)
@@ -249,7 +262,7 @@ export default function ConversationPage() {
       }
       setConversationState("user-turn");
     }
-  }, [sendAudioChunk]);
+  }, [sendAudioChunk, isPaused]);
 
   // 마이크 녹음 중지
   const stopRecording = useCallback(() => {
@@ -264,6 +277,9 @@ export default function ConversationPage() {
   }, []);
 
   const handleMicClick = () => {
+    // 일시정지 상태면 클릭 무시
+    if (isPaused) return;
+
     resetTimers();
 
     if (conversationState === "user-speaking") {
@@ -289,6 +305,9 @@ export default function ConversationPage() {
   };
 
   const getStatusText = () => {
+    if (isPaused) {
+      return "일시정지 중...";
+    }
     if (!chatState.isConnected) {
       return "연결 중...";
     }
@@ -314,7 +333,8 @@ export default function ConversationPage() {
   const getMalangEEStatus = (): MalangEEStatus => {
     if (showInactivityMessage) return "humm";
     if (conversationState === "ai-speaking") return "talking";
-    return "default";
+    // AI가 말하지 않을 때(user-turn, user-speaking)는 humm 상태
+    return "humm";
   };
 
   const handleLogin = () => {
@@ -349,7 +369,9 @@ export default function ConversationPage() {
   // 대화 종료하기 핸들러 (팝업 열기)
   const handleEndConversation = useCallback(() => {
     setShowEndChatPopup(true);
-  }, []);
+    // 팝업 표시 중 음소거
+    if (toggleMute) toggleMute(true);
+  }, [toggleMute]);
 
   // 대화 종료 확인
   const handleEndChatConfirm = useCallback(() => {
@@ -367,7 +389,9 @@ export default function ConversationPage() {
   // 대화 종료 취소
   const handleEndChatCancel = useCallback(() => {
     setShowEndChatPopup(false);
-  }, []);
+    // 팝업 닫히면 음소거 해제 (원래 상태가 음소거가 아니었다면)
+    if (toggleMute && !isMuted) toggleMute(false);
+  }, [toggleMute, isMuted]);
 
   // AI 메시지 표시 (chatState에서 가져옴)
   // 초기값이 필요 없다면 빈 문자열로 설정하거나, 상태에 따라 안내 문구를 보여줄 수 있음
@@ -405,12 +429,40 @@ export default function ConversationPage() {
       handleEndConversation();
     };
 
+    const handleToggleMuteEvent = (event: CustomEvent<{ isMuted: boolean }>) => {
+      setIsMuted(event.detail.isMuted);
+      if (toggleMute) {
+        toggleMute(event.detail.isMuted);
+      }
+    };
+
+    const handleTogglePauseEvent = (event: CustomEvent<{ isPaused: boolean }>) => {
+      const paused = event.detail.isPaused;
+      setIsPaused(paused);
+      if (togglePause) {
+        togglePause(paused);
+      }
+      
+      if (paused) {
+        // 일시정지 시 타이머 정지 및 마이크 중단
+        resetTimers();
+        stopRecording();
+      } else {
+        // 재개 시 타이머 재시작
+        startInactivityTimer();
+      }
+    };
+
     window.addEventListener("end-conversation", handleEndConversationEvent);
+    window.addEventListener("toggle-mute", handleToggleMuteEvent as EventListener);
+    window.addEventListener("toggle-pause", handleTogglePauseEvent as EventListener);
 
     return () => {
       window.removeEventListener("end-conversation", handleEndConversationEvent);
+      window.removeEventListener("toggle-mute", handleToggleMuteEvent as EventListener);
+      window.removeEventListener("toggle-pause", handleTogglePauseEvent as EventListener);
     };
-  }, [handleEndConversation]);
+  }, [handleEndConversation, toggleMute, togglePause, stopRecording]);
 
   if (!isMounted) return null;
 
@@ -433,7 +485,7 @@ export default function ConversationPage() {
         <MalangEE status={getMalangEEStatus()} size={150} />
 
         {/* Hint Bubble */}
-        {conversationState === "user-turn" && (
+        {conversationState === "user-turn" && !isPaused && (
           <div className="absolute -bottom-[55px] left-1/2 z-10 -translate-x-1/2">
             <button
               onClick={handleHintClick}
@@ -475,14 +527,16 @@ export default function ConversationPage() {
         <div
           className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${!chatState.isConnected
             ? "bg-yellow-100 text-yellow-700"
-            : conversationState === "ai-speaking"
-              ? "bg-blue-100 text-blue-700"
-              : conversationState === "user-speaking"
-                ? "bg-green-100 text-green-700"
-                : "bg-gray-100 text-gray-700"
+            : isPaused
+              ? "bg-gray-200 text-gray-600"
+              : conversationState === "ai-speaking"
+                ? "bg-blue-100 text-blue-700"
+                : conversationState === "user-speaking"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-gray-100 text-gray-700"
             }`}
         >
-          {conversationState === "ai-speaking" && chatState.isConnected && (
+          {conversationState === "ai-speaking" && chatState.isConnected && !isPaused && (
             <div className="flex gap-1">
               <span className="h-4 w-1 animate-pulse bg-blue-500"></span>
               <span
@@ -506,7 +560,7 @@ export default function ConversationPage() {
           onClick={handleMicClick}
           size="md"
           className={
-            !chatState.isConnected
+            !chatState.isConnected || conversationState === "ai-speaking" || isPaused
               ? "pointer-events-none opacity-50"
               : ""
           }
@@ -515,7 +569,7 @@ export default function ConversationPage() {
       </div>
 
       {/* AI Speaking Wave Animation */}
-      {conversationState === "ai-speaking" && chatState.isConnected && (
+      {conversationState === "ai-speaking" && chatState.isConnected && !isPaused && (
         <div className="absolute left-1/2 top-full mt-2 flex -translate-x-1/2 justify-center gap-1">
           {[...Array(5)].map((_, i) => (
             <div
