@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MicButton, Button, MalangEE, MalangEEStatus } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useGeneralChat } from "@/features/chat";
 
 /**
@@ -17,23 +17,45 @@ type ConversationState = "ai-speaking" | "user-turn" | "user-speaking";
 export default function ConversationPage() {
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // sessionId 상태 (초기값은 null, 클라이언트에서 설정)
+  // sessionId 상태 (초기값은 빈 문자열, 클라이언트에서 설정)
   const [sessionId, setSessionId] = useState<string>("");
 
-  // sessionId 초기화 (localStorage에서 읽기 - 클라이언트에서만 실행)
+  // sessionId 초기화 (우선순위: URL > localStorage > 새로 생성)
   useEffect(() => {
-    // scenario.completed에서 저장한 sessionId 사용
-    const savedSessionId = localStorage.getItem("currentSessionId");
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-    } else {
-      // 없으면 새로 생성 (폴백)
-      const newSessionId = crypto.randomUUID();
-      localStorage.setItem("currentSessionId", newSessionId);
-      setSessionId(newSessionId);
+    // 1순위: URL 쿼리 파라미터에서 sessionId 읽기
+    const urlSessionId = searchParams.get("sessionId");
+    console.log("[SessionId] URL query value:", urlSessionId);
+
+    if (urlSessionId) {
+      console.log("[SessionId] Using URL sessionId:", urlSessionId);
+      setSessionId(urlSessionId);
+      // localStorage에도 동기화 (폴백용)
+      localStorage.setItem("currentSessionId", urlSessionId);
+      return;
     }
-  }, []);
+
+    // 2순위: localStorage에서 sessionId 읽기
+    const savedSessionId = localStorage.getItem("currentSessionId");
+    console.log("[SessionId] localStorage value:", savedSessionId);
+
+    if (savedSessionId) {
+      console.log("[SessionId] Using saved sessionId:", savedSessionId);
+      setSessionId(savedSessionId);
+      // URL에 sessionId 추가 (일관성 유지)
+      router.replace(`/chat/conversation?sessionId=${savedSessionId}`, { scroll: false });
+      return;
+    }
+
+    // 3순위: 새로 생성 (폴백)
+    const newSessionId = crypto.randomUUID();
+    console.log("[SessionId] Creating new sessionId:", newSessionId);
+    localStorage.setItem("currentSessionId", newSessionId);
+    setSessionId(newSessionId);
+    // URL에 sessionId 추가
+    router.replace(`/chat/conversation?sessionId=${newSessionId}`, { scroll: false });
+  }, [searchParams, router]);
 
   // localStorage에서 설정 읽기
   const [selectedVoice, setSelectedVoice] = useState("alloy");

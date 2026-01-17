@@ -41,9 +41,14 @@ function WelcomeBackPage() {
     // 텍스트 변경
     setIsConfirmed(true);
 
-    // 1초 후 자막 설정 페이지로 이동
+    // 1초 후 자막 설정 페이지로 이동 (sessionId 전달)
     setTimeout(() => {
-      router.push("/chat/subtitle-settings");
+      const targetSessionId = sessionId || lastSession?.session_id;
+      if (targetSessionId) {
+        router.push(`/chat/subtitle-settings?sessionId=${targetSessionId}`);
+      } else {
+        router.push("/chat/subtitle-settings");
+      }
     }, 1000);
   };
 

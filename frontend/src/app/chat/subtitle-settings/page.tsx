@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button, MalangEE } from "@/shared/ui";
 
 export default function SubtitleSettingsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
   const [textOpacity, setTextOpacity] = useState(1);
 
   const handleChoice = (withSubtitle: boolean) => {
     setTextOpacity(0);
 
     setTimeout(() => {
-      // 선택 결과를 세션 스토리지에 저장
-      sessionStorage.setItem("subtitleEnabled", withSubtitle.toString());
-      router.push("/chat/voice-selection");
+      // 선택 결과를 localStorage에 저장 (sessionStorage → localStorage)
+      localStorage.setItem("subtitleEnabled", withSubtitle.toString());
+
+      // sessionId를 URL 쿼리로 전달
+      if (sessionId) {
+        router.push(`/chat/voice-selection?sessionId=${sessionId}`);
+      } else {
+        router.push("/chat/voice-selection");
+      }
     }, 300);
   };
 

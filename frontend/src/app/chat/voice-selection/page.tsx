@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
 
@@ -21,6 +21,8 @@ const voiceOptions: VoiceOption[] = [
 
 export default function VoiceSelectionPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId");
   const [currentVoiceIndex, setCurrentVoiceIndex] = useState(0);
   const [textOpacity, setTextOpacity] = useState(1);
 
@@ -40,9 +42,15 @@ export default function VoiceSelectionPage() {
     setTextOpacity(0);
 
     setTimeout(() => {
-      // 선택한 목소리를 세션 스토리지에 저장
-      sessionStorage.setItem("selectedVoice", voiceOptions[currentVoiceIndex].id);
-      router.push("/chat/conversation");
+      // 선택한 목소리를 localStorage에 저장 (sessionStorage → localStorage)
+      localStorage.setItem("selectedVoice", voiceOptions[currentVoiceIndex].id);
+
+      // sessionId를 URL 쿼리로 전달
+      if (sessionId) {
+        router.push(`/chat/conversation?sessionId=${sessionId}`);
+      } else {
+        router.push("/chat/conversation");
+      }
     }, 300);
   };
 
