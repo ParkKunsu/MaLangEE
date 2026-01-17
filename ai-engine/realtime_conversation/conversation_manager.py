@@ -250,8 +250,10 @@ class ConversationManager:
             wpm_status (str): "slow" | "normal" | "fast"
         """
         new_dynamic_instruction = ""
-        if wpm_status == "slow":
-            new_dynamic_instruction = "The user speaks slowly. Please speak slowly and clearly, articulating every word."
+        if wpm_status == "super_slow":
+            new_dynamic_instruction = "The user speaks very slowly. Speak extremely slowly and clearly, articulating every single word like teaching a beginner."
+        elif wpm_status == "slow":
+            new_dynamic_instruction = "The user speaks a bit slowly. Speak slowly and clearly."
         elif wpm_status == "fast":
             new_dynamic_instruction = "The user is fluent. You should speak at a natural, faster pace like a native speaker."
         

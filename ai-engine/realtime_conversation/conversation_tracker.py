@@ -104,7 +104,9 @@ class ConversationTracker:
             
         avg_wpm = sum(self.wpm_history) / len(self.wpm_history)
         
-        if avg_wpm < 90:
+        if avg_wpm < 70:
+            return "super_slow"
+        elif avg_wpm < 90:
             return "slow"
         elif avg_wpm > 140:
             return "fast"

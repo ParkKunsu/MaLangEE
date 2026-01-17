@@ -37,19 +37,19 @@
 </head>
 
 <body>
-<body>
     <h1>MaLangEE Realtime w/ Debug</h1>
 
     <!-- 1. Session Control -->
     <div style="margin-bottom: 20px;">
         <label>Session ID: </label>
-        <input type="text" id="sessionIdInput" placeholder="Leave empty for auto-gen" style="width: 300px; padding: 5px;">
+        <input type="text" id="sessionIdInput" placeholder="Leave empty for auto-gen"
+            style="width: 300px; padding: 5px;">
         <button onclick="generateUUID()">🎲 Generate New</button>
     </div>
 
     <button id="connectBtn">Connect & Start</button>
     <button id="disconnectBtn" disabled>Disconnect</button>
-    
+
     <div id="status">Disconnected</div>
 
     <!-- 2. Debug Monitor -->
@@ -58,8 +58,10 @@
         <div style="display: flex; gap: 20px; margin-top: 5px;">
             <div>Speed Status: <span id="wpmStatus" style="font-weight: bold; color: blue;">-</span></div>
             <div style="flex: 1;">
-                Active Dynamic Instruction: 
-                <div id="dynamicInstruction" style="background: white; padding: 5px; font-size: 12px; height: 40px; overflow: auto; border: 1px dashed gray;">(Waiting for update...)</div>
+                Active Dynamic Instruction:
+                <div id="dynamicInstruction"
+                    style="background: white; padding: 5px; font-size: 12px; height: 40px; overflow: auto; border: 1px dashed gray;">
+                    (Waiting for update...)</div>
             </div>
         </div>
     </div>
@@ -93,13 +95,13 @@
             </div>
             <div style="flex: 1;">
                 <label>2. User Custom Instructions (Editable)</label>
-                <textarea id="userPromptInput"
-                    style="width: 100%; height: 200px; box-sizing: border-box;" 
+                <textarea id="userPromptInput" style="width: 100%; height: 200px; box-sizing: border-box;"
                     placeholder="e.g. Speak Korean only, Be sarcastic..."></textarea>
             </div>
         </div>
 
-        <button id="updateSettingsBtn" style="background-color: #4CAF50; color: white; margin-top: 10px;">Update Settings (Apply User Prompt)</button>
+        <button id="updateSettingsBtn" style="background-color: #4CAF50; color: white; margin-top: 10px;">Update
+            Settings (Apply User Prompt)</button>
     </div>
 
     <script>
@@ -155,7 +157,7 @@
         connectBtn.onclick = async () => {
             let sessionId = sessionIdInput.value.trim();
             statusDiv.textContent = "Connecting...";
-            
+
             // Build WS URL
             let url = "ws://localhost:8002/ws/chat";
             if (sessionId) {
@@ -174,7 +176,7 @@
 
             ws.onmessage = async (event) => {
                 const data = JSON.parse(event.data);
-                
+
                 // [Debug Monitor]
                 if (data.type === "debug.state") {
                     wpmStatusSpan.textContent = data.wpm_status;
@@ -190,7 +192,18 @@
                     log("User started speaking... (Interruption detected)");
                     clearScheduledAudio();
                 } else if (data.type === "transcript.done") {
+                    // Standard transcript (fallback or if tool not used)
                     log(`AI: ${data.transcript}`);
+                } else if (data.type === "bilingual.transcript") {
+                    // Bilingual Transcript Display
+                    const html = `
+                        <div style="background-color: #e3f2fd; padding: 10px; border-radius: 5px; margin: 5px 0;">
+                            <div style="font-weight: bold; color: #1565c0;">🇺🇸 ${data.english_script}</div>
+                            <div style="color: #555; margin-top: 4px;">🇰🇷 ${data.korean_translation}</div>
+                        </div>
+                    `;
+                    logDiv.innerHTML += html;
+                    logDiv.scrollTop = logDiv.scrollHeight;
                 } else if (data.type === "user.transcript") {
                     log(`You: ${data.transcript}`);
                 }
@@ -221,6 +234,19 @@
                         autoGainControl: true
                     }
                 });
+
+                // If WS closed while getting permission, stop immediately
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    console.warn("WS closed during audio init. Aborting.");
+                    if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
+                    if (audioContext && audioContext.state !== 'closed') audioContext.close();
+                    return;
+                }
+
+                if (audioContext.state === 'closed') {
+                    console.warn("AudioContext is closed. Aborting.");
+                    return;
+                }
 
                 log("Microphone Access Granted");
 

@@ -18,12 +18,23 @@ feedback_service.py - 대화 후 피드백 생성 서비스
 Backend 서비스에서 메시지 리스트를 전달받아 피드백 생성 (generate_feedback)
 """
 
-# 대화 요약용 LLM
-_summary_llm = ChatOpenAI(model="gpt-4o-mini")
-_summary_prompt = ChatPromptTemplate.from_messages([
-    ("system", "Summarize the following English learning conversation in ONE English sentence. Focus on what topics were practiced."),
-    ("user", "{conversation}")
-])
+
+# 초기화 방지: LLM 인스턴스를 전역에서 생성하지 않음
+_summary_llm = None
+_summary_prompt = None
+
+
+def _get_summary_tools():
+    """LLM 및 프롬프트 Lazy Initialization"""
+    global _summary_llm, _summary_prompt
+    if _summary_llm is None:
+        _summary_llm = ChatOpenAI(model="gpt-4o-mini")
+    if _summary_prompt is None:
+        _summary_prompt = ChatPromptTemplate.from_messages([
+            ("system", "Summarize the following English learning conversation in ONE English sentence. Focus on what topics were practiced."),
+            ("user", "{conversation}")
+        ])
+    return _summary_llm, _summary_prompt
 
 
 def _convert_messages_to_text(messages: list) -> str:
@@ -60,7 +71,8 @@ def _generate_summary(conversation_text: str) -> str:
     Returns:
         영어 1문장 요약
     """
-    chain = _summary_prompt | _summary_llm
+    llm, prompt = _get_summary_tools()
+    chain = prompt | llm
     result = chain.invoke({"conversation": conversation_text})
     return result.content.strip()
 

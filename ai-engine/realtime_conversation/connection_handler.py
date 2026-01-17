@@ -62,7 +62,8 @@ class ConnectionHandler:
             logger.error(f"메인 루프 오류: {e}")
             await self.send_error_to_client("server_error", str(e))
         finally:
-            return await self.cleanup()  # 반환값 전달 (Session Report)
+            # 반환값 전달 (Session Report)
+            return await self.cleanup()  
 
     async def send_error_to_client(self, code: str, message: str):
         """클라이언트에게 에러 메시지 전송"""
@@ -83,10 +84,6 @@ class ConnectionHandler:
             "openai_disconnected", 
             f"OpenAI connection lost: {reason or 'Unknown error'}"
         )
-        # 이 함수 호출 후 상위 루프(receive_from_openai)가 종료되고
-        # 결국 start() 메서드가 끝나면서 finally 블록의 cleanup()이 호출될 것임
-        # 하지만 명시적인 흐름 제어를 위해 여기서 즉시 cleanup을 호출하지 않고
-        # 에러 메시지만 보낸 뒤 루프를 빠져나가도록 유도함.
 
 
     async def connect_to_openai(self):
@@ -116,11 +113,28 @@ class ConnectionHandler:
             )
             
             # 히스토리 주입
-            # [Voice Change 등 재연결 시] 
-            # 초기 히스토리(self.history) + 현재 세션에서 발생한 대화(self.tracker.messages)를 합쳐서 주입
             full_history = self.history + self.tracker.messages
             if full_history:
                 await self.conversation_manager.inject_history(full_history)
+
+            # [Trigger] 강제 발화 유도: "Let's start" 가짜 사용자 메시지 주입
+            logger.info("Triggering AI First Turn with 'Let's start'")
+            await self.openai_ws.send(json.dumps({
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": "Let's start" 
+                        }
+                    ]
+                }
+            }))
+            await self.openai_ws.send(json.dumps({
+                "type": "response.create"
+            }))
 
             # 수신 태스크 재시작
             if self.openai_task and not self.openai_task.done():

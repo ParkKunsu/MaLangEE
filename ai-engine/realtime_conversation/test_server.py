@@ -95,9 +95,17 @@ class DebugConnectionHandler(ConnectionHandler):
 # -----------------------------------------------------------------------------
 
 # 부모 .env 또는 로컬 .env에서 환경 변수 로드
+# 부모 .env 또는 로컬 .env에서 환경 변수 로드
 load_dotenv() 
-# 찾을 수 없는 경우 부모 디렉토리에서도 로드 시도 (표준 개발 설정)
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env'))
+
+# 백엔드 경로의 .env 로드 시도
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+backend_env_path = os.path.join(project_root, 'backend', '.env')
+if os.path.exists(backend_env_path):
+    print(f"DEBUG: Loading .env from {backend_env_path}")
+    load_dotenv(backend_env_path)
+else:
+    print(f"DEBUG: .env not found at {backend_env_path}")
 
 app = FastAPI()
 
