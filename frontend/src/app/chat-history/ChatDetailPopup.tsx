@@ -115,7 +115,7 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
                   <Button
                     variant="outline-purple"
                     size="sm"
-                    onClick={() => router.push("/chat/welcome-back")}
+                    onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
                   >
                     다시 대화하기
                   </Button>
@@ -145,4 +145,3 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
     </>
   );
 };
-
