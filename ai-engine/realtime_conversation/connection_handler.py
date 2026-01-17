@@ -117,6 +117,9 @@ class ConnectionHandler:
             if full_history:
                 await self.conversation_manager.inject_history(full_history)
 
+            # [Stable Start] 설정 적용될 시간 확보 (Minimized to 0.1s)
+            await asyncio.sleep(0.1)
+
             # [Trigger] 강제 발화 유도: "Let's start" 가짜 사용자 메시지 주입
             logger.info("Triggering AI First Turn with 'Let's start'")
             await self.openai_ws.send(json.dumps({
@@ -133,7 +136,10 @@ class ConnectionHandler:
                 }
             }))
             await self.openai_ws.send(json.dumps({
-                "type": "response.create"
+                "type": "response.create",
+                "response": {
+                    "modalities": ["audio", "text"]
+                }
             }))
 
             # 수신 태스크 재시작
@@ -214,7 +220,7 @@ class ConnectionHandler:
                 #    pass
                 
                 # 모든 이벤트 로그 출력 (너무 많으면 나중에 다시 필터링)
-                # print(f"[OpenAI Event] {event_type}") 
+                print(f"[OpenAI Event] {event_type}") 
                 pass # print는 주석처리하고 필요한 중요 로그만 아래에서 처리하도록 내버려두거나,
                      # 아니면 디버깅을 위해 다 찍어볼 수도 있음. 
                      # 여기서는 사용자가 원인 파악을 원하므로 'Warning' 이상이나 'Error'는 무조건 찍히게 되어있지만,

@@ -222,9 +222,21 @@
             if (ws) ws.close();
         };
 
-        async function startAudio() {
+        async function startAudio(startTime = Date.now()) {
             try {
+                // [Fix] Reset audio scheduling for new context
+                nextStartTime = 0;
+                scheduledAudioSources = [];
+
+                // AudioContext Creation
+                const acStart = Date.now();
+                // [Restore] Force 24000Hz for OpenAI compatibility
                 audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+                log(`[Time] AudioContext Created: ${Date.now() - acStart}ms (Total: ${Date.now() - startTime}ms)`);
+                log(`AudioContext State: ${audioContext.state}, Rate: ${audioContext.sampleRate}`);
+
+                // Mic Access
+                const micStart = Date.now();
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         channelCount: 1,
@@ -234,13 +246,19 @@
                         autoGainControl: true
                     }
                 });
+                log(`[Time] Mic Access Granted: ${Date.now() - micStart}ms (Total: ${Date.now() - startTime}ms)`);
 
                 // If WS closed while getting permission, stop immediately
                 if (!ws || ws.readyState !== WebSocket.OPEN) {
                     console.warn("WS closed during audio init. Aborting.");
                     if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-                    if (audioContext && audioContext.state !== 'closed') audioContext.close();
+                    if (audioContext && audioContext.state !== 'closed') await audioContext.close();
                     return;
+                }
+
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                    log("[Time] AudioContext Resumed");
                 }
 
                 if (audioContext.state === 'closed') {
@@ -248,9 +266,8 @@
                     return;
                 }
 
-                log("Microphone Access Granted");
-
-                // Initialize AudioWorklet for raw PCM processing
+                // Worklet Loading
+                const workletStart = Date.now();
                 await audioContext.audioWorklet.addModule("data:text/javascript;base64," + btoa(`
                     class Processor extends AudioWorkletProcessor {
                         process(inputs, outputs, parameters) {
@@ -270,6 +287,7 @@
                     }
                     registerProcessor('recorder-processor', Processor);
                 `));
+                log(`[Time] Worklet Loaded: ${Date.now() - workletStart}ms (Total: ${Date.now() - startTime}ms)`);
 
                 const source = audioContext.createMediaStreamSource(mediaStream);
                 workletNode = new AudioWorkletNode(audioContext, 'recorder-processor');

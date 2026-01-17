@@ -251,34 +251,41 @@ class ConversationManager:
         """
         new_dynamic_instruction = ""
         if wpm_status == "super_slow":
-            new_dynamic_instruction = "The user speaks very slowly. Speak extremely slowly and clearly, articulating every single word like teaching a beginner."
+            new_dynamic_instruction = "The user speaks very slowly. You MUST speak extremely slowly (approx. 70 words per minute)."
         elif wpm_status == "slow":
-            new_dynamic_instruction = "The user speaks a bit slowly. Speak slowly and clearly."
+            new_dynamic_instruction = "The user speaks slowly. Speak at a slow, relaxed pace (approx. 100 words per minute)."
+        elif wpm_status == "normal":
+             new_dynamic_instruction = "The user speaks at a normal pace. Speak naturally and clearly (approx. 130 words per minute)."
         elif wpm_status == "fast":
-            new_dynamic_instruction = "The user is fluent. You should speak at a natural, faster pace like a native speaker."
+            new_dynamic_instruction = "The user speaks fluently. Speak at a fast, native-level pace (approx. 160 words per minute)."
         
-        # 변경사항이 없으면 리턴
-        if self.instruction_dynamic == new_dynamic_instruction:
-            return
+        # [Modified] 변경사항이 없어도 계속 주입하여 태도 유지 (User Request)
+        # if self.instruction_dynamic == new_dynamic_instruction:
+        #    return
 
-        logger.info(f"시스템 프롬프트 동적 변경 (WPM: {wpm_status})")
+        logger.info(f"시스템 프롬프트 동적 변경 (WPM: {wpm_status}) -> Injection 방식 적용")
         
-        # [Refactor] Dynamic 레이어만 업데이트
+        # [Refactor] Session Update 대신 '강제 주입(Injection)' 사용
         self.instruction_dynamic = new_dynamic_instruction
         
-        # 전체 프롬프트 재조립
-        assembled = self._assemble_instructions()
-        self.current_config["instructions"] = assembled
+        # 주입할 메시지 내용 생성
+        injection_text = f"[System Note: {new_dynamic_instruction}]"
         
-        # 직접 전송 (User 레이어 영향 없이)
         if self.openai_ws:
             try:
                 await self.openai_ws.send(json.dumps({
-                    "type": "session.update",
-                    "session": {
-                        "instructions": assembled
+                    "type": "conversation.item.create",
+                    "item": {
+                        "type": "message",
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "input_text",
+                                "text": injection_text
+                            }
+                        ]
                     }
                 }))
-                logger.info("-> WPM 반영 프롬프트 업데이트 전송 완료")
+                logger.info(f"-> WPM 지시사항 주입 완료: {injection_text}")
             except Exception as e:
-                logger.error(f"WPM 업데이트 실패: {e}")
+                logger.error(f"WPM 주입 실패: {e}")
