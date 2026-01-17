@@ -39,7 +39,7 @@ export const authApi = {
 
       if (response.status === 400) {
         throw new Error(
-          errorData.detail || "아이디 또는 비밀번호가 올바르지 않습니다"
+          errorData.detail || "이메일 또는 비밀번호가 올바르지 않습니다"
         );
       }
 

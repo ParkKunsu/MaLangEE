@@ -134,7 +134,7 @@ export default function LoginPage() {
             <input
               id="username"
               type="text"
-              placeholder="아이디"
+              placeholder="이메일"
               {...register("username")}
               className="border-border text-text-primary placeholder:text-muted-foreground focus:border-brand focus:ring-brand-200 bg-background h-[56px] w-full rounded-full border px-5 text-base lowercase focus:outline-none focus:ring-2"
               style={{ letterSpacing: "-0.2px" }}
@@ -170,7 +170,7 @@ export default function LoginPage() {
             className="hover:text-brand"
             style={{ letterSpacing: "-0.1px" }}
           >
-            아이디/비밀번호 찾기
+            이메일/비밀번호 찾기
           </a>
           <Link
             href="/auth/signup"

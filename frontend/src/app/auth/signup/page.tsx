@@ -57,7 +57,7 @@ export default function RegisterPage() {
     reValidateMode: "onBlur",
   });
 
-  // 페이지 로딩 시 아이디 입력창에 포커스
+  // 페이지 로딩 시 이메일 입력창에 포커스
   useEffect(() => {
     setFocus("login_id");
   }, [setFocus]);
@@ -146,16 +146,16 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5 sm:gap-6">
         <div className="flex flex-col gap-4 sm:gap-5">
-          {/* 아이디 입력 */}
+          {/* 이메일 입력 */}
           <div className="flex flex-col gap-2">
             <label htmlFor="login_id" className="text-text-primary px-1 text-sm font-medium" style={{ letterSpacing: "-0.2px" }}>
-              아이디
+              이메일
             </label>
             <div className="relative">
               <input
                 id="login_id"
                 type="text"
-                placeholder="아이디 (영문 또는 숫자 4~20자리)"
+                placeholder="이메일을 입력해주세요"
                 {...register("login_id", {
                   onBlur: () => loginIdCheck.trigger(),
                   onChange: (e) => {
@@ -174,7 +174,7 @@ export default function RegisterPage() {
                     {getCheckErrorMessage(loginIdCheck.error)}
                   </p>
                 ) : !loginIdCheck.isChecking && loginIdCheck.isAvailable && watchLoginId ? (
-                  <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 아이디입니다</p>
+                  <p className="whitespace-nowrap px-1 text-sm text-green-600">사용 가능한 이메일입니다</p>
                 ) : null}
               </div>
             </div>

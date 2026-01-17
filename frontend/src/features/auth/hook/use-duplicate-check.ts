@@ -52,13 +52,13 @@ export function useLoginIdCheck(
         if (signal.aborted) return;
 
         setIsAvailable(result.is_available);
-        setError(result.is_available ? null : "이미 사용중인 아이디입니다");
+        setError(result.is_available ? null : "이미 사용중인 이메일입니다");
       } catch (error) {
         if (signal.aborted) return;
 
-        console.error("아이디 중복 확인 오류:", error);
+        console.error("이메일 중복 확인 오류:", error);
 
-        let errorMessage = "아이디 확인 중 오류가 발생했습니다";
+        let errorMessage = "이메일 확인 중 오류가 발생했습니다";
         if (error instanceof Error) {
           if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")) {
             errorMessage = "서버에 연결할 수 없습니다. 네트워크를 확인해주세요.";

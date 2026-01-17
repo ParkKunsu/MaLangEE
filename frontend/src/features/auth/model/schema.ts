@@ -6,9 +6,8 @@ import { z } from "zod";
 
 const loginIdValidation = z
   .string()
-  .min(4, "아이디는 4~20자 사이로 입력해주세요")
-  .max(20, "아이디는 4~20자 사이로 입력해주세요")
-  .regex(/^[a-zA-Z0-9]+$/, "영문 또는 숫자만 입력 가능합니다");
+  .min(1, "이메일을 입력해주세요")
+  .email("올바른 이메일 형식이 아닙니다");
 
 const nicknameValidation = z
   .string()
@@ -17,7 +16,7 @@ const nicknameValidation = z
   .regex(/^[a-zA-Z가-힣]+$/, "영문 또는 한글만 입력 가능합니다");
 
 export const loginSchema = z.object({
-  username: z.string().min(1, "아이디를 입력해주세요"),
+  username: z.string().min(1, "이메일을 입력해주세요").email("올바른 이메일 형식이 아닙니다"),
   password: z.string().min(1, "비밀번호를 입력해주세요"),
 });
 
