@@ -71,7 +71,7 @@ export const GlassCard: FC<GlassCardProps> = ({
 
   return (
     <>
-      <main className={`main-container glass-card w-full ${className}`}>
+      <main className={`main-container glass-card w-full backdrop-blur-md ${className}`}>
         {/* Header */}
         {showHeader && (
           <header className="glass-card-header">
@@ -95,20 +95,10 @@ export const GlassCard: FC<GlassCardProps> = ({
             <MalangEE status="humm" size={120} />
             <div className="text-xl font-bold text-[#1F1C2B]">정말 로그아웃 하실건가요?</div>
             <div className="flex w-full gap-3">
-              <Button
-                variant="outline-purple"
-                size="md"
-                fullWidth
-                onClick={handleLogoutCancel}
-              >
+              <Button variant="outline-purple" size="md" fullWidth onClick={handleLogoutCancel}>
                 닫기
               </Button>
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                onClick={handleLogoutConfirm}
-              >
+              <Button variant="primary" size="md" fullWidth onClick={handleLogoutConfirm}>
                 로그아웃
               </Button>
             </div>

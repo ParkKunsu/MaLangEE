@@ -75,6 +75,7 @@
 
   .scenario-desc {
     font-size: 1rem;
+    min-height: 1rem;
   }
 
   .character-box {

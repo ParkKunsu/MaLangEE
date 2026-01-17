@@ -7,6 +7,7 @@ import {PopupLayout} from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
 import {FullLayout} from "@/shared/ui/FullLayout";
 import {useScenarioChat} from "@/features/chat";
+import {useInactivityTimer} from "@/shared/hooks";
 import {Step1} from "@/app/demo/steps/Step1";
 import {Step2} from "@/app/demo/steps/Step2";
 import {Step3} from "@/app/demo/steps/Step3";
@@ -17,15 +18,21 @@ export default function ScenarioSelectPage() {
     const [isListening, setIsListening] = useState(false);
     const [textOpacity, setTextOpacity] = useState(1);
     const [showLoginPopup, setShowLoginPopup] = useState(false);
-    const [showInactivityMessage, setShowInactivityMessage] = useState(false);
     const [showNotUnderstood, setShowNotUnderstood] = useState(false);
     const [isLocalSpeaking, setIsLocalSpeaking] = useState(false);
-    const [showWaitPopup, setShowWaitPopup] = useState(false);
     const [showEndChatPopup, setShowEndChatPopup] = useState(false);
+    const [showScenarioResultPopup, setShowScenarioResultPopup] = useState(false);
     const [stepIndex, setStepIndex] = useState<1 | 2 | 3 | 4>(1);
 
-    const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const waitTimerRef = useRef<NodeJS.Timeout | null>(null);
+    // 커스텀 훅 사용
+    const {
+        showInactivityMessage,
+        showWaitPopup,
+        startInactivityTimer,
+        resetTimers: resetInactivityTimers,
+        setShowWaitPopup
+    } = useInactivityTimer();
+
     const loginTimerRef = useRef<NodeJS.Timeout | null>(null);
     const notUnderstoodTimerRef = useRef<NodeJS.Timeout | null>(null);
     const localSpeakingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -45,44 +52,6 @@ export default function ScenarioSelectPage() {
     } = useScenarioChat();
     const hintMessage = "예: 공항 체크인 상황을 연습하고 싶어요.";
     const hasError = Boolean(chatState.error);
-
-    // 비활동 타이머 시작 (15초 후 메시지 표시)
-    const startInactivityTimer = () => {
-        clearInactivityTimer();
-        inactivityTimerRef.current = setTimeout(() => {
-            setShowInactivityMessage(true);
-            setIsListening(true);
-            startRecording();
-            // 비활동 메시지 표시 후 5초 뒤 응답 대기 팝업
-            startWaitTimer();
-        }, 15000);
-    };
-
-    // 비활동 타이머 정리
-    const clearInactivityTimer = () => {
-        if (inactivityTimerRef.current) {
-            clearTimeout(inactivityTimerRef.current);
-            inactivityTimerRef.current = null;
-        }
-    };
-
-    // 응답 대기 타이머 시작 (5초 후 팝업 표시)
-    const startWaitTimer = () => {
-        clearWaitTimer();
-        waitTimerRef.current = setTimeout(() => {
-            setShowWaitPopup(true);
-            setIsListening(false);
-            stopRecording();
-        }, 5000);
-    };
-
-    // 응답 대기 타이머 정리
-    const clearWaitTimer = () => {
-        if (waitTimerRef.current) {
-            clearTimeout(waitTimerRef.current);
-            waitTimerRef.current = null;
-        }
-    };
 
     const clearLoginTimer = () => {
         if (loginTimerRef.current) {
@@ -108,8 +77,6 @@ export default function ScenarioSelectPage() {
     // 컴포넌트 언마운트 시 타이머 정리
     useEffect(() => {
         return () => {
-            clearInactivityTimer();
-            clearWaitTimer();
             clearLoginTimer();
             clearNotUnderstoodTimer();
             clearLocalSpeakingTimer();
@@ -223,42 +190,58 @@ export default function ScenarioSelectPage() {
 
     useEffect(() => {
         connect();
-        setIsListening(true);
-        startRecording();
         return () => {
             stopRecording();
             disconnect();
         };
-    }, [connect, disconnect, startRecording, stopRecording]);
+    }, [connect, disconnect, stopRecording]);
 
     useEffect(() => {
         aiSpeakingRef.current = chatState.isAiSpeaking;
     }, [chatState.isAiSpeaking]);
 
-    useEffect(() => {
-        // Phase가 topic일 때 scenario.completed 이벤트를 받으면 다음 단계(자막 설정)로 이동
-        if (stepIndex === 1 && phase === "topic") {
-            // scenario.completed 이벤트가 발생하면 isCompleted가 true가 됨
-            if (chatState.isCompleted) {
-                // sessionId 추출 및 저장
-                const sessionId = chatState.scenarioResult?.sessionId;
-                if (sessionId) {
-                    localStorage.setItem("currentSessionId", sessionId);
-                }
+    // 사용자 활동 시작 (타이머 초기화)
+    const resetTimers = useCallback(() => {
+        resetInactivityTimers();
+        setShowNotUnderstood(false);
+    }, [resetInactivityTimers]);
 
-                // Topic 선정 완료 -> 자막 설정(Step 2)으로 이동
-                setStepIndex(2);
-                // 녹음 중지
+    // 비활동 타이머 로직
+    useEffect(() => {
+        if (stepIndex !== 1 && stepIndex !== 4) return;
+
+        if (chatState.isAiSpeaking || chatState.isUserSpeaking || isLocalSpeaking) {
+            resetTimers();
+            return;
+        }
+
+        startInactivityTimer();
+    }, [chatState.isAiSpeaking, chatState.isUserSpeaking, isLocalSpeaking, stepIndex, startInactivityTimer, resetTimers]);
+
+    useEffect(() => {
+        // Phase가 topic일 때 시나리오가 선택되면 결과 팝업 표시
+        if (stepIndex === 1 && phase === "topic") {
+            if (chatState.isCompleted) {
+                resetTimers();
                 setIsListening(false);
                 stopRecording();
+                setShowScenarioResultPopup(true);
             }
         }
     }, [
         chatState.isCompleted,
         phase,
         stepIndex,
-        stopRecording
+        stopRecording,
+        resetTimers
     ]);
+
+    // 팝업이 떠있을 때 타이머 초기화 (사용자 확인 대기 중)
+    useEffect(() => {
+        if (showScenarioResultPopup || showLoginPopup || showWaitPopup || showEndChatPopup) {
+            resetTimers();
+        }
+    }, [showScenarioResultPopup, showLoginPopup, showWaitPopup, showEndChatPopup, resetTimers]);
 
     useEffect(() => {
         if (stepIndex === 4 && phase === "topic") {
@@ -267,35 +250,22 @@ export default function ScenarioSelectPage() {
            startInactivityTimer();
             if (!loginTimerRef.current) {
                 loginTimerRef.current = setTimeout(() => {
-                    clearInactivityTimer();
-                    clearWaitTimer();
+                    resetTimers(); // 비활동 타이머 초기화
                     setShowLoginPopup(true);
                     setIsListening(false);
                     stopRecording();
                 }, 10 * 60 * 1000);
             }
         }
-    }, [stepIndex, phase, startInactivityTimer, clearInactivityTimer, clearWaitTimer, stopRecording]);
+    }, [stepIndex, phase, startInactivityTimer, stopRecording, resetTimers]);
 
     useEffect(() => {
         if (phase !== "conversation") return;
         if (!chatState.isReady || initialPromptSentRef.current) return;
 
-        // AI가 먼저 말을 걸도록 텍스트 전송
-        // 주제정보가 있다면 포함해서 보내는 것이 좋음
-        const scenarioResult = chatState.scenarioResult;
-        let prompt = "여행이나 식당같은 주제로 대화를 시작해볼까요?";
-
-        if (scenarioResult) {
-             const place = scenarioResult.place || "장소";
-             const partner = scenarioResult.conversationPartner || "상대방";
-             const goal = scenarioResult.conversationGoal || "목표";
-             prompt = `지금부터 상황극을 시작합니다. 당신은 ${place}에서 ${partner} 역할을 맡아주세요. 사용자의 목표는 ${goal}입니다. 먼저 사용자에게 말을 걸어주세요.`;
-        }
-
-        sendText(prompt);
+        sendText("Hello! Start a conversation with me.");
         initialPromptSentRef.current = true;
-    }, [chatState.isReady, phase, sendText, chatState.scenarioResult]);
+    }, [chatState.isReady, phase, sendText]);
 
     useEffect(() => {
         if (!chatState.aiMessage) return;
@@ -336,41 +306,16 @@ export default function ScenarioSelectPage() {
         }
     }, [chatState.isAiSpeaking, chatState.isUserSpeaking, isLocalSpeaking, phase]);
 
-    useEffect(() => {
-        if (phase !== "conversation") return;
-
-        if (chatState.isAiSpeaking || chatState.isUserSpeaking || isLocalSpeaking) {
-            clearInactivityTimer();
-            clearWaitTimer();
-            setShowInactivityMessage(false);
-            clearNotUnderstoodTimer();
-            return;
-        }
-
-        startInactivityTimer();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [chatState.isAiSpeaking, chatState.isUserSpeaking, isLocalSpeaking, phase]);
-
-    // 사용자 활동 시작 (타이머 초기화)
-    const resetTimers = () => {
-        clearInactivityTimer();
-        clearWaitTimer();
-        setShowInactivityMessage(false);
-        setShowNotUnderstood(false);
-    };
-
     const endChatAndGoLogin = useCallback(() => {
-        clearInactivityTimer();
-        clearWaitTimer();
+        resetTimers();
         clearLoginTimer();
         setShowWaitPopup(false);
         setShowEndChatPopup(false);
-        setShowInactivityMessage(false);
         setIsListening(false);
         stopRecording();
         disconnect();
         router.push("/auth/login");
-    }, [disconnect, router, stopRecording]);
+    }, [disconnect, router, stopRecording, resetTimers]);
 
     const handleStopChat = () => {
         endChatAndGoLogin();
@@ -428,7 +373,7 @@ export default function ScenarioSelectPage() {
              Step 1: Topic Selection (Use Step1 component in 'topic' phase)
              Step 2: Subtitle (Use Step2 component)
              Step 3: Voice (Use Step3 component)
-             Step 4: Conversation (Use Step1 component in 'conversation' phase)
+             Step 4: Conversation (Use Step4 component in 'conversation' phase)
           */}
 
           {stepIndex === 1 && (
@@ -443,7 +388,8 @@ export default function ScenarioSelectPage() {
               showInactivityMessage={showInactivityMessage}
               showNotUnderstood={showNotUnderstood}
               aiMessage={chatState.aiMessage}
-              userTranscript={chatState.userTranscript} // 자막 데이터 전달
+              aiMessageKR={chatState.aiMessageKR}
+              userTranscript={chatState.userTranscript}
               resetTimers={resetTimers}
               startRecording={startRecording}
               stopRecording={stopRecording}
@@ -454,23 +400,12 @@ export default function ScenarioSelectPage() {
             />
           )}
 
-          {stepIndex === 2 && (
-              <Step2 textOpacity={textOpacity} onNext={() => setStepIndex(3)} />
-          )}
+          {stepIndex === 2 && <Step2 textOpacity={textOpacity} onNext={() => setStepIndex(3)} />}
 
-          {stepIndex === 3 && (
-              <Step3
-                textOpacity={textOpacity}
-                onNext={() => {
-                  disconnect();        // 시나리오 WebSocket 해제
-                  stopRecording();     // 마이크 중지
-                  router.push('/chat/conversation');
-                }}
-              />
-          )}
+          {stepIndex === 3 && <Step3 textOpacity={textOpacity} onNext={() => setStepIndex(4)} />}
 
           {stepIndex === 4 && (
-            <Step1
+            <Step4
               textOpacity={textOpacity}
               isListening={isListening}
               isLocalSpeaking={isLocalSpeaking}
@@ -495,24 +430,82 @@ export default function ScenarioSelectPage() {
         </FullLayout>
 
         {/* 디버깅용 이벤트 상태 표시 */}
-        <div className="fixed bottom-4 left-4 right-4 flex justify-center pointer-events-none z-50">
-          <div className="bg-black/70 text-white text-[10px] px-3 py-1 rounded-full backdrop-blur-md flex gap-3 items-center">
+        <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex justify-center">
+          <div className="flex items-center gap-3 rounded-full bg-black/70 px-3 py-1 text-[10px] text-white backdrop-blur-md">
             <div className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${chatState.isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span>{chatState.isConnected ? 'CONNECTED' : 'DISCONNECTED'}</span>
+              <div
+                className={`h-1.5 w-1.5 rounded-full ${chatState.isConnected ? "bg-green-500" : "bg-red-500"}`}
+              />
+              <span>{chatState.isConnected ? "CONNECTED" : "DISCONNECTED"}</span>
             </div>
             {chatState.lastEvent && (
               <div className="border-l border-white/20 pl-3">
-                LAST EVENT: <span className="text-yellow-400 font-mono">{chatState.lastEvent.toUpperCase()}</span>
+                LAST EVENT:{" "}
+                <span className="font-mono text-yellow-400">
+                  {chatState.lastEvent.toUpperCase()}
+                </span>
               </div>
             )}
             {chatState.isAiSpeaking && (
-              <div className="border-l border-white/20 pl-3 text-blue-400 animate-pulse">
+              <div className="animate-pulse border-l border-white/20 pl-3 text-blue-400">
                 AI SPEAKING...
               </div>
             )}
           </div>
         </div>
+
+        {/* 시나리오 결과 확인 팝업 */}
+        {showScenarioResultPopup && chatState.scenarioResult && (
+          <PopupLayout
+            onClose={() => setShowScenarioResultPopup(false)}
+            maxWidth="md"
+            showCloseButton={false}
+          >
+            <div className="flex flex-col items-center gap-6 py-6">
+              <div className="space-y-4 text-center">
+                <p className="text-text-primary text-xl font-bold">좋아요! 상황을 파악했어요.</p>
+                <div className="bg-brand-50 border-brand-200 space-y-2 rounded-2xl border p-4 text-left">
+                  <p className="text-text-secondary text-sm">
+                    <span className="text-brand mr-2 font-bold">미션:</span>
+                    {chatState.scenarioResult.conversationGoal || "대화하기"}
+                  </p>
+                  <p className="text-text-secondary text-sm">
+                    <span className="text-brand mr-2 font-bold">상대:</span>
+                    {chatState.scenarioResult.conversationPartner || "말랭이"}
+                  </p>
+                  <p className="text-text-secondary text-sm">
+                    <span className="text-brand mr-2 font-bold">장소:</span>
+                    {chatState.scenarioResult.place || "어딘가"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex w-full gap-3">
+                <Button
+                  onClick={() => {
+                    setShowScenarioResultPopup(false);
+                    setStepIndex(1); // 주제 다시 정하기
+                    connect(); // 재연결
+                  }}
+                  variant="outline-purple"
+                  className="h-14 flex-1 rounded-full border-2 border-gray-300 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
+                >
+                  주제 다시 정하기
+                </Button>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => {
+                    setShowScenarioResultPopup(false);
+                    setStepIndex(2); // 자막 설정하기로 이동
+                  }}
+                  className="flex-1"
+                >
+                  다음단계
+                </Button>
+              </div>
+            </div>
+          </PopupLayout>
+        )}
 
         {/* Login Popup */}
         {showLoginPopup && (

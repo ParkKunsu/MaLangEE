@@ -3,12 +3,18 @@
 import { useState, useRef } from "react";
 import { ChevronLeft, ChevronRight, Volume2 } from "lucide-react";
 import { Button } from "@/shared/ui";
+import { useRouter } from "next/navigation";
 
 interface VoiceOption {
   id: string;
   name: string;
   description: string;
   sampleUrl: string;
+}
+
+interface Step3Props {
+  textOpacity: number;
+  onNext: () => void;
 }
 
 const voiceOptions: VoiceOption[] = [
@@ -39,6 +45,7 @@ const voiceOptions: VoiceOption[] = [
 ];
 
 export function Step3({ textOpacity, onNext }: Step3Props) {
+  const router = useRouter();
   const [currentVoiceIndex, setCurrentVoiceIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -83,8 +90,8 @@ export function Step3({ textOpacity, onNext }: Step3Props) {
   const handleNextStep = () => {
     stopSample();
     const selectedVoice = currentVoice?.id || "alloy";
-    localStorage.setItem("selectedVoice", selectedVoice);
-    onNext();
+    sessionStorage.setItem("selectedVoice", selectedVoice);
+    router.push("/chat/conversation");
   };
 
   return (
@@ -149,14 +156,9 @@ export function Step3({ textOpacity, onNext }: Step3Props) {
           size="lg"
           fullWidth
         >
-          선택완료
+          대화 시작하기
         </Button>
       </div>
     </div>
   );
-}
-
-interface Step3Props {
-  textOpacity: number;
-  onNext: () => void;
 }
