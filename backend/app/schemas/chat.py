@@ -8,6 +8,9 @@ class MessageSchema(BaseModel):
     timestamp: str
     duration_sec: float = 0.0
 
+    class Config:
+        from_attributes = True
+
 
 class SessionBase(BaseModel):
     session_id: str
