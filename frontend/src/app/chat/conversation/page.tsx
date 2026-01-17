@@ -322,7 +322,7 @@ export default function ConversationPage() {
   };
 
   const handleStopChat = () => {
-    router.push("/auth/signup");
+    router.push("/dashboard");
   };
 
   const handleContinueChat = () => {
@@ -333,7 +333,7 @@ export default function ConversationPage() {
   };
 
   const handleStopFromWait = () => {
-    router.push("/auth/signup");
+    router.push("/dashboard");
   };
 
   const handleContinueFromEnd = () => {
@@ -343,7 +343,7 @@ export default function ConversationPage() {
   };
 
   const handleStopFromEnd = () => {
-    router.push("/auth/signup");
+    router.push("/dashboard");
   };
 
   // 대화 종료하기 핸들러 (팝업 열기)
@@ -358,9 +358,9 @@ export default function ConversationPage() {
     disconnect();
     // 마이크 녹음 중지
     stopRecording();
-    // 대화 내역 페이지로 이동
+    // 대시보드로 이동
     setTimeout(() => {
-      router.push("/chat-history");
+      router.push("/dashboard");
     }, 1000); // disconnect 메시지 전송 후 이동
   }, [disconnect, stopRecording, router]);
 

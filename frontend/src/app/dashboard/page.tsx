@@ -171,7 +171,7 @@ export default function DashboardPage() {
         size="md"
         fullWidth
         className="mt-10"
-        onClick={() => router.push("/demo")}
+        onClick={() => router.push("/chat/scenario-select")}
       >
         말랭이랑 새로운 대화를 해볼까요?
       </Button>

@@ -33,7 +33,7 @@ function WelcomeBackPage() {
   // 대화 기록이 없으면 시나리오 선택 페이지로 리다이렉트
   useEffect(() => {
     if (!isLoading && !lastSession) {
-      router.push("/demo");
+      router.push("/chat/scenario-select");
     }
   }, [isLoading, lastSession, router]);
 
@@ -54,7 +54,7 @@ function WelcomeBackPage() {
 
   const handleNewTopic = () => {
     // 새로운 주제 선택 페이지로 이동
-    router.push("/demo");
+    router.push("/chat/scenario-select");
   };
 
   if (isLoading) {

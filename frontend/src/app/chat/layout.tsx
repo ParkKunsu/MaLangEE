@@ -34,9 +34,8 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
 
   const handleEndChatConfirm = () => {
     setShowEndChatPopup(false);
-    // 토큰 제거 및 로그인 페이지로 이동
-    tokenStorage.remove();
-    router.push("/auth/login");
+    // 대시보드로 이동
+    router.push("/dashboard");
   };
 
   const handleEndChatCancel = () => {
