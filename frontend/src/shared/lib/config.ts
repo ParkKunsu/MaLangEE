@@ -12,10 +12,10 @@ export const config = {
   apiBasePath: "/api/v1",
 
   // 완전한 API URL (baseUrl + basePath)
-  // NEXT_PUBLIC_USE_PROXY=true 설정 시 Next.js proxy 사용 (CORS 해결)
-  // 기본값: 웹 서버로 직접 연결
+  // 개발 환경에서는 기본적으로 Next.js proxy 사용 (CORS 해결)
+  // NEXT_PUBLIC_USE_PROXY=false로 명시적 비활성화 가능
   get apiUrl(): string {
-    const useProxy = process.env.NEXT_PUBLIC_USE_PROXY === 'true';
+    const useProxy = process.env.NEXT_PUBLIC_USE_PROXY !== 'false';
 
     if (useProxy && process.env.NODE_ENV === 'development') {
       return this.apiBasePath; // /api/v1 (Next.js proxy 사용)

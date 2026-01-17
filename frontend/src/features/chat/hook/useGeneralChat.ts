@@ -94,6 +94,11 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
   const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isManuallyClosedRef = useRef(false);
 
+  // [Fix] 타임아웃 관련 refs - 응답 없을 때 상태 리셋용
+  const aiSpeakingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const responseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastAudioTimeRef = useRef<number>(0);
+
   /**
    * WebSocket URL 생성
    */
@@ -175,6 +180,53 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
   }, []);
 
   /**
+   * [Fix] AI Speaking 타임아웃 리셋
+   * 마지막 audio.delta 후 3초간 새 오디오 없으면 isAiSpeaking을 false로
+   */
+  const resetAiSpeakingTimeout = useCallback(() => {
+    if (aiSpeakingTimeoutRef.current) {
+      clearTimeout(aiSpeakingTimeoutRef.current);
+    }
+    lastAudioTimeRef.current = Date.now();
+    aiSpeakingTimeoutRef.current = setTimeout(() => {
+      console.log("[Timeout] AI speaking timeout - forcing state reset");
+      setState(prev => ({ ...prev, isAiSpeaking: false }));
+    }, 3000);
+  }, []);
+
+  /**
+   * [Fix] 응답 대기 타임아웃 시작
+   * 사용자 발화 종료 후 8초간 AI 응답 없으면 에러 표시
+   */
+  const startResponseTimeout = useCallback(() => {
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+    }
+    responseTimeoutRef.current = setTimeout(() => {
+      console.log("[Timeout] Response timeout - no AI response received");
+      setState(prev => ({ 
+        ...prev, 
+        isAiSpeaking: false,
+        error: "응답 대기 시간 초과. 다시 말해주세요."
+      }));
+      // 3초 후 에러 메시지 클리어
+      setTimeout(() => {
+        setState(prev => ({ ...prev, error: null }));
+      }, 3000);
+    }, 8000);
+  }, []);
+
+  /**
+   * [Fix] 응답 타임아웃 취소 (AI가 응답을 시작하면)
+   */
+  const clearResponseTimeout = useCallback(() => {
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+      responseTimeoutRef.current = null;
+    }
+  }, []);
+
+  /**
    * 오디오 청크 재생 (스케줄링)
    */
   const playChunk = useCallback((base64: string, sampleRate: number) => {
@@ -233,6 +285,24 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
               error: null,
               sessionInfo: payload.session || null
             }));
+            // [Fix] 세션 설정 업데이트
+            // 1. VAD: silence_duration_ms 증가 (사용자가 말을 끝낼 때까지 더 오래 기다림)
+            // 2. Instructions: 영어로만 응답하도록 지시
+            if (wsRef.current?.readyState === WebSocket.OPEN) {
+              wsRef.current.send(JSON.stringify({
+                type: "session.update",
+                session: {
+                  instructions: "You must respond only in English. You are an English conversation tutor helping users practice English. Always speak in English regardless of what language the user speaks.",
+                  turn_detection: {
+                    type: "server_vad",
+                    threshold: 0.7,
+                    prefix_padding_ms: 300,
+                    silence_duration_ms: 2500
+                  }
+                }
+              }));
+              console.log("[WebSocket] Sent session.update: English-only + silence_duration 2500ms");
+            }
             break;
 
           case "speech.started":
@@ -244,12 +314,18 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
           case "speech.stopped":
             setState(prev => ({ ...prev, isUserSpeaking: false }));
+            // [Fix] 사용자 발화 종료 → AI 응답 대기 타임아웃 시작
+            startResponseTimeout();
             break;
 
           case "audio.delta":
             if (payload.delta) {
               const rate = payload.sample_rate || 24000;
-              setState(prev => ({ ...prev, isAiSpeaking: true }));
+              // [Fix] AI 응답 시작 → 응답 대기 타임아웃 취소
+              clearResponseTimeout();
+              // [Fix] AI Speaking 타임아웃 리셋 (3초간 오디오 없으면 상태 리셋)
+              resetAiSpeakingTimeout();
+              setState(prev => ({ ...prev, isAiSpeaking: true, error: null }));
               playChunk(payload.delta, rate);
             }
             break;
@@ -312,7 +388,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
         console.error("[WebSocket] Parse error:", error);
       }
     },
-    [playChunk, stopAudio]
+    [playChunk, stopAudio, startResponseTimeout, clearResponseTimeout, resetAiSpeakingTimeout]
   );
 
   // handleMessage를 ref에 저장하여 connect의 의존성에서 제거
@@ -375,6 +451,13 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
     }
+    // [Fix] 타임아웃 정리
+    if (aiSpeakingTimeoutRef.current) {
+      clearTimeout(aiSpeakingTimeoutRef.current);
+    }
+    if (responseTimeoutRef.current) {
+      clearTimeout(responseTimeoutRef.current);
+    }
 
     // WebSocket이 열려있으면 disconnect 메시지 전송
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -410,10 +493,10 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
         binary += String.fromCharCode(pcm16[i]);
       }
       const base64 = btoa(binary);
+      // OpenAI Realtime API 표준 타입 사용 (Backend에서 처리하는 타입)
       wsRef.current.send(JSON.stringify({
-        type: "input_audio_chunk",
-        audio: base64,
-        sample_rate: 16000
+        type: "input_audio_buffer.append",
+        audio: base64
       }));
     }
   }, []);

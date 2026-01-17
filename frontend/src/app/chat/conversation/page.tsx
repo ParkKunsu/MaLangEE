@@ -192,7 +192,7 @@ export default function ConversationPage() {
     try {
       const constraints = {
         audio: {
-          sampleRate: { ideal: 16000 },
+          sampleRate: { ideal: 24000 },  // OpenAI Realtime API 표준
           channelCount: { ideal: 1 },
           echoCancellation: true,
           noiseSuppression: true,
@@ -213,7 +213,7 @@ export default function ConversationPage() {
       // AudioContext 생성 (Safari/Old Browser 호환)
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({
-        sampleRate: 16000
+        sampleRate: 24000  // OpenAI Realtime API 표준
       });
 
       const source = audioContextRef.current.createMediaStreamSource(stream);
