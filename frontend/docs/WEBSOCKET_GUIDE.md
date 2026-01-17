@@ -1,158 +1,88 @@
-# 🔌 MaLangEE WebSocket 기능 가이드
+# 🔌 MaLangEE WebSocket 통합 가이드
 
-## 📋 목차
-1. [개요](#개요)
-2. [WebSocket 엔드포인트](#websocket-엔드포인트)
-3. [연결 방법](#연결-방법)
-4. [메시지 프로토콜](#메시지-프로토콜)
-5. [세션 관리](#세션-관리)
-6. [에러 처리](#에러-처리)
-7. [사용 예제](#사용-예제)
+실시간 AI 대화 기능을 위한 WebSocket 엔드포인트와 프로토콜 명세입니다.
 
 ---
 
-## 📖 개요
+## 1. 🟡 게스트용 (Guest)
+인증 없이 즉시 체험 가능한 엔드포인트입니다.
 
-MaLangEE는 실시간 AI 대화를 위해 **4개의 WebSocket 엔드포인트**를 제공합니다:
-
-| 엔드포인트 | 인증 | 용도 |
-|-----------|------|------|
-| `/api/v1/chat/ws/chat/{session_id}` | 필요 | 회원용 일반 대화 |
-| `/api/v1/chat/ws/guest-chat/{session_id}` | 불필요 | 게스트용 일반 대화 |
-| `/api/v1/ws/scenario` | 필요 | 회원용 시나리오 대화 |
-| `/api/v1/ws/guest-scenario` | 불필요 | 게스트용 시나리오 대화 |
-
-### 주요 특징
-- ✅ **실시간 음성/텍스트 대화**: OpenAI Realtime API 기반
-- ✅ **세션 지속성**: 대화 내용 자동 저장 및 복원
-- ✅ **게스트 모드**: 회원가입 없이 체험 가능
-- ✅ **세션 동기화**: 게스트 세션을 회원 계정에 연동 가능
-- ✅ **컨텍스트 유지**: 이전 대화 내역 자동 로드
-- ✅ **사용자 설정**: 음성 선택, 자막 표시 여부 설정
-- ✅ **Barge-in 지원**: 사용자 발화 시 AI 음성 즉시 중단
+### 📍 엔드포인트
+| 기능 | URL |
+| :--- | :--- |
+| **일반 대화** | `ws://49.50.137.35:8080/api/v1/chat/ws/guest-chat/{session_id}` |
+| **시나리오** | `ws://49.50.137.35:8080/api/v1/ws/guest-scenario` |
 
 ---
 
-## 🔗 WebSocket 엔드포인트
+## 2. 🟢 회원용 (Member)
+로그인한 사용자를 위한 개인화된 엔드포인트입니다.
 
-### 1. 회원용 일반 대화
-
-```
-ws://49.50.137.35:8080/api/v1/chat/ws/chat/{session_id}?token={access_token}&voice={voice_id}&show_text={true|false}
-```
-
-#### Path Parameters
-- `session_id` (required): 대화 세션 ID (UUID 형식 권장)
-
-#### Query Parameters
-- `token` (required): JWT 인증 토큰 (로그인 시 발급)
-- `voice` (optional): 음성 ID (alloy, ash, ballad, coral, echo, sage, shimmer, verse)
-- `show_text` (optional): 자막 표시 여부 (`true` | `false`)
+### 📍 엔드포인트
+| 기능 | URL |
+| :--- | :--- |
+| **일반 대화** | `ws://49.50.137.35:8080/api/v1/chat/ws/chat/{session_id}?token={access_token}` |
+| **시나리오** | `ws://49.50.137.35:8080/api/v1/ws/scenario?token={access_token}` |
 
 ---
 
-### 2. 게스트용 일반 대화
+## 3. 🔄 진행 플로우 (Flow)
 
-```
-ws://49.50.137.35:8080/api/v1/chat/ws/guest-chat/{session_id}?voice={voice_id}&show_text={true|false}
-```
+실시간 대화의 표준 진행 순서입니다.
 
-#### Path Parameters
-- `session_id` (required): 대화 세션 ID
+### 1단계: 연결 및 준비 (Connection)
+1.  **Client**: WebSocket 연결 요청 (URL 파라미터 포함)
+2.  **Server**: 연결 승인 및 세션 초기화
+3.  **Server**: `ready` 메시지 송신 (대화 시작 가능 상태)
 
-#### Query Parameters
-- `voice` (optional): 음성 ID
-- `show_text` (optional): 자막 표시 여부
+### 2단계: 사용자 발화 (User Turn)
+1.  **Client**: 마이크 입력 데이터를 `input_audio_buffer.append`로 지속 송신
+2.  **Server**: (VAD 감지 시) `speech.started` 송신 -> **AI 재생 중단(Barge-in)**
+3.  **Server**: 사용자 발화 종료 감지 시 `speech.stopped` 송신
+4.  **Server**: 음성 인식 결과인 `user.transcript` 송신 (자막 표시용)
 
----
+### 3단계: AI 응답 (AI Turn)
+1.  **Server**: AI 음성 데이터를 `audio.delta`로 스트리밍 송신 -> **Client 즉시 재생**
+2.  **Server**: AI 답변 텍스트가 완성되면 `transcript.done` 송신
+3.  **Server**: 모든 음성 데이터 전송 완료 시 `audio.done` 송신
 
-### 3. 회원용 시나리오 대화
+### 4단계: 시나리오 완료 (Scenario Only)
+1.  **Server**: 시나리오 조건(장소, 상대, 목표) 충족 시 `scenario.completed` 송신
+2.  **Client**: 결과 데이터 저장 및 다음 단계(본 대화 등)로 전환
 
-```
-ws://49.50.137.35:8080/api/v1/ws/scenario?token={access_token}
-```
-
-#### Query Parameters
-- `token` (required): JWT 인증 토큰
-
----
-
-### 4. 게스트용 시나리오 대화
-
-```
-ws://49.50.137.35:8080/api/v1/ws/guest-scenario
-```
+### 5단계: 종료 (Termination)
+1.  **Client**: `disconnect` 메시지 송신 또는 소켓 Close
+2.  **Server**: 최종 세션 리포트가 포함된 `disconnected` 송신 후 연결 종료
 
 ---
 
-## 📨 메시지 프로토콜
+## 4. ⚙️ 공용 사양 (Common)
 
-### 📤 Client -> Server (송신)
+### 쿼리 파라미터 (Query Parameters)
+- `voice`: AI 목소리 설정 (`alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`)
+- `show_text`: 자막 표시 여부 (`true` | `false`)
 
-#### 1. 오디오 데이터 전송
-- **일반 대화**: `{ "type": "input_audio_buffer.append", "audio": "<base64>" }`
-- **시나리오**: `{ "type": "input_audio_chunk", "audio": "<base64>", "sample_rate": 16000 }`
+### 📤 메시지 프로토콜: 송신 (Client -> Server)
+| 타입 | 설명 | 데이터 구조 |
+| :--- | :--- | :--- |
+| `input_audio_buffer.append` | 오디오 데이터 전송 | `{ "type": "...", "audio": "<base64>" }` |
+| `input_audio_buffer.commit` | 발화 종료 알림 | `{ "type": "input_audio_buffer.commit" }` |
+| `response.create` | 응답 생성 요청 | `{ "type": "response.create" }` |
+| `session.update` | 실시간 설정 변경 | `{ "type": "session.update", "config": { "voice": "nova" } }` |
+| `text` | 텍스트 메시지 전송 | `{ "type": "text", "text": "..." }` |
 
-#### 2. 텍스트 데이터 전송
-- **일반 대화**: 
-  ```json
-  {
-    "type": "conversation.item.create",
-    "item": { "type": "message", "role": "user", "content": [{ "type": "input_text", "text": "..." }] }
-  }
-  ```
-- **시나리오**: `{ "type": "text", "text": "..." }`
-
-#### 3. 세션 설정 변경
-```json
-{
-  "type": "session.update",
-  "config": { "voice": "shimmer" }
-}
-```
-
----
-
-### 📥 Server -> Client (수신)
-
-#### 1. AI 오디오 스트림
-- **일반 대화**: `{ "type": "audio.delta", "delta": "<base64>" }`
-- **시나리오**: `{ "type": "response.audio.delta", "delta": "<base64>", "sample_rate": 24000 }`
-
-#### 2. 발화 상태 감지 (Barge-in)
-- `speech.started` / `input_audio_buffer.speech_started`: 사용자 발화 시작 (AI 중단 필요)
-- `speech.stopped` / `input_audio_buffer.speech_stopped`: 사용자 발화 종료
-
-#### 3. 자막 데이터
-- **사용자**: `user.transcript` 또는 `input_audio.transcript`
-- **AI (스트리밍)**: `response.audio_transcript.delta`
-- **AI (완료)**: `transcript.done` 또는 `response.audio_transcript.done`
-
-#### 4. 시나리오 완료 (시나리오 모드 전용)
-```json
-{
-  "type": "scenario.completed",
-  "json": { "place": "...", "conversation_partner": "...", "conversation_goal": "..." },
-  "completed": true
-}
-```
+### 📥 메시지 프로토콜: 수신 (Server -> Client)
+| 타입 | 설명 | 결과값 형식 (JSON) |
+| :--- | :--- | :--- |
+| `ready` | 연결 준비 완료 | `{ "type": "ready" }` |
+| `audio.delta` | AI 오디오 스트림 | `{ "type": "audio.delta", "delta": "<base64_pcm16>" }` |
+| `audio.done` | AI 오디오 완료 | `{ "type": "audio.done" }` |
+| `speech.started` | 사용자 발화 시작 | `{ "type": "speech.started" }` |
+| `speech.stopped` | 사용자 발화 종료 | `{ "type": "speech.stopped" }` |
+| `user.transcript` | 사용자 자막 | `{ "type": "user.transcript", "transcript": "..." }` |
+| `transcript.done` | AI 최종 자막 | `{ "type": "transcript.done", "transcript": "..." }` |
+| `scenario.completed` | 시나리오 완료 | `{ "type": "scenario.completed", "json": {...}, "completed": true }` |
+| `disconnected` | 세션 종료 리포트 | `{ "type": "disconnected", "reason": "...", "report": {...} }` |
 
 ---
-
-## ⚠️ 에러 처리
-
-### WebSocket Close Codes
-- `1008`: 토큰 인증 실패
-- `4003`: 권한 없음 (이미 주인이 있는 세션에 접근)
-- `4004`: 세션을 찾을 수 없음
-- `1011`: 서버 내부 오류
-
----
-
-## 🎙️ 지원되는 목소리 (Voice Options)
-- `alloy` (기본), `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`
-
----
-
 **최종 업데이트**: 2026-01-17
-**작성자**: MaLangEE 개발팀
