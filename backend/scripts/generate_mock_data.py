@@ -113,6 +113,28 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate mock data for MaLangEE")
     # Changed type to str to allow login_id logic
     parser.add_argument("--user-id", type=str, help="User ID (int) or login_id (str) to assign sessions to", default=None)
+    parser.add_argument("--production", action="store_true", help="Force use of production database (PostgreSQL)")
     args = parser.parse_args()
+
+    if args.production:
+        print("Switching to PRODUCTION mode (PostgreSQL)")
+        from app.core.config import settings
+        settings.USE_SQLITE = False
+        # Re-initialize engine with new settings
+        from app.db import database
+        database.engine = database.create_async_engine(
+            settings.DATABASE_URL,
+            echo=True,
+            pool_size=20,
+            max_overflow=10,
+            pool_recycle=3600,
+            pool_pre_ping=True,
+            pool_timeout=30
+        )
+        database.AsyncSessionLocal = database.sessionmaker(
+            database.engine, class_=database.AsyncSession, expire_on_commit=False
+        )
+        # Re-import to ensure we use the updated objects
+        from app.db.database import AsyncSessionLocal, engine
 
     asyncio.run(create_mock_data(user_identifier=args.user_id))
