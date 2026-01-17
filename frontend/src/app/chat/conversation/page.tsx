@@ -81,7 +81,6 @@ export default function ConversationPage() {
 
   const [conversationState, setConversationState] = useState<ConversationState>("user-turn");
   const [showHint, setShowHint] = useState(false);
-  const [showEndChatPopup, setShowEndChatPopup] = useState(false);
   const hintMessage = "Try saying: I'm doing great, thanks for asking!";
   const [textOpacity, setTextOpacity] = useState(1);
 

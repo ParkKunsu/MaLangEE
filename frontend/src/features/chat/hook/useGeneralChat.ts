@@ -4,27 +4,31 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { tokenStorage } from "@/features/auth";
 
 /**
- * WebSocket 메시지 타입 (OpenAI Realtime API 표준)
+ * WebSocket 메시지 타입 (Backend custom types)
+ * Note: Backend는 OpenAI 표준 대신 단순화된 타입을 사용
  */
 export type GeneralChatMessageType =
   | "session.created"
   | "session.updated"
   | "conversation.item.created"
-  | "response.audio.delta"
-  | "response.audio.done"
+  | "audio.delta"                    // Backend custom: AI 음성 청크
+  | "audio.done"                     // Backend custom: AI 음성 완료
+  | "transcript.done"                // Backend custom: AI 텍스트 자막
+  | "speech.started"                 // Backend custom: 사용자 발화 시작
+  | "speech.stopped"                 // Backend custom: 사용자 발화 종료
+  | "user.transcript"                // Backend custom: 사용자 STT 자막
   | "response.text.delta"
   | "response.text.done"
-  | "input_audio_buffer.speech_started"
-  | "input_audio_buffer.speech_stopped"
   | "disconnected"
   | "error";
 
 export interface GeneralChatMessage {
   type: GeneralChatMessageType;
-  delta?: string;           // response.audio.delta
-  sample_rate?: number;     // response.audio.delta
+  delta?: string;           // audio.delta
+  sample_rate?: number;     // audio.delta
   text_delta?: string;      // response.text.delta
   text?: string;            // response.text.done
+  transcript?: string;      // transcript.done, user.transcript
   session?: {               // session.created
     id: string;
     model: string;
@@ -82,6 +86,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const connectionIdRef = useRef(0);
+  const handleMessageRef = useRef<((event: MessageEvent) => void) | null>(null);
 
   // 재연결 관련 refs
   const reconnectCountRef = useRef(0);
@@ -230,22 +235,40 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             }));
             break;
 
-          case "input_audio_buffer.speech_started":
+          case "speech.started":
             // 사용자 발화 시작 감지 시 AI 음성 즉시 중단 (Barge-in)
             console.log("[WebSocket] Barge-in triggered");
             stopAudio();
             setState(prev => ({ ...prev, isUserSpeaking: true }));
             break;
 
-          case "input_audio_buffer.speech_stopped":
+          case "speech.stopped":
             setState(prev => ({ ...prev, isUserSpeaking: false }));
             break;
 
-          case "response.audio.delta":
+          case "audio.delta":
             if (payload.delta) {
               const rate = payload.sample_rate || 24000;
               setState(prev => ({ ...prev, isAiSpeaking: true }));
               playChunk(payload.delta, rate);
+            }
+            break;
+
+          case "audio.done":
+            console.log("[WebSocket] Audio playback done");
+            break;
+
+          case "transcript.done":
+            if (payload.transcript) {
+              console.log("[AI Transcript]:", payload.transcript);
+              setState(prev => ({ ...prev, aiMessage: payload.transcript || "" }));
+            }
+            break;
+
+          case "user.transcript":
+            if (payload.transcript) {
+              console.log("[User Transcript]:", payload.transcript);
+              setState(prev => ({ ...prev, userTranscript: payload.transcript || "" }));
             }
             break;
 
@@ -282,6 +305,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             break;
 
           default:
+            console.warn("[WebSocket] Unknown message type:", payload.type);
             break;
         }
       } catch (error) {
@@ -290,6 +314,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     },
     [playChunk, stopAudio]
   );
+
+  // handleMessage를 ref에 저장하여 connect의 의존성에서 제거
+  handleMessageRef.current = handleMessage;
 
   /**
    * WebSocket 연결
@@ -314,7 +341,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
       ws.onmessage = (event) => {
         if (connectionIdRef.current !== currentConnectionId) return;
-        handleMessage(event);
+        handleMessageRef.current?.(event);
       };
 
       ws.onclose = (event) => {
@@ -341,7 +368,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     } catch (error) {
       setState((prev) => ({ ...prev, error: "Connection failed" }));
     }
-  }, [getWebSocketUrl, handleMessage]);
+  }, [getWebSocketUrl]);
 
   const disconnect = useCallback(() => {
     isManuallyClosedRef.current = true;
