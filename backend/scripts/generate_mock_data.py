@@ -1,3 +1,26 @@
+"""
+MaLangEE Mock Data Generation Script
+
+이 스크립트는 DB에 테스트용 세션과 메시지 데이터를 생성합니다.
+
+사용 예시 (Usage Examples):
+
+1. 로컬 개발 환경 (Local Development - SQLite):
+   poetry run python scripts/generate_mock_data.py --user-id 1
+
+2. 배포 서버 / 운영 환경 (Production - PostgreSQL):
+   # 직접 DB 정보를 입력하여 실행 (가장 확실한 방법)
+   poetry run python scripts/generate_mock_data.py \
+     --user-id guest \
+     --production \
+     --db-name malangee \
+     --db-user malangee_user \
+     --db-password "실제_DB_비밀번호" \
+     --db-host localhost \
+     --db-port 5432
+
+참고: --user-id는 사용자의 숫자 ID(PK) 또는 로그인 ID(문자열) 모두 지원합니다.
+"""
 import asyncio
 import argparse
 import sys
