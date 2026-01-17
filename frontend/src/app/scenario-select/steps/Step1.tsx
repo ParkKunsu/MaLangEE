@@ -63,6 +63,21 @@ export function Step1({
     }
   }, []);
 
+  // 소켓 연결 상태 리스닝 (일시정지 버튼 제어용 - Step1에서는 사용 안함)
+  useEffect(() => {
+    // Step1에서는 일시정지 버튼을 숨기기 위해 소켓 상태를 false로 강제 설정하는 이벤트를 보낼 수도 있지만,
+    // ChatLayout에서 pathname을 체크하거나 별도의 prop을 받는 것이 더 깔끔함.
+    // 여기서는 ChatLayout이 socket-status 이벤트를 받아서 처리하므로,
+    // Step1이 마운트될 때 false를 보내면 다른 페이지(Conversation)에서 문제될 수 있음.
+    // 따라서 ChatLayout에서 pathname 기반으로 제어하는 것이 좋음.
+    // 하지만 요청사항은 "소켓 연결상태 체크해, 일시중지 버튼은 숨김처리" 이므로
+    // ChatLayout에서 isSocketConnected 상태를 관리하고 있음.
+    // Step1에서는 별도 처리가 필요 없음 (ChatLayout이 알아서 처리).
+    // 다만, Step1이 있는 ScenarioSelectPage에서도 소켓 연결이 이루어지므로
+    // ChatLayout의 일시정지 버튼이 보일 수 있음.
+    // 이를 숨기려면 ChatLayout에서 pathname이 /scenario-select 일 때 숨기도록 처리해야 함.
+  }, []);
+
   const toggleSubtitle = () => {
     const newValue = !showSubtitle;
     setShowSubtitle(newValue);

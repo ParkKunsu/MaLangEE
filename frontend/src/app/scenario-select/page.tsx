@@ -6,7 +6,7 @@ import {Button, MalangEE} from "@/shared/ui";
 import {PopupLayout} from "@/shared/ui/PopupLayout";
 import "@/shared/styles/scenario.css";
 import {FullLayout} from "@/shared/ui/FullLayout";
-import {useScenarioChat} from "@/features/chat";
+import {useGeneralChat} from "@/features/chat"; // useScenarioChat -> useGeneralChat
 import {useInactivityTimer, useAudioRecorder} from "@/shared/hooks";
 import {Step1} from "@/app/scenario-select/steps/Step1";
 import {Step2} from "@/app/scenario-select/steps/Step2";
@@ -41,6 +41,7 @@ export default function ScenarioSelectPage() {
     const lastAiMessageRef = useRef("");
     const localSpeakingRef = useRef(false);
     
+    // useGeneralChat 훅 사용 (mode: "scenario")
     const {
         state: chatState,
         connect,
@@ -48,7 +49,10 @@ export default function ScenarioSelectPage() {
         sendText,
         sendAudioChunk,
         initAudio,
-    } = useScenarioChat();
+    } = useGeneralChat({
+        mode: "scenario",
+    });
+
     const hintMessage = "예: 공항 체크인 상황을 연습하고 싶어요.";
     const hasError = Boolean(chatState.error);
 

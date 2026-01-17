@@ -74,6 +74,7 @@ export default function ConversationPage() {
   }, []);
 
   const { state: chatState, connect, disconnect, sendAudioChunk, initAudio, toggleMute, togglePause } = useGeneralChat({
+    mode: "general", // 모드 추가
     sessionId,
     voice: selectedVoice,
     showText: subtitleEnabled,
@@ -403,7 +404,7 @@ export default function ConversationPage() {
       // 오디오 컨텍스트 Resume 시도
       // (useScenarioChat 내부 initAudio가 export 되어 있다고 가정)
       // *만약 useScenarioChat 수정이 아직 반영 안 됐다면 hook에서 initAudio를 반환하도록 수정 필요*
-      // 확인: useScenarioChat.ts 수정 완료됨.
+      // 확인: useGeneralChat.ts 수정 완료됨.
       if ((chatState as any).initAudio) {
         (chatState as any).initAudio();
       } else {

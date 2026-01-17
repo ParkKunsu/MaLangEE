@@ -224,7 +224,7 @@ yarn build       # 빌드 성공
   - [ ] `input_audio.transcript` 처리
   - [ ] `scenario.completed` 처리
   - [ ] `error` 처리
-- [ ] `features/scenario-chat/hook/useScenarioChat.ts` - 채팅 상태 관리 훅
+- [ ] `features/scenario-chat/hook/useGeneralChat.ts` - 채팅 상태 관리 훅
 - [ ] `features/scenario-chat/ui/ScenarioChat.tsx` - 채팅 UI 컴포넌트
 - [ ] `features/scenario-chat/index.ts` - Public API export
 
@@ -268,7 +268,7 @@ src/features/
     ├── api/websocket.ts
     ├── hook/
     │   ├── useScenarioWebSocket.ts
-    │   └── useScenarioChat.ts
+    │   └── useGeneralChat.ts
     ├── ui/ScenarioChat.tsx
     └── index.ts
 ```

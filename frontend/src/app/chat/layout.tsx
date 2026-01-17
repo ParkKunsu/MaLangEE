@@ -63,7 +63,7 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
   const handleEndChatConfirm = () => {
     setShowEndChatPopup(false);
     // 대시보드로 이동
-    router.push("/dashboard");
+    router.push("/chat/complete");
   };
 
   const handleEndChatCancel = () => {
@@ -71,7 +71,8 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
   };
 
   // 헤더 우측 버튼 그룹 (로그인한 사용자만 표시)
-  const headerRightContent = hasToken ? (
+  // /chat/complete 페이지에서는 버튼 숨김
+  const headerRightContent = hasToken && pathname !== "/chat/complete" ? (
     <div className="flex items-center gap-2">
       {/* 음소거 버튼 */}
       <button
@@ -82,8 +83,8 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
         {isMuted ? <VolumeX size={24} strokeWidth={2.5} /> : <Volume2 size={24} strokeWidth={2.5} />}
       </button>
 
-      {/* 일시정지 버튼 (소켓 연결 상태일 때만 표시) */}
-      {isSocketConnected && (
+      {/* 일시정지 버튼 (소켓 연결 상태이고 대화 페이지일 때만 표시) */}
+      {isSocketConnected && pathname === "/chat/conversation" && (
         <button
           className="flex h-10 w-10 items-center justify-center rounded-full text-[#6A667A] transition-colors hover:bg-gray-100 hover:text-[#5F51D9]"
           onClick={handlePauseToggle}
