@@ -37,7 +37,12 @@ class ConversationSession(Base):
     scenario_goal = Column(String, nullable=True)
     scenario_state_json = Column(Text, nullable=True)
     scenario_completed_at = Column(DateTime(timezone=True), nullable=True)
+    scenario_completed_at = Column(DateTime(timezone=True), nullable=True)
     deleted = Column(Boolean, default=False)
+
+    # [New] Feedback & Summary
+    feedback = Column(Text, nullable=True) # Top 3 피드백 (JSON string or Plain Text)
+    scenario_summary = Column(Text, nullable=True) # 시나리오 요약 (English 1 line)
     
     # [New] User Preferences
     voice = Column(String, nullable=True)
