@@ -33,6 +33,17 @@ export type ChatMessageType =
   | "disconnected"
   | "error";
 
+export interface ChatSessionReport {
+  session_id: string;
+  total_duration_sec: number;
+  user_speech_duration_sec: number;
+  messages: Array<{
+    role: string;
+    content: string;
+    timestamp: string;
+  }>;
+}
+
 export interface ChatMessage {
   type: ChatMessageType;
   // Common / General
@@ -49,12 +60,7 @@ export interface ChatMessage {
   };
   message?: string;
   reason?: string;
-  report?: {
-    session_id: string;
-    total_duration_sec: number;
-    user_speech_duration_sec: number;
-    messages: any[];
-  };
+  report?: ChatSessionReport;
   // Scenario Specific
   json?: {
     place: string | null;
@@ -114,6 +120,18 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     sessionInfo: null,
     scenarioResult: null,
   });
+
+  // 디버그 상태 이벤트 발송
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("chat-debug-status", { 
+      detail: { 
+        isConnected: state.isConnected,
+        lastEvent: state.lastEvent,
+        isAiSpeaking: state.isAiSpeaking,
+        isUserSpeaking: state.isUserSpeaking
+      } 
+    }));
+  }, [state.isConnected, state.lastEvent, state.isAiSpeaking, state.isUserSpeaking]);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -182,8 +200,6 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
       // Scenario Mode
       endpoint = token ? "/api/v1/ws/scenario" : "/api/v1/ws/guest-scenario";
       if (token) params.append("token", token);
-      // 시나리오 모드는 voice, show_text 파라미터를 현재 API 스펙상 사용하지 않거나 내부적으로 처리할 수 있음
-      // 필요하다면 추가: params.append("voice", voice);
     }
 
     const queryString = params.toString();
@@ -285,7 +301,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (isPausedRef.current) return;
 
     if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
       nextStartTimeRef.current = audioContextRef.current.currentTime;
       
@@ -364,15 +380,13 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
   const handleMessage = useCallback(
     (event: MessageEvent) => {
       try {
-        const payload: ChatMessage = JSON.parse(event.data);
-        // console.log("[WebSocket] Received:", payload.type, payload);
+        const payload: ChatMessage = JSON.parse(event.data as string);
 
         setState(prev => ({ ...prev, lastEvent: payload.type }));
 
         switch (payload.type) {
-          // --- Common / General ---
           case "session.created":
-          case "ready": // Scenario
+          case "ready":
             reconnectCountRef.current = 0;
             setState((prev) => ({
               ...prev,
@@ -381,7 +395,6 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
               sessionInfo: payload.session || null
             }));
             
-            // General 모드일 때만 초기 설정 전송
             if (mode === "general" && wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(JSON.stringify({
                 type: "session.update",
@@ -418,8 +431,8 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             if (mode === "general") startResponseTimeout();
             break;
 
-          case "audio.delta": // General
-          case "response.audio.delta": // Scenario
+          case "audio.delta":
+          case "response.audio.delta":
             if (isPausedRef.current) return;
             if (payload.delta) {
               const rate = payload.sample_rate || 24000;
@@ -430,28 +443,22 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             }
             break;
 
-          case "audio.done": // General
-          case "response.audio.done": // Scenario
-            // 오디오 재생 완료 처리 (필요시)
-            break;
-
-          case "transcript.done": // General
+          case "transcript.done":
             if (payload.transcript) {
               setState(prev => ({ ...prev, aiMessage: payload.transcript || "" }));
             }
             break;
           
-          case "response.audio_transcript.delta": // Scenario
+          case "response.audio_transcript.delta":
             if (payload.transcript_delta) {
               setState(prev => ({ ...prev, aiMessage: prev.aiMessage + payload.transcript_delta }));
             }
             break;
 
-          case "response.audio_transcript.done": // Scenario
+          case "response.audio_transcript.done":
             if (payload.transcript) {
               const englishText = payload.transcript;
               setState(prev => ({ ...prev, aiMessage: englishText }));
-              // 시나리오 모드에서는 번역 수행
               if (mode === "scenario") {
                 translateToKorean(englishText).then(translated => {
                   setState(prev => ({ ...prev, aiMessageKR: translated }));
@@ -460,26 +467,26 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
             }
             break;
 
-          case "user.transcript": // General
-          case "input_audio.transcript": // Scenario
+          case "user.transcript":
+          case "input_audio.transcript":
             if (payload.transcript) {
               setState(prev => ({ ...prev, userTranscript: payload.transcript || "", isUserSpeaking: false }));
             }
             break;
 
-          case "response.text.delta": // General
+          case "response.text.delta":
             if (payload.text_delta) {
               setState(prev => ({ ...prev, aiMessage: prev.aiMessage + payload.text_delta }));
             }
             break;
 
-          case "response.text.done": // General
+          case "response.text.done":
             if (payload.text) {
               setState(prev => ({ ...prev, aiMessage: payload.text || "" }));
             }
             break;
 
-          case "scenario.completed": // Scenario
+          case "scenario.completed":
             if (payload.json) {
               setState(prev => ({
                 ...prev,
@@ -496,11 +503,9 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
           case "disconnected":
             if (payload.report) {
-              // 세션 리포트 저장
               if (typeof window !== "undefined") {
                 localStorage.setItem("chatReport", JSON.stringify(payload.report));
               }
-              // 완료 페이지로 이동
               router.push("/chat/complete");
             }
             break;
@@ -532,7 +537,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
     try {
       const url = getWebSocketUrl();
-      if (!url) return; // URL 생성 실패 시 중단
+      if (!url) return;
 
       const ws = new WebSocket(url);
 
@@ -585,7 +590,6 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
     if (speakingEndTimeoutRef.current) clearTimeout(speakingEndTimeoutRef.current);
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      // General 모드일 때만 disconnect 메시지 전송 (시나리오 모드는 그냥 닫아도 됨)
       if (mode === "general") {
         wsRef.current.send(JSON.stringify({ type: "disconnect" }));
       }
@@ -628,11 +632,10 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
           audio: base64
         }));
       } else {
-        // Scenario Mode
         wsRef.current.send(JSON.stringify({
           type: "input_audio_chunk",
           audio: base64,
-          sample_rate: 16000 // 시나리오 모드는 16k 사용
+          sample_rate: 16000
         }));
       }
     }
@@ -649,7 +652,7 @@ export function useGeneralChat(options: UseGeneralChatOptions) {
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
       gainNodeRef.current = audioContextRef.current.createGain();
       gainNodeRef.current.connect(audioContextRef.current.destination);

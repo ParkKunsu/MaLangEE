@@ -90,6 +90,7 @@ export default function ConversationPage() {
   const streamRef = useRef<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [hasStartedRecording, setHasStartedRecording] = useState(false); // 녹음 시작 여부 추적
 
   // 팝업 상태
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -100,6 +101,7 @@ export default function ConversationPage() {
   // 타이머 ref
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const waitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityTimeRef = useRef<number>(Date.now());
 
   // WebSocket 연결 및 초기화 (sessionId가 설정된 후에만 연결)
   useEffect(() => {
@@ -119,6 +121,8 @@ export default function ConversationPage() {
   useEffect(() => {
     if (chatState.isAiSpeaking) {
       setConversationState("ai-speaking");
+      lastActivityTimeRef.current = Date.now(); // 활동 시간 업데이트
+      resetTimers();
     } else if (chatState.isConnected && chatState.isReady && !chatState.isAiSpeaking) {
       // AI가 말을 멈췄을 때, 사용자가 이미 말하고 있는 중이라면(녹음 중) 상태를 유지해야 함
       setConversationState((prev) => {
@@ -130,6 +134,14 @@ export default function ConversationPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatState.isAiSpeaking, chatState.isConnected, chatState.isReady]);
 
+  // 사용자 발화 감지 시 활동 시간 업데이트
+  useEffect(() => {
+    if (chatState.isUserSpeaking) {
+      lastActivityTimeRef.current = Date.now();
+      resetTimers();
+    }
+  }, [chatState.isUserSpeaking]);
+
   // 비활동 타이머 시작 (15초 후 메시지 표시)
   const startInactivityTimer = () => {
     // 일시정지 상태면 타이머 시작 안 함
@@ -137,9 +149,18 @@ export default function ConversationPage() {
 
     clearInactivityTimer();
     inactivityTimerRef.current = setTimeout(() => {
-      setShowInactivityMessage(true);
-      setConversationState("user-turn");
-      startWaitTimer();
+      const now = Date.now();
+      const diff = now - lastActivityTimeRef.current;
+      
+      // 마지막 활동으로부터 15초 이상 지났을 때만 힌트 표시
+      if (diff >= 15000) {
+        setShowInactivityMessage(true);
+        setConversationState("user-turn");
+        startWaitTimer();
+      } else {
+        // 아직 15초 안 지났으면 남은 시간만큼 다시 타이머 설정
+        inactivityTimerRef.current = setTimeout(startInactivityTimer, 15000 - diff);
+      }
     }, 15000);
   };
 
@@ -254,6 +275,7 @@ export default function ConversationPage() {
 
       source.connect(processor);
       processor.connect(audioContextRef.current.destination);
+      setHasStartedRecording(true); // 녹음 시작됨 표시
 
     } catch (error) {
       console.error("[Recording] Failed to start:", error);
@@ -275,6 +297,7 @@ export default function ConversationPage() {
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
+    setHasStartedRecording(false); // 녹음 중지됨
   }, []);
 
   const handleMicClick = () => {
@@ -282,9 +305,10 @@ export default function ConversationPage() {
     if (isPaused) return;
 
     resetTimers();
+    lastActivityTimeRef.current = Date.now(); // 활동 시간 업데이트
 
-    if (conversationState === "user-speaking") {
-      // 말하기 종료 (수동 중단)
+    if (hasStartedRecording) {
+      // 이미 녹음 중이면 수동 중단
       stopRecording();
       setTextOpacity(0);
       setTimeout(() => {
@@ -292,7 +316,7 @@ export default function ConversationPage() {
         setTextOpacity(1);
       }, 300);
     } else {
-      // 말하기 시작 (대기 중이거나 AI 말하는 중일 때 - Barge-in 포함)
+      // 녹음 시작 (대기 중이거나 AI 말하는 중일 때 - Barge-in 포함)
       setConversationState("user-speaking");
       setShowHint(false);
       startRecording();
@@ -349,6 +373,7 @@ export default function ConversationPage() {
   const handleContinueChat = () => {
     setShowWaitPopup(false);
     resetTimers();
+    lastActivityTimeRef.current = Date.now(); // 활동 시간 업데이트
     setConversationState("user-turn"); // 다시 대화 가능한 상태로
     startInactivityTimer();
   };
@@ -360,6 +385,7 @@ export default function ConversationPage() {
   const handleContinueFromEnd = () => {
     setShowEndChatPopup(false);
     resetTimers();
+    lastActivityTimeRef.current = Date.now(); // 활동 시간 업데이트
     startInactivityTimer();
   };
 
@@ -450,6 +476,7 @@ export default function ConversationPage() {
         stopRecording();
       } else {
         // 재개 시 타이머 재시작
+        lastActivityTimeRef.current = Date.now(); // 활동 시간 업데이트
         startInactivityTimer();
       }
     };
@@ -465,7 +492,20 @@ export default function ConversationPage() {
     };
   }, [handleEndConversation, toggleMute, togglePause, stopRecording]);
 
+  // 사용자 발화 상태 감지 (VAD)
+  useEffect(() => {
+    if (chatState.isUserSpeaking) {
+      setConversationState("user-speaking");
+    } else if (!chatState.isAiSpeaking && !isPaused) {
+      // AI도 안 말하고 사용자도 안 말하면 대기 상태
+      setConversationState("user-turn");
+    }
+  }, [chatState.isUserSpeaking, chatState.isAiSpeaking, isPaused]);
+
   if (!isMounted) return null;
+
+  // 마이크 웨이브 표시 여부: 대화가 시작되었고, 사용자가 말해야 하는 타이밍일 때
+  const showMicWaves = hasStartedRecording && (conversationState === "user-turn" || conversationState === "user-speaking");
 
   return (
     <>
@@ -486,21 +526,22 @@ export default function ConversationPage() {
         <MalangEE status={getMalangEEStatus()} size={150} />
 
         {/* Hint Bubble */}
-        {conversationState === "user-turn" && !isPaused && (
-          <div className="absolute -bottom-[55px] left-1/2 z-10 -translate-x-1/2">
+        {showInactivityMessage && !isPaused && (
+          <div className="absolute -right-[220px] top-1/2 z-10 -translate-y-1/2 animate-in fade-in slide-in-from-left-4 duration-500">
             <button
               onClick={handleHintClick}
-              className="relative rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-6 py-3 shadow-lg transition-all hover:bg-yellow-100"
+              className="relative rounded-2xl border-2 border-yellow-300 bg-yellow-50 px-6 py-3 shadow-lg transition-all hover:bg-yellow-100 max-w-[200px]"
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <div className="h-0 w-0 border-b-[12px] border-l-[12px] border-r-[12px] border-b-yellow-300 border-l-transparent border-r-transparent"></div>
-                <div className="absolute left-1/2 top-[2px] h-0 w-0 -translate-x-1/2 border-b-[10px] border-l-[10px] border-r-[10px] border-b-yellow-50 border-l-transparent border-r-transparent"></div>
+              {/* Arrow pointing to character (left) */}
+              <div className="absolute -left-3 top-1/2 -translate-y-1/2">
+                <div className="h-0 w-0 border-r-[12px] border-t-[12px] border-b-[12px] border-r-yellow-300 border-t-transparent border-b-transparent"></div>
+                <div className="absolute left-[2px] top-1/2 -translate-y-1/2 h-0 w-0 border-r-[10px] border-t-[10px] border-b-[10px] border-r-yellow-50 border-t-transparent border-b-transparent"></div>
               </div>
 
               {showHint ? (
-                <p className="whitespace-nowrap text-sm text-gray-700">{hintMessage}</p>
+                <p className="text-sm text-gray-700 leading-tight">{hintMessage}</p>
               ) : (
-                <p className="whitespace-nowrap text-sm italic text-gray-500">
+                <p className="text-sm italic text-gray-500 leading-tight">
                   Lost your words? <br /> (tap for a hint)
                 </p>
               )}
@@ -557,11 +598,11 @@ export default function ConversationPage() {
       {/* Mic Button */}
       <div className="relative mt-2">
         <MicButton
-          isListening={conversationState === "user-speaking"}
+          isListening={showMicWaves}
           onClick={handleMicClick}
           size="md"
           className={
-            !chatState.isConnected || conversationState === "ai-speaking" || isPaused
+            !chatState.isConnected || (hasStartedRecording && conversationState === "ai-speaking") || isPaused
               ? "pointer-events-none opacity-50"
               : ""
           }

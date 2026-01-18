@@ -11,6 +11,7 @@ import {useInactivityTimer, useAudioRecorder} from "@/shared/hooks";
 import {Step1} from "@/app/scenario-select/steps/Step1";
 import {Step2} from "@/app/scenario-select/steps/Step2";
 import {Step3} from "@/app/scenario-select/steps/Step3";
+import {DebugStatus} from "@/shared/ui";
 
 export default function ScenarioSelectPage() {
     const router = useRouter();
@@ -288,6 +289,13 @@ export default function ScenarioSelectPage() {
 
     return (
       <>
+        <DebugStatus
+          isConnected={chatState.isConnected}
+          lastEvent={chatState.lastEvent}
+          isAiSpeaking={chatState.isAiSpeaking}
+          isUserSpeaking={chatState.isUserSpeaking || isLocalSpeaking}
+        />
+
         <FullLayout showHeader={true}>
           {/* Character */}
           <div className="character-box relative">
@@ -341,31 +349,6 @@ export default function ScenarioSelectPage() {
 
           {stepIndex === 3 && <Step3 textOpacity={textOpacity} onNext={() => setStepIndex(4)} />}
         </FullLayout>
-
-        {/* 디버깅용 이벤트 상태 표시 */}
-        <div className="pointer-events-none fixed bottom-4 left-4 right-4 z-50 flex justify-center">
-          <div className="flex items-center gap-3 rounded-full bg-black/70 px-3 py-1 text-[10px] text-white backdrop-blur-md">
-            <div className="flex items-center gap-1">
-              <div
-                className={`h-1.5 w-1.5 rounded-full ${chatState.isConnected ? "bg-green-500" : "bg-red-500"}`}
-              />
-              <span>{chatState.isConnected ? "CONNECTED" : "DISCONNECTED"}</span>
-            </div>
-            {chatState.lastEvent && (
-              <div className="border-l border-white/20 pl-3">
-                LAST EVENT:{" "}
-                <span className="font-mono text-yellow-400">
-                  {chatState.lastEvent.toUpperCase()}
-                </span>
-              </div>
-            )}
-            {chatState.isAiSpeaking && (
-              <div className="animate-pulse border-l border-white/20 pl-3 text-blue-400">
-                AI SPEAKING...
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* 시나리오 결과 확인 팝업 */}
         {showScenarioResultPopup && chatState.scenarioResult && (

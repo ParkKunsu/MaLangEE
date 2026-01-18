@@ -4,7 +4,7 @@ import { ReactNode, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { tokenStorage } from "@/features/auth/model";
 import { FullLayout } from "@/shared/ui/FullLayout";
-import { Button, MalangEE, PopupLayout } from "@/shared/ui";
+import { Button, MalangEE, PopupLayout, DebugStatus } from "@/shared/ui";
 import { Square, Volume2, VolumeX, Pause } from "lucide-react";
 import "@/shared/styles/scenario.css";
 
@@ -21,20 +21,39 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [isSocketConnected, setIsSocketConnected] = useState(false); // 소켓 연결 상태
 
+  // 디버그 상태 관리
+  const [debugInfo, setDebugInfo] = useState<{
+    isConnected: boolean;
+    lastEvent: string | null;
+    isAiSpeaking: boolean;
+    isUserSpeaking?: boolean;
+  }>({
+    isConnected: false,
+    lastEvent: null,
+    isAiSpeaking: false,
+  });
+
   // 클라이언트에서만 토큰 확인 (hydration 에러 방지)
   useEffect(() => {
     setHasToken(tokenStorage.exists());
   }, []);
 
-  // 소켓 연결 상태 리스닝
+  // 소켓 및 디버그 상태 리스닝
   useEffect(() => {
     const handleSocketStatus = (event: CustomEvent<{ isConnected: boolean }>) => {
       setIsSocketConnected(event.detail.isConnected);
     };
 
+    const handleDebugStatus = (event: CustomEvent) => {
+      setDebugInfo(event.detail);
+    };
+
     window.addEventListener("socket-status", handleSocketStatus as EventListener);
+    window.addEventListener("chat-debug-status", handleDebugStatus as EventListener);
+
     return () => {
       window.removeEventListener("socket-status", handleSocketStatus as EventListener);
+      window.removeEventListener("chat-debug-status", handleDebugStatus as EventListener);
     };
   }, []);
 
@@ -62,7 +81,7 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
 
   const handleEndChatConfirm = () => {
     setShowEndChatPopup(false);
-    // 대시보드로 이동
+    // 완료 페이지로 이동
     router.push("/chat/complete");
   };
 
@@ -107,6 +126,13 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
 
   return (
     <>
+      <DebugStatus
+        isConnected={debugInfo.isConnected}
+        lastEvent={debugInfo.lastEvent}
+        isAiSpeaking={debugInfo.isAiSpeaking}
+        isUserSpeaking={debugInfo.isUserSpeaking}
+      />
+
       <FullLayout showHeader={true} headerRight={headerRightContent}>
         {children}
       </FullLayout>
