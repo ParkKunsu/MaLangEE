@@ -19,6 +19,8 @@ class SessionBase(BaseModel):
     ended_at: str
     total_duration_sec: float
     user_speech_duration_sec: float
+    feedback: Optional[str] = None
+    scenario_summary: Optional[str] = None
 
 class SessionCreate(SessionBase):
     messages: List[MessageSchema]

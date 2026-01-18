@@ -171,7 +171,7 @@ class ConversationManager:
                     "role": msg['role'],
                     "content": [
                         {
-                            "type": "input_text",
+                            "type": "input_text" if msg['role'] == "user" else "text",
                             "text": msg['content']
                         } 
                     ]

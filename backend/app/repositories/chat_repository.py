@@ -60,6 +60,12 @@ class ChatRepository:
             if session_data.show_text is not None:
                 db_session.show_text = session_data.show_text
             
+            # [New] Feedback & Summary
+            if session_data.feedback is not None:
+                db_session.feedback = session_data.feedback
+            if session_data.scenario_summary is not None:
+                db_session.scenario_summary = session_data.scenario_summary
+            
             # Tracker는 현재 세션의 '새로운' 메시지만 들고 있으므로,
             # 슬라이싱 없이 그대로 기존 DB 메시지 뒤에 추가(Append)하면 됩니다.
             for msg in session_data.messages:
@@ -87,7 +93,10 @@ class ChatRepository:
                 scenario_completed_at=scenario_completed_at,
                 voice=session_data.voice,
                 show_text=session_data.show_text,
-                user_id=user_id
+                user_id=user_id,
+                # [New] Feedback & Summary
+                feedback=session_data.feedback,
+                scenario_summary=session_data.scenario_summary
             )
             self.db.add(db_session)
             

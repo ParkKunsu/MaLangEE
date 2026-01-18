@@ -5,6 +5,7 @@ import websockets
 from fastapi import WebSocket, WebSocketDisconnect
 from .conversation_manager import ConversationManager
 from .conversation_tracker import ConversationTracker
+from conversation_feedback.feedback_service import generate_feedback
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -300,6 +301,27 @@ class ConnectionHandler:
         # [Tracker] 세션 종료 및 리포트 생성 (전송 & 반환)
         if hasattr(self, 'tracker'):
             report = self.tracker.finalize()
+            
+            # [Feedback] 메시지 10개 초과 시 피드백 생성
+            total_messages = self.history + report["messages"]
+            message_count = len(total_messages)
+            
+            if message_count > 10:
+                try:
+                    logger.info(f"피드백 생성 조건을 만족했습니다. (메시지: {message_count}개)")
+                    # 히스토리 + 현재 세션 메시지 전체로 피드백 생성
+                    feedback_result = generate_feedback(total_messages, session_id=self.tracker.session_id)
+                    
+                    report["feedback"] = feedback_result.get("feedback")
+                    report["scenario_summary"] = feedback_result.get("scenario_summary")
+                    logger.info("피드백 및 요약 생성 완료")
+                except Exception as e:
+                    logger.error(f"피드백 생성 실패: {e}")
+            else:
+                logger.info(f"대화가 충분하지 않아 피드백 생성을 건너뜁니다. (메시지: {message_count}개)")
+                report["feedback"] = "대화가 충분하지 않아 분석을 진행할수 없어요."
+                report["scenario_summary"] = None
+
             logger.info(f"### Session Report ###\n{json.dumps(report, indent=2, ensure_ascii=False)}")
             
             # 클라이언트에게 리포트 전송 (이미 끊겼을 수도 있으므로 try-except)
