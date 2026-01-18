@@ -2,12 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { tokenStorage } from "@/features/auth";
+import { translateToKorean } from "@/shared/lib/translate";
 
 export interface ScenarioChatStateNew {
   isConnected: boolean;
   isReady: boolean;
   logs: string[];
   aiMessage: string;
+  aiMessageKR: string;
   userTranscript: string;
   isAiSpeaking: boolean;
   isUserSpeaking: boolean;
@@ -20,6 +22,7 @@ export function useScenarioChatNew() {
     isReady: false,
     logs: [],
     aiMessage: "",
+    aiMessageKR: "",
     userTranscript: "",
     isAiSpeaking: false,
     isUserSpeaking: false,
@@ -30,6 +33,7 @@ export function useScenarioChatNew() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const gainNodeRef = useRef<GainNode | null>(null);
 
   const addLog = (msg: string) => {
     setState((prev) => ({ ...prev, logs: [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.logs] }));
@@ -62,11 +66,18 @@ export function useScenarioChatNew() {
     return `${wsBaseUrl}${endpoint}?${params.toString()}`;
   };
 
+  // 시나리오 모드는 16000Hz 권장 (가이드 기준)
+  const SAMPLE_RATE = 16000;
+
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
-      addLog("AudioContext created");
+      audioContextRef.current = new AudioContextClass({ sampleRate: SAMPLE_RATE });
+      
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+      
+      addLog(`AudioContext created (${SAMPLE_RATE}Hz)`);
     }
     if (audioContextRef.current.state === "suspended") {
       audioContextRef.current.resume();
@@ -75,10 +86,7 @@ export function useScenarioChatNew() {
   }, []);
 
   const playAudio = useCallback((base64: string, sampleRate: number = 24000) => {
-    if (!audioContextRef.current) {
-        addLog("AudioContext not initialized. Call initAudio() first.");
-        return;
-    }
+    if (!audioContextRef.current) return;
 
     const ctx = audioContextRef.current;
     const binary = atob(base64);
@@ -92,12 +100,18 @@ export function useScenarioChatNew() {
       samples[i] = sample / 32768;
     }
 
+    // 서버 응답은 24k일 수 있으므로 파라미터로 받은 sampleRate 사용
     const buffer = ctx.createBuffer(1, samples.length, sampleRate);
     buffer.copyToChannel(samples, 0);
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    
+    if (gainNodeRef.current) {
+      source.connect(gainNodeRef.current);
+    } else {
+      source.connect(ctx.destination);
+    }
 
     const startTime = Math.max(nextStartTimeRef.current, ctx.currentTime);
     source.start(startTime);
@@ -123,6 +137,16 @@ export function useScenarioChatNew() {
     setState(prev => ({ ...prev, isAiSpeaking: false }));
   }, []);
 
+  const toggleMute = useCallback((isMuted: boolean) => {
+    if (gainNodeRef.current && audioContextRef.current) {
+      const currentTime = audioContextRef.current.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(currentTime);
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(isMuted ? 0 : 1, currentTime + 0.1);
+      addLog(isMuted ? "Muted" : "Unmuted");
+    }
+  }, []);
+
   const connect = useCallback(() => {
     const url = getWebSocketUrl();
     addLog(`Connecting to ${url}`);
@@ -138,24 +162,12 @@ export function useScenarioChatNew() {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        // addLog(`Received: ${data.type}`);
 
         switch (data.type) {
           case "ready":
             addLog("Received 'ready'. Sending init messages...");
             setState(prev => ({ ...prev, isReady: true }));
             
-            // 1. Session Update
-            ws.send(JSON.stringify({
-              type: "session.update",
-              session: {
-                instructions: "You are a scenario selector. Ask the user what situation they want to practice.",
-                turn_detection: { type: "server_vad", threshold: 0.4, prefix_padding_ms: 300, silence_duration_ms: 600 }
-              }
-            }));
-            addLog("Sent session.update");
-
-            // 2. Response Create
             ws.send(JSON.stringify({
               type: "response.create",
               response: {
@@ -167,13 +179,17 @@ export function useScenarioChatNew() {
             break;
 
           case "response.audio.delta":
-            // addLog("Received audio chunk"); // 너무 많아서 주석 처리
-            playAudio(data.delta, 24000);
+            playAudio(data.delta, data.sample_rate || 24000);
             break;
           
           case "response.audio_transcript.done":
             setState(prev => ({ ...prev, aiMessage: data.transcript }));
             addLog(`AI: ${data.transcript}`);
+            // 번역 수행
+            translateToKorean(data.transcript).then(translated => {
+              setState(prev => ({ ...prev, aiMessageKR: translated }));
+              addLog(`AI (KR): ${translated}`);
+            });
             break;
 
           case "speech.started":
@@ -213,10 +229,16 @@ export function useScenarioChatNew() {
   }, [playAudio, stopAudio]);
 
   const disconnect = useCallback(() => {
-    wsRef.current?.close();
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
     stopAudio();
-    audioContextRef.current?.close();
-    audioContextRef.current = null;
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setState(prev => ({ ...prev, isConnected: false, isReady: false }));
     addLog("Disconnected manually");
   }, [stopAudio]);
 
@@ -236,13 +258,13 @@ export function useScenarioChatNew() {
       const base64 = btoa(binary);
 
       wsRef.current.send(JSON.stringify({
-        type: "input_audio_buffer.append",
-        audio: base64
+        type: "input_audio_chunk",
+        audio: base64,
+        sample_rate: 16000
       }));
     }
   }, []);
 
-  // 수동 테스트용 함수들
   const sendText = useCallback((text: string) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "text", text }));
@@ -258,8 +280,7 @@ export function useScenarioChatNew() {
   }, []);
 
   const sendMockAudio = useCallback(() => {
-    // 1초 분량의 무음 데이터 전송
-    const mockData = new Float32Array(24000).fill(0);
+    const mockData = new Float32Array(16000).fill(0);
     sendAudio(mockData);
     addLog("Sent Mock Audio (Silence)");
   }, [sendAudio]);
@@ -272,6 +293,7 @@ export function useScenarioChatNew() {
     sendAudio,
     sendText,
     forceResponseCreate,
-    sendMockAudio
+    sendMockAudio,
+    toggleMute
   };
 }

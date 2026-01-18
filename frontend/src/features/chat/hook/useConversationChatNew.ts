@@ -31,6 +31,7 @@ export function useConversationChatNew(sessionId: string) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const gainNodeRef = useRef<GainNode | null>(null); // GainNode 추가
 
   const addLog = (msg: string) => {
     setState((prev) => ({ ...prev, logs: [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.logs] }));
@@ -74,6 +75,11 @@ export function useConversationChatNew(sessionId: string) {
     if (!audioContextRef.current) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+      
+      // GainNode 생성 및 연결
+      gainNodeRef.current = audioContextRef.current.createGain();
+      gainNodeRef.current.connect(audioContextRef.current.destination);
+      
       addLog("AudioContext created");
     }
     if (audioContextRef.current.state === "suspended") {
@@ -102,7 +108,13 @@ export function useConversationChatNew(sessionId: string) {
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.connect(ctx.destination);
+    
+    // GainNode를 통해 출력 연결
+    if (gainNodeRef.current) {
+      source.connect(gainNodeRef.current);
+    } else {
+      source.connect(ctx.destination);
+    }
 
     const startTime = Math.max(nextStartTimeRef.current, ctx.currentTime);
     source.start(startTime);
@@ -126,6 +138,16 @@ export function useConversationChatNew(sessionId: string) {
     activeSourcesRef.current = [];
     nextStartTimeRef.current = 0;
     setState(prev => ({ ...prev, isAiSpeaking: false }));
+  }, []);
+
+  const toggleMute = useCallback((isMuted: boolean) => {
+    if (gainNodeRef.current && audioContextRef.current) {
+      const currentTime = audioContextRef.current.currentTime;
+      gainNodeRef.current.gain.cancelScheduledValues(currentTime);
+      gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, currentTime);
+      gainNodeRef.current.gain.linearRampToValueAtTime(isMuted ? 0 : 1, currentTime + 0.1);
+      addLog(isMuted ? "Muted" : "Unmuted");
+    }
   }, []);
 
   const connect = useCallback(() => {
@@ -272,6 +294,7 @@ export function useConversationChatNew(sessionId: string) {
     disconnect,
     initAudio,
     sendAudio,
-    sendText
+    sendText,
+    toggleMute // 추가됨
   };
 }
