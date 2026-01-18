@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button, ChatMicButton } from "@/shared/ui";
 import { useAuth } from "@/features/auth";
-import { Captions, CaptionsOff } from "lucide-react";
+import { Captions, CaptionsOff, Volume2, VolumeX } from "lucide-react";
 import { ScenarioState } from "@/features/chat/hook";
 import { isDev } from "@/shared/lib/debug";
+import { debugLog } from "@/shared/lib/debug";
 
 interface Step1Props {
   textOpacity: number;
@@ -33,6 +34,7 @@ interface Step1Props {
   startScenarioSession: () => void;
   hasStarted: boolean;
   setHasStarted: (value: boolean) => void;
+  toggleMute: (muted: boolean) => void;
 }
 
 export function Step1({
@@ -58,6 +60,7 @@ export function Step1({
   startScenarioSession,
   hasStarted,
   setHasStarted,
+  toggleMute,
 }: Step1Props) {
   const router = useRouter();
   const { user } = useAuth();
@@ -65,6 +68,9 @@ export function Step1({
 
   // 자막 표시 상태 (기본값: true)
   const [showSubtitle, setShowSubtitle] = useState(true);
+
+  // 음소거 상태
+  const [isMuted, setIsMuted] = useState(false);
 
   // 연결 성공 여부 추적 (연결 중 vs 에러 구분용)
   const wasConnectedRef = useRef(false);
@@ -88,6 +94,14 @@ export function Step1({
     const newValue = !showSubtitle;
     setShowSubtitle(newValue);
     sessionStorage.setItem("subtitleEnabled", newValue.toString());
+  };
+
+  // 음소거 토글 핸들러
+  const handleMuteToggle = () => {
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+    toggleMute(newMuteState);
+    debugLog(`[Mute Toggle] ${newMuteState ? 'Muted' : 'Unmuted'}`);
   };
 
   // 상황별 메시지 정의 (우선순위 순서)
@@ -213,25 +227,46 @@ export function Step1({
               className={phase === "conversation" ? "pointer-events-none opacity-50" : ""}
             />
 
-            {/* 자막 토글 버튼 (개발 환경에서만 표시) */}
-            {isDev() && (
+            <div className="flex items-center gap-3">
+              {/* 자막 토글 버튼 (개발 환경에서만 표시) */}
+              {isDev() && (
+                <button
+                  onClick={toggleSubtitle}
+                  className="text-text-secondary hover:text-brand flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium transition-colors"
+                >
+                  {showSubtitle ? (
+                    <>
+                      <Captions size={14} />
+                      자막 끄기
+                    </>
+                  ) : (
+                    <>
+                      <CaptionsOff size={14} />
+                      자막 켜기
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* 음소거 토글 버튼 */}
               <button
-                onClick={toggleSubtitle}
-                className="text-text-secondary hover:text-brand flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium transition-colors"
+                onClick={handleMuteToggle}
+                className="text-text-secondary hover:text-brand flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!chatState.isConnected || !chatState.isRecording}
               >
-                {showSubtitle ? (
+                {isMuted ? (
                   <>
-                    <Captions size={14} />
-                    자막 끄기
+                    <VolumeX size={14} />
+                    음소거 해제
                   </>
                 ) : (
                   <>
-                    <CaptionsOff size={14} />
-                    자막 켜기
+                    <Volume2 size={14} />
+                    음소거
                   </>
                 )}
               </button>
-            )}
+            </div>
           </div>
         </div>
 

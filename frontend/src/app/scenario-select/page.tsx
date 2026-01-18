@@ -51,6 +51,7 @@ export default function ScenarioSelectPage() {
         stopMicrophone,
         initAudio,
         startScenarioSession,
+        toggleMute,
     } = useScenarioChatNew();
 
     const hintMessage = "예: 공항 체크인 상황을 연습하고 싶어요.";
@@ -335,6 +336,7 @@ export default function ScenarioSelectPage() {
               startScenarioSession={startScenarioSession}
               hasStarted={hasStarted}
               setHasStarted={setHasStarted}
+              toggleMute={toggleMute}
             />
           )}
 

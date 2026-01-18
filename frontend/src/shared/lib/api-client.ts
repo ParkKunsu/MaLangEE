@@ -88,6 +88,13 @@ class ApiClient {
 
       // 401: 인증 오류 - 토큰이 없거나 유효하지 않음
       if (response.status === 401) {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("access_token");
+          // 현재 페이지가 이미 로그인 페이지가 아닌 경우에만 이동
+          if (!window.location.pathname.startsWith("/auth/login")) {
+            window.location.href = "/auth/login";
+          }
+        }
         const error = new Error(errorData.detail || "인증이 필요합니다. 다시 로그인해주세요.");
         Object.assign(error, { status: 401 });
         throw error;
