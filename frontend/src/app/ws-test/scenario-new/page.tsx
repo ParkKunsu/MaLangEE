@@ -4,22 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useScenarioChatNew } from "@/features/chat/hook/useScenarioChatNew";
 
 export default function ScenarioTestPage() {
-  const [voice, setVoice] = useState("alloy");
-  const { 
-    state, connect, disconnect, initAudio, sendAudio, sendText, 
-    forceResponseCreate, sendMockAudio, toggleMute,
-    clearAudioBuffer, commitAudio, updateSession, sendJson 
-  } = useScenarioChatNew(voice);
+  const {
+    state, connect, disconnect, initAudio, sendAudio, sendText,
+    toggleMute, clearAudioBuffer, commitAudio
+  } = useScenarioChatNew();
   
   const [isRecording, setIsRecording] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [isMuted, setIsMuted] = useState(false);
-  const [jsonInput, setJsonInput] = useState(JSON.stringify({
-    type: "session.update",
-    config: {
-      instructions: "You are a scenario selector. Ask the user what situation they want to practice."
-    }
-  }, null, 2));
   
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
@@ -75,7 +67,7 @@ export default function ScenarioTestPage() {
   const handleConnectAndStart = async () => {
     initAudio();
     connect();
-    await startMic();
+    //await startMic();
   };
 
   const handleDisconnect = () => {
@@ -95,15 +87,6 @@ export default function ScenarioTestPage() {
     toggleMute(newMuteState);
   };
 
-  const handleSendJson = () => {
-    try {
-      const json = JSON.parse(jsonInput);
-      sendJson(json);
-    } catch (e) {
-      alert("Invalid JSON format");
-    }
-  };
-
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
@@ -120,7 +103,7 @@ export default function ScenarioTestPage() {
     <div className="mx-auto max-w-[1600px] p-8">
       <h1 className="mb-6 text-2xl font-bold">주제 정하기 테스트 (Scenario Chat)</h1>
 
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* 1. Connection & Status */}
         <div className="space-y-4">
           <div className="h-full rounded border bg-gray-50 p-4">
@@ -171,7 +154,7 @@ export default function ScenarioTestPage() {
                 <span>준비:</span> <span>{state.isReady ? "✅" : "❌"}</span>
               </div>
               <div className="flex justify-between">
-                <span>AI:</span>{" "}
+                <span>AI 발화:</span>{" "}
                 <span
                   className={
                     state.isAiSpeaking ? "animate-pulse font-bold text-blue-600" : "text-gray-400"
@@ -181,15 +164,9 @@ export default function ScenarioTestPage() {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>User:</span>{" "}
-                <span
-                  className={
-                    state.isUserSpeaking
-                      ? "animate-pulse font-bold text-green-600"
-                      : "text-gray-400"
-                  }
-                >
-                  {state.isUserSpeaking ? "🎤 Speaking" : "Silent"}
+                <span>마이크:</span>{" "}
+                <span className={isRecording ? "font-bold text-green-600" : "text-gray-400"}>
+                  {isRecording ? "🎤 Recording" : "Off"}
                 </span>
               </div>
             </div>
@@ -222,62 +199,11 @@ export default function ScenarioTestPage() {
           </div>
         </div>
 
-        {/* 2. Settings (Session Update) */}
-        <div className="space-y-4">
-          <div className="h-full rounded border border-blue-200 bg-blue-50 p-4">
-            <h2 className="mb-3 border-b border-blue-200 pb-2 font-bold text-blue-800">
-              2. 세션 설정 (Session Update)
-            </h2>
-
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  목소리 (Voice)
-                </label>
-                <select
-                  value={voice}
-                  onChange={(e) => setVoice(e.target.value)}
-                  className="w-full rounded border p-2 text-sm"
-                  disabled={state.isConnected}
-                >
-                  <option value="alloy">Alloy</option>
-                  <option value="echo">Echo</option>
-                  <option value="shimmer">Shimmer</option>
-                  <option value="ash">Ash</option>
-                  <option value="ballad">Ballad</option>
-                  <option value="coral">Coral</option>
-                  <option value="sage">Sage</option>
-                  <option value="verse">Verse</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  JSON 메시지 전송
-                </label>
-                <textarea
-                  value={jsonInput}
-                  onChange={(e) => setJsonInput(e.target.value)}
-                  className="mb-2 h-48 w-full rounded border p-2 font-mono text-xs"
-                  placeholder='{"type": "session.update", ...}'
-                />
-                <button
-                  onClick={handleSendJson}
-                  className="w-full rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50"
-                  disabled={!state.isConnected}
-                >
-                  JSON 전송
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Actions (Response Create & Text) */}
+        {/* 2. Actions (Text & Manual) */}
         <div className="space-y-4">
           <div className="h-full rounded border border-purple-200 bg-purple-50 p-4">
             <h2 className="mb-3 border-b border-purple-200 pb-2 font-bold text-purple-800">
-              3. 액션 및 응답 (Response)
+              2. 액션 및 응답 (Response)
             </h2>
 
             <div className="space-y-4">
@@ -305,37 +231,43 @@ export default function ScenarioTestPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2 border-t border-purple-200 pt-4">
-                <button
-                  onClick={sendMockAudio}
-                  className="flex-1 rounded bg-gray-500 px-3 py-2 text-xs text-white disabled:opacity-50"
-                  disabled={!state.isConnected}
-                >
-                  가상 오디오 (무음)
-                </button>
-                <button
-                  onClick={clearAudioBuffer}
-                  className="flex-1 rounded bg-yellow-500 px-3 py-2 text-xs text-white disabled:opacity-50"
-                  disabled={!state.isConnected}
-                >
-                  버퍼 초기화
-                </button>
-                <button
-                  onClick={commitAudio}
-                  className="flex-1 rounded bg-green-500 px-3 py-2 text-xs text-white disabled:opacity-50"
-                  disabled={!state.isConnected}
-                >
-                  발화 종료
-                </button>
+              <div className="border-t border-purple-200 pt-4">
+                <label className="mb-2 block text-xs font-medium text-gray-600">
+                  오디오 컨트롤
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={clearAudioBuffer}
+                    className="flex-1 rounded bg-yellow-500 px-3 py-2 text-xs text-white disabled:opacity-50"
+                    disabled={!state.isConnected}
+                  >
+                    버퍼 초기화 (Clear)
+                  </button>
+                  <button
+                    onClick={commitAudio}
+                    className="flex-1 rounded bg-green-500 px-3 py-2 text-xs text-white disabled:opacity-50"
+                    disabled={!state.isConnected}
+                  >
+                    발화 종료 (Commit)
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  ※ Server VAD 모드에서는 일반적으로 불필요
+                </p>
               </div>
 
-              <button
-                onClick={forceResponseCreate}
-                className="mt-2 w-full rounded bg-purple-500 px-3 py-2 text-sm text-white disabled:opacity-50"
-                disabled={!state.isConnected}
-              >
-                응답 생성 요청 (Force Response)
-              </button>
+              <div className="border-t border-purple-200 pt-4">
+                1. 사용자 : 연결 및 오디오 초기화 - 마이크 클릭 - 사용자가 먼지 말하기
+                <br />
+                2. 말랭이 : 어디서 대화하고 싶은지 물음 - 사용자 : 답변
+                <br />
+                3. 누구랑 영어회화 연습하고 싶은지 물음 - 사용자 : 답변
+                <br />
+                4. 대하를 통해 무엇을 성취하고 싶은지 물음 - 사용자 : 답변
+                <br />
+                5. 주제확정되고 말랭이는 더이상 답변하지 않음
+                <br />
+              </div>
             </div>
           </div>
         </div>
