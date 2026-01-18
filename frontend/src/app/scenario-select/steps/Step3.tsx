@@ -18,29 +18,29 @@ interface Step3Props {
 }
 
 const voiceOptions: VoiceOption[] = [
-  { 
-    id: "alloy", 
-    name: "Alloy", 
-    description: "부드럽고 친근한 중성 목소리",
-    sampleUrl: "https://cdn.openai.com/API/docs/audio/alloy.wav"
-  },
-  { 
-    id: "echo", 
-    name: "Echo", 
+  {
+    id: "echo",
+    name: "Echo",
     description: "차분하고 안정적인 남성 목소리",
-    sampleUrl: "https://cdn.openai.com/API/docs/audio/echo.wav"
+    sampleUrl: "https://cdn.openai.com/API/docs/audio/echo.wav",
   },
-  { 
-    id: "nova", 
-    name: "Nova", 
-    description: "명랑하고 활기찬 여성 목소리",
-    sampleUrl: "https://cdn.openai.com/API/docs/audio/nova.wav"
-  },
-  { 
-    id: "shimmer", 
-    name: "Shimmer", 
+  {
+    id: "shimmer",
+    name: "Shimmer",
     description: "따뜻하고 편안한 여성 목소리",
-    sampleUrl: "https://cdn.openai.com/API/docs/audio/shimmer.wav"
+    sampleUrl: "https://cdn.openai.com/API/docs/audio/shimmer.wav",
+  },
+  {
+    id: "alloy",
+    name: "Alloy",
+    description: "부드럽고 친근한 중성 목소리",
+    sampleUrl: "https://cdn.openai.com/API/docs/audio/alloy.wav",
+  },
+  {
+    id: "nova",
+    name: "Nova",
+    description: "명랑하고 활기찬 여성 목소리",
+    sampleUrl: "https://cdn.openai.com/API/docs/audio/nova.wav",
   },
 ];
 
