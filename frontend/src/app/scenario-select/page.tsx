@@ -123,13 +123,19 @@ export default function ScenarioSelectPage() {
     useEffect(() => {
         if (stepIndex !== 1 && stepIndex !== 4) return;
 
+        // 대화 시작 전에는 타이머 작동하지 않음
+        if (!hasStarted) {
+            resetTimers();
+            return;
+        }
+
         if (chatState.isAiSpeaking || chatState.isRecording) {
             resetTimers();
             return;
         }
 
         startInactivityTimer();
-    }, [chatState.isAiSpeaking, chatState.isRecording, stepIndex, startInactivityTimer, resetTimers]);
+    }, [chatState.isAiSpeaking, chatState.isRecording, stepIndex, hasStarted, startInactivityTimer, resetTimers]);
 
     useEffect(() => {
         // Phase가 topic일 때 시나리오가 선택되면 결과 팝업 표시

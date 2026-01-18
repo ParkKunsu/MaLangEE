@@ -11,7 +11,8 @@ interface ChatMicButtonProps {
   isPaused?: boolean;
   isMuted?: boolean;
   hasStarted?: boolean;
-  onClick: () => void;
+  isListening?: boolean; // 실제 마이크 켜짐 상태
+  onClick?: () => void;
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -21,6 +22,7 @@ export const ChatMicButton: React.FC<ChatMicButtonProps> = ({
   isPaused = false,
   isMuted = false, // 음소거 여부
   hasStarted = false, // 대화 시작 여부
+  isListening = false, // 실제 마이크 켜짐 상태
   onClick,
   size = "md",
   className = "",
@@ -28,9 +30,8 @@ export const ChatMicButton: React.FC<ChatMicButtonProps> = ({
   // 1. 음소거/일시중지 여부
   const muted = isMuted || isPaused;
 
-  // 2. 웨이브 표시 여부 (사용자 차례이고, 대화가 시작되었으며, 음소거가 아닐 때)
-  const isUserTurn = !state.isAiSpeaking && state.isConnected;
-  const showWaves = (hasStarted || isUserTurn) && !muted;
+  // 2. 웨이브 표시 여부 (마이크가 실제로 켜져 있을 때만)
+  const showWaves = isListening && !muted;
 
   // 3. 비활성화 여부
   // - 대화 시작 전(!hasStarted): 항상 클릭 가능 (연결 시작 버튼 역할)
@@ -40,7 +41,7 @@ export const ChatMicButton: React.FC<ChatMicButtonProps> = ({
   return (
     <MicButton
       isListening={showWaves}
-      onClick={onClick}
+      onClick={onClick || (() => {})}
       size={size}
       isMuted={muted}
       className={`${isDisabled ? "pointer-events-none opacity-50" : ""} ${className}`}
