@@ -34,8 +34,8 @@ MaLangEE는 **두 가지 독립적인 WebSocket 기능**을 제공하며, 각각
 
 **엔드포인트:**
 ```
-회원: ws://49.50.137.35:8080/api/v1/scenario/ws/scenario?token={access_token}
-게스트: ws://49.50.137.35:8080/api/v1/scenario/ws/guest-scenario
+회원: ws://49.50.137.35:8080/api/v1/ws/scenario?token={access_token}
+게스트: ws://49.50.137.35:8080/api/v1/ws/guest-scenario
 ```
 
 **용도:**
@@ -46,7 +46,7 @@ MaLangEE는 **두 가지 독립적인 WebSocket 기능**을 제공하며, 각각
 
 **주요 이벤트:**
 - 클라이언트 → 서버: `input_audio_chunk`, `text`
-- 서버 → 클라이언트: `response.audio.delta`, `scenario.completed`
+- 서버 → 클라이언트: `response.audio.delta`, `response.audio_transcript.delta`, `scenario.completed`
 
 ---
 
@@ -281,9 +281,34 @@ AI 음성 응답이 끝났음을 알립니다.
 
 ---
 
-##### (5) `response.audio_transcript.done` - AI 응답 텍스트
+##### (5) `response.audio_transcript.delta` - AI 응답 텍스트 청크
 
-AI가 말한 내용의 텍스트입니다.
+AI가 말하는 내용의 텍스트를 스트리밍으로 수신합니다.
+
+**수신:**
+```json
+{
+  "type": "response.audio_transcript.delta",
+  "transcript_delta": "Great! "
+}
+```
+
+**필드:**
+- `transcript_delta`: AI 발화 텍스트의 일부분
+
+**발생 빈도:**
+- AI 응답 중 연속적으로 수신
+- `response.audio.delta`와 함께 전송됨
+
+**처리 방법:**
+- 기존 텍스트에 델타 값을 누적하여 실시간 자막 표시
+- 예: `setTranscript(prev => prev + data.transcript_delta)`
+
+---
+
+##### (6) `response.audio_transcript.done` - AI 응답 텍스트 완료
+
+AI가 말한 내용의 전체 텍스트입니다.
 
 **수신:**
 ```json
@@ -294,7 +319,7 @@ AI가 말한 내용의 텍스트입니다.
 ```
 
 **필드:**
-- `transcript`: AI 발화 내용
+- `transcript`: AI 발화 내용 전체
 
 **발생 시점:**
 - `response.audio.done` 직후
@@ -302,10 +327,11 @@ AI가 말한 내용의 텍스트입니다.
 **처리 방법:**
 - 자막 UI에 표시
 - 후속 질문 확인
+- `response.audio_transcript.delta`로 누적한 텍스트 검증 가능
 
 ---
 
-##### (6) `scenario.completed` - 시나리오 완성
+##### (7) `scenario.completed` - 시나리오 완성
 
 시나리오 빌딩이 완료되었습니다.
 
@@ -341,7 +367,7 @@ AI가 말한 내용의 텍스트입니다.
 
 ---
 
-##### (7) `error` - 에러 발생
+##### (8) `error` - 에러 발생
 
 에러가 발생했습니다.
 
@@ -371,27 +397,32 @@ AI가 말한 내용의 텍스트입니다.
 4. Backend → Frontend: input_audio.transcript ("I'm at a hotel")
    → 서버: Place 추출 ("hotel"), Partner/Goal 누락 감지
 5. Backend → Frontend: response.audio.delta (TTS 질문 오디오)
-6. Backend → Frontend: response.audio.done
-7. Backend → Frontend: response.audio_transcript.done ("Great! Who are you talking to?")
+6. Backend → Frontend: response.audio_transcript.delta ("Great! ")
+7. Backend → Frontend: response.audio_transcript.delta ("Who are ")
+8. Backend → Frontend: response.audio_transcript.delta ("you talking to?")
+9. Backend → Frontend: response.audio.done
+10. Backend → Frontend: response.audio_transcript.done ("Great! Who are you talking to?")
 
 [두 번째 발화]
-8. Frontend → Backend: input_audio_chunk
-9. Backend → Frontend: input_audio.transcript ("the receptionist")
+11. Frontend → Backend: input_audio_chunk
+12. Backend → Frontend: input_audio.transcript ("the receptionist")
    → 서버: Partner 추출 ("receptionist"), Goal 누락 감지
-10. Backend → Frontend: response.audio.delta
-11. Backend → Frontend: response.audio.done
-12. Backend → Frontend: response.audio_transcript.done ("What do you want to achieve?")
+13. Backend → Frontend: response.audio.delta
+14. Backend → Frontend: response.audio_transcript.delta (여러 청크)
+15. Backend → Frontend: response.audio.done
+16. Backend → Frontend: response.audio_transcript.done ("What do you want to achieve?")
 
 [세 번째 발화]
-13. Frontend → Backend: input_audio_chunk
-14. Backend → Frontend: input_audio.transcript ("check in")
+17. Frontend → Backend: input_audio_chunk
+18. Backend → Frontend: input_audio.transcript ("check in")
    → 서버: Goal 추출 ("check in"), 모든 필드 완성!
-15. Backend → Frontend: response.audio.delta (완료 메시지)
-16. Backend → Frontend: response.audio.done
-17. Backend → Frontend: response.audio_transcript.done ("Perfect! Let's start...")
-18. Backend → Frontend: scenario.completed (시나리오 정보 + sessionId)
-19. 서버: DB에 시나리오 저장
-20. WebSocket 연결 종료
+19. Backend → Frontend: response.audio.delta (완료 메시지)
+20. Backend → Frontend: response.audio_transcript.delta (여러 청크)
+21. Backend → Frontend: response.audio.done
+22. Backend → Frontend: response.audio_transcript.done ("Perfect! Let's start...")
+23. Backend → Frontend: scenario.completed (시나리오 정보 + sessionId)
+24. 서버: DB에 시나리오 저장
+25. WebSocket 연결 종료
 ```
 
 ---
@@ -411,6 +442,7 @@ sequenceDiagram
     B->>AI: Validate Token & Create Handler
     AI->>OpenAI: Connect to Realtime API
     OpenAI-->>AI: session.updated
+    AI-->>F: session.created
     AI->>AI: Initialize Session & Inject History
     AI->>OpenAI: Trigger First Turn ("Let's start")
     OpenAI-->>AI: Audio Response
@@ -440,9 +472,66 @@ sequenceDiagram
 
 ---
 
-### 3.2 이벤트 목록
+### 3.2 Server VAD (Voice Activity Detection) 모드
 
-#### 3.2.1 클라이언트 → 서버 이벤트
+대화하기 WebSocket은 **Server VAD 모드**를 사용하여 사용자 발화를 자동으로 감지합니다.
+
+#### 3.2.1 Server VAD 동작 원리
+
+```
+[클라이언트 역할]
+1. 마이크로 오디오 캡처
+2. 지속적으로 input_audio_buffer.append 전송
+   └─ 말을 하든 안 하든 계속 전송
+
+[서버 역할]
+1. 오디오 스트림 실시간 분석
+2. 발화 시작 감지 → speech.started 전송
+3. 발화 종료 감지 → speech.stopped 전송
+4. 자동으로 AI 응답 생성
+```
+
+#### 3.2.2 클라이언트가 할 일 vs 하지 않아도 되는 일
+
+**✅ 클라이언트가 해야 할 일:**
+- 마이크 오디오를 지속적으로 캡처
+- `input_audio_buffer.append`로 오디오 청크 전송 (약 100ms 간격)
+- `speech.started`, `speech.stopped` 이벤트 수신하여 UI 업데이트
+
+**❌ 클라이언트가 하지 않아도 되는 일:**
+- 발화 시작/종료 감지 (서버가 자동으로 처리)
+- `input_audio_buffer.commit` 전송 (Server VAD가 자동으로 처리)
+- 발화 구간 판단 로직 구현 (서버가 알아서 함)
+
+#### 3.2.3 발화 관련 이벤트 정리
+
+| 이벤트 | 방향 | 설명 | Server VAD 모드 |
+|--------|------|------|----------------|
+| `input_audio_buffer.append` | Client → Server | 오디오 데이터 전송 | ✅ 필수 (계속 전송) |
+| `input_audio_buffer.commit` | Client → Server | 수동 발화 종료 알림 | ❌ 불필요 (자동 감지) |
+| `speech.started` | Server → Client | 발화 시작 감지됨 | ✅ 자동 수신 |
+| `speech.stopped` | Server → Client | 발화 종료 감지됨 | ✅ 자동 수신 |
+
+#### 3.2.4 VAD 설정
+
+Server VAD는 다음 파라미터로 동작합니다 (백엔드에서 설정):
+
+```javascript
+{
+  "type": "server_vad",
+  "threshold": 0.5,           // 음성 감지 임계값 (0.0 ~ 1.0)
+  "prefix_padding_ms": 300,   // 발화 시작 전 포함할 오디오 (ms)
+  "silence_duration_ms": 1000 // 침묵 지속 시간 (발화 종료 판단)
+}
+```
+
+**프론트엔드에서는 이 설정을 변경할 수 없습니다.** 서버에서 최적화된 값으로 고정되어 있습니다.
+
+---
+
+### 3.3 이벤트 목록
+
+#### 3.3.1 클라이언트 → 서버 이벤트
 
 ##### (1) `input_audio_buffer.append` - 오디오 전송
 
@@ -482,12 +571,12 @@ sequenceDiagram
 ```
 
 **발생 시점:**
-- 사용자가 말하기를 멈췄을 때 (VAD 미사용 모드)
-- 현재 Chat WebSocket은 **Server VAD 모드**를 사용하므로 일반적으로 **전송 불필요**
+- 사용자가 말하기를 멈췄을 때 (VAD 미사용 모드에서만 사용)
 
-**Server VAD 모드:**
-- 서버가 자동으로 발화 시작/종료를 감지
-- `speech.started`, `speech.stopped` 이벤트 자동 수신
+**⚠️ 중요: Server VAD 모드에서는 전송 불필요**
+- 현재 Chat WebSocket은 **Server VAD 모드**를 사용합니다
+- 서버가 자동으로 발화 종료를 감지하므로 이 이벤트를 보낼 필요가 없습니다
+- 자세한 내용은 [3.2 Server VAD 모드](#32-server-vad-voice-activity-detection-모드) 참조
 
 ---
 
@@ -503,36 +592,95 @@ AI의 응답을 강제로 요청합니다.
 ```
 
 **발생 시점:**
-- 사용자가 응답을 기다리는 상황 (일반적으로 자동 처리되므로 드물게 사용)
+- 서버가 먼저 말하게 하고 싶을 때 (연결 직후 인사말)
+- 사용자가 응답을 기다리는 상황
+- 일반적으로 Server VAD가 자동으로 처리하므로 수동 사용은 드뭅니다
+
+**사용 예시:**
+```javascript
+// 연결 직후 AI가 먼저 인사하도록 요청
+ws.send(JSON.stringify({ type: "response.create" }));
+```
 
 ---
 
 ##### (4) `session.update` - 세션 설정 변경
 
-AI 음성이나 기타 설정을 실시간으로 변경합니다.
+AI 음성을 실시간으로 변경합니다.
 
 **전송:**
 ```json
 {
   "type": "session.update",
   "config": {
-    "voice": "nova"
+    "voice": "shimmer"
   }
 }
 ```
 
-**가능한 설정:**
-- `voice`: `alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`
+**사용 가능한 목소리:**
+- `alloy` (기본값)
+- `ash`
+- `ballad`
+- `coral`
+- `echo`
+- `sage`
+- `shimmer`
+- `verse`
 
 **발생 시점:**
 - 사용자가 UI에서 음성 설정을 변경했을 때
+- 대화 중 언제든지 변경 가능
 
 **주의사항:**
 - 음성 변경 시 서버가 OpenAI 세션을 재연결하므로 1-2초 지연 발생 가능
+- 현재 재생 중인 오디오는 중단될 수 있습니다
+
+**사용 예시:**
+```javascript
+// 목소리를 shimmer로 변경
+function changeVoice(newVoice: string) {
+  ws.send(JSON.stringify({
+    type: "session.update",
+    config: { voice: newVoice }
+  }));
+}
+
+// UI에서 사용
+<select onChange={(e) => changeVoice(e.target.value)}>
+  <option value="alloy">Alloy</option>
+  <option value="shimmer">Shimmer</option>
+  <option value="echo">Echo</option>
+</select>
+```
 
 ---
 
-##### (5) `disconnect` - 연결 종료 요청
+##### (5) `text` - 텍스트 입력
+
+음성 대신 텍스트로 메시지를 입력합니다.
+
+**전송:**
+```json
+{
+  "type": "text",
+  "text": "Hello, how are you?"
+}
+```
+
+**필드:**
+- `text`: 사용자가 입력한 텍스트 메시지
+
+**발생 시점:**
+- 사용자가 음성 대신 텍스트로 입력할 때
+- 테스트 또는 접근성 기능 사용 시
+
+**주의사항:**
+- 텍스트 전송 후 `response.create`를 별도로 호출해야 AI 응답을 받을 수 있습니다.
+
+---
+
+##### (6) `disconnect` - 연결 종료 요청
 
 대화를 종료하고 세션을 저장합니다.
 
@@ -549,9 +697,31 @@ AI 음성이나 기타 설정을 실시간으로 변경합니다.
 
 ---
 
-#### 3.2.2 서버 → 클라이언트 이벤트
+#### 3.3.2 서버 → 클라이언트 이벤트
 
-##### (1) `audio.delta` - AI 응답 오디오
+##### (1) `session.created` - 세션 생성 완료
+
+WebSocket 연결이 완료되고 세션이 생성되었습니다.
+
+**수신:**
+```json
+{
+  "type": "session.created"
+}
+```
+
+**발생 시점:**
+- WebSocket 연결 직후 (약 1-2초 이내)
+- OpenAI Realtime API 연결 및 초기화 완료 후
+
+**처리 방법:**
+- UI 업데이트 (예: "연결 중..." → "대화 시작")
+- 초기 설정 전송 (`session.update`, `response.create`)
+- 오디오 녹음 시작 허용
+
+---
+
+##### (2) `audio.delta` - AI 응답 오디오
 
 AI가 말하는 음성 데이터를 실시간으로 수신합니다.
 
@@ -576,7 +746,7 @@ AI가 말하는 음성 데이터를 실시간으로 수신합니다.
 
 ---
 
-##### (2) `audio.done` - AI 응답 오디오 완료
+##### (3) `audio.done` - AI 응답 오디오 완료
 
 AI 음성 응답이 끝났음을 알립니다.
 
@@ -596,7 +766,7 @@ AI 음성 응답이 끝났음을 알립니다.
 
 ---
 
-##### (3) `transcript.done` - AI 응답 텍스트
+##### (4) `transcript.done` - AI 응답 텍스트
 
 AI가 말한 내용의 텍스트 자막입니다.
 
@@ -620,7 +790,7 @@ AI가 말한 내용의 텍스트 자막입니다.
 
 ---
 
-##### (4) `user.transcript` - 사용자 발화 텍스트
+##### (5) `user.transcript` - 사용자 발화 텍스트
 
 사용자가 말한 내용의 텍스트 자막입니다.
 
@@ -644,7 +814,7 @@ AI가 말한 내용의 텍스트 자막입니다.
 
 ---
 
-##### (5) `speech.started` - 사용자 발화 시작
+##### (6) `speech.started` - 사용자 발화 시작
 
 서버 VAD가 사용자의 발화 시작을 감지했습니다.
 
@@ -664,7 +834,7 @@ AI가 말한 내용의 텍스트 자막입니다.
 
 ---
 
-##### (6) `speech.stopped` - 사용자 발화 종료
+##### (7) `speech.stopped` - 사용자 발화 종료
 
 서버 VAD가 사용자의 발화 종료를 감지했습니다.
 
@@ -684,7 +854,7 @@ AI가 말한 내용의 텍스트 자막입니다.
 
 ---
 
-##### (7) `disconnected` - 세션 종료 및 리포트
+##### (8) `disconnected` - 세션 종료 및 리포트
 
 WebSocket 연결이 종료되고 세션 분석 리포트를 수신합니다.
 
@@ -736,7 +906,7 @@ WebSocket 연결이 종료되고 세션 분석 리포트를 수신합니다.
 
 ---
 
-##### (8) `error` - 에러 발생
+##### (9) `error` - 에러 발생
 
 서버에서 에러가 발생했습니다.
 
@@ -759,35 +929,36 @@ WebSocket 연결이 종료되고 세션 분석 리포트를 수신합니다.
 
 ---
 
-### 3.3 이벤트 발생 순서 예시
+### 3.4 이벤트 발생 순서 예시
 
 ```
 [대화 시작]
 1. Frontend → Backend: WebSocket 연결 (session_id 포함)
 2. Backend: 토큰 검증, 세션 조회, OpenAI 연결
-3. Backend → Frontend: audio.delta (AI 첫 인사 "Hello! How can I help you today?")
-4. Backend → Frontend: audio.done
-5. Backend → Frontend: transcript.done ("Hello! How can I help you today?")
+3. Backend → Frontend: session.created
+4. Backend → Frontend: audio.delta (AI 첫 인사 "Hello! How can I help you today?")
+5. Backend → Frontend: audio.done
+6. Backend → Frontend: transcript.done ("Hello! How can I help you today?")
 
 [첫 번째 대화 턴]
-6. Frontend → Backend: input_audio_buffer.append (계속 전송)
-7. Backend → Frontend: speech.started (VAD 감지)
-8. Frontend → Backend: input_audio_buffer.append (계속)
-9. Backend → Frontend: speech.stopped (VAD 감지)
-10. Backend → Frontend: user.transcript ("I would like to check in.")
+7. Frontend → Backend: input_audio_buffer.append (계속 전송)
+8. Backend → Frontend: speech.started (VAD 감지)
+9. Frontend → Backend: input_audio_buffer.append (계속)
+10. Backend → Frontend: speech.stopped (VAD 감지)
+11. Backend → Frontend: user.transcript ("I would like to check in.")
 
-11. Backend → Frontend: audio.delta (AI 응답)
-12. Backend → Frontend: audio.done
-13. Backend → Frontend: transcript.done ("Sure, may I have your name?")
+12. Backend → Frontend: audio.delta (AI 응답)
+13. Backend → Frontend: audio.done
+14. Backend → Frontend: transcript.done ("Sure, may I have your name?")
 
 [대화 계속...]
-... (6-13 반복)
+... (7-14 반복)
 
 [대화 종료]
-14. Frontend → Backend: disconnect
-15. Backend: 세션 리포트 생성 및 DB 저장
-16. Backend → Frontend: disconnected (세션 리포트 포함)
-17. WebSocket 연결 종료
+15. Frontend → Backend: disconnect
+16. Backend: 세션 리포트 생성 및 DB 저장
+17. Backend → Frontend: disconnected (세션 리포트 포함)
+18. WebSocket 연결 종료
 ```
 
 ---
@@ -1108,6 +1279,11 @@ export function useScenarioWebSocket(token: string) {
           // 오디오 재생 완료
           break;
 
+        case 'response.audio_transcript.delta':
+          // 실시간 텍스트 스트리밍
+          setAiResponse((prev) => prev + (data.transcript_delta || ''));
+          break;
+
         case 'response.audio_transcript.done':
           setAiResponse(data.transcript);
           break;
@@ -1189,6 +1365,12 @@ export function useChatWebSocket(sessionId: string, token: string) {
       const data = JSON.parse(event.data);
 
       switch (data.type) {
+        case 'session.created':
+          console.log('Session created, ready to chat');
+          // AI가 먼저 말하게 하기 (선택사항 - 백엔드에서 자동 처리될 수 있음)
+          // ws.send(JSON.stringify({ type: 'response.create' }));
+          break;
+
         case 'audio.delta':  // Chat 이벤트
           audioPlayerRef.current?.addChunk(data.delta);
           break;
@@ -1287,7 +1469,7 @@ export function useChatWebSocket(sessionId: string, token: string) {
 | **오디오 전송** | `input_audio_chunk` | `input_audio_buffer.append` |
 | **오디오 커밋** | `input_audio_commit` | `input_audio_buffer.commit` |
 | **오디오 클리어** | `input_audio_clear` | (없음) |
-| **텍스트 입력** | `text` | (없음) |
+| **텍스트 입력** | `text` | `text` |
 
 ### 7.2 오디오 수신 이벤트 비교
 
@@ -1295,14 +1477,15 @@ export function useChatWebSocket(sessionId: string, token: string) {
 |------|----------------------|----------------|
 | **AI 오디오** | `response.audio.delta` | `audio.delta` |
 | **오디오 완료** | `response.audio.done` | `audio.done` |
-| **AI 텍스트** | `response.audio_transcript.done` | `transcript.done` |
+| **AI 텍스트 스트리밍** | `response.audio_transcript.delta` | (없음) |
+| **AI 텍스트 완료** | `response.audio_transcript.done` | `transcript.done` |
 | **사용자 텍스트** | `input_audio.transcript` | `user.transcript` |
 
 ### 7.3 상태 이벤트 비교
 
 | 기능 | 주제 정하기 (Scenario) | 대화하기 (Chat) |
 |------|----------------------|----------------|
-| **연결 준비** | `ready` | (없음, 바로 AI 인사) |
+| **연결 준비** | `ready` | `session.created` |
 | **발화 시작** | (없음) | `speech.started` |
 | **발화 종료** | (없음) | `speech.stopped` |
 | **완료** | `scenario.completed` | `disconnected` |
@@ -1329,6 +1512,36 @@ export function useChatWebSocket(sessionId: string, token: string) {
 7. **Session ID 관리**:
    - Scenario WebSocket 완료 후 받은 `sessionId`를 저장
    - Chat WebSocket 연결 시 이 `sessionId` 사용
+
+8. **서버가 먼저 말하게 하기 (AI First Turn)**:
+   - 대화 시작 시 AI가 먼저 인사하도록 하려면 `session.created` 수신 후 `response.create` 전송
+   ```javascript
+   ws.onmessage = (event) => {
+     const data = JSON.parse(event.data);
+     if (data.type === 'session.created') {
+       ws.send(JSON.stringify({ type: 'response.create' }));
+     }
+   };
+   ```
+   - **주의**: 백엔드에서 이미 자동으로 처리하는 경우가 많으므로 확인 필요
+
+9. **실시간 목소리 변경**:
+   - 대화 중 언제든지 `session.update`로 목소리 변경 가능
+   - 변경 시 1-2초 지연 발생 (OpenAI 세션 재연결)
+   - 사용자에게 "목소리 변경 중..." 같은 피드백 제공 권장
+   ```javascript
+   function updateVoice(newVoice: string) {
+     ws.send(JSON.stringify({
+       type: "session.update",
+       config: { voice: newVoice }
+     }));
+   }
+   ```
+
+10. **Server VAD 활용**:
+    - 발화 감지를 직접 구현하지 말고 Server VAD 사용
+    - `speech.started`/`speech.stopped` 이벤트를 UI 업데이트에만 활용
+    - `input_audio_buffer.commit`은 특수한 경우가 아니면 전송하지 않음
 
 ---
 
