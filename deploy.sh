@@ -226,11 +226,22 @@ if [[ "$TARGET" == "all" || "$TARGET" == "restart" ]]; then
     echo -e "${GREEN}5️⃣ 서비스 재시작${NC}"
     
     echo "  • Backend 재시작 중..."
-    sudo systemctl restart malangee-backend
-    if [ $? -eq 0 ]; then
-        echo "[INFO] Backend 재시작 성공" | tee -a $LOG_FILE
+    # Backend 전용 재시작 스크립트 실행 (Hung 프로세스 처리 포함)
+    if [ -f "$BACKEND_DIR/scripts/restart_backend.sh" ]; then
+        "$BACKEND_DIR/scripts/restart_backend.sh"
+        if [ $? -eq 0 ]; then
+            echo "[INFO] Backend 재시작 스크립트 실행 성공" | tee -a $LOG_FILE
+        else
+            echo "[ERROR] Backend 재시작 스크립트 실행 실패" | tee -a $LOG_FILE
+        fi
     else
-        echo "[ERROR] Backend 재시작 실패" | tee -a $LOG_FILE
+        echo -e "${YELLOW}⚠ Backend 재시작 스크립트가 없습니다. systemctl로 직접 재시작합니다.${NC}"
+        sudo systemctl restart malangee-backend
+        if [ $? -eq 0 ]; then
+            echo "[INFO] Backend 재시작 성공" | tee -a $LOG_FILE
+        else
+            echo "[ERROR] Backend 재시작 실패" | tee -a $LOG_FILE
+        fi
     fi
     
     echo "  • Frontend 재시작 중..."
