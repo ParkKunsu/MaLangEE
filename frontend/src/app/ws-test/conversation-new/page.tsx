@@ -17,14 +17,9 @@ export default function ConversationTestPage() {
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [isMuted, setIsMuted] = useState(false);
-  const [jsonInput, setJsonInput] = useState(JSON.stringify({
-    type: "session.update",
-    config: {
-      voice: "alloy"
-    }
-  }, null, 2));
-  
-  const { state, connect, disconnect, initAudio, sendAudio, sendText, toggleMute, sendJson } = useConversationChatNew(sessionId);
+  const [selectedVoice, setSelectedVoice] = useState("alloy");
+
+  const { state, connect, disconnect, initAudio, sendAudio, sendText, commitAudio, updateVoice, requestResponse, toggleMute } = useConversationChatNew(sessionId);
   
   const [isRecording, setIsRecording] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
@@ -128,15 +123,6 @@ export default function ConversationTestPage() {
     toggleMute(newMuteState);
   };
 
-  const handleSendJson = () => {
-    try {
-      const json = JSON.parse(jsonInput);
-      sendJson(json);
-    } catch (e) {
-      alert("Invalid JSON format");
-    }
-  };
-
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
@@ -153,8 +139,8 @@ export default function ConversationTestPage() {
     <div className="p-8 max-w-[1600px] mx-auto">
       <h1 className="text-2xl font-bold mb-6">대화하기 테스트 (Conversation Chat)</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
         {/* 1. Connection & Status */}
         <div className="space-y-4">
           <div className="p-4 border rounded bg-gray-50 h-full">
@@ -228,30 +214,10 @@ export default function ConversationTestPage() {
           </div>
         </div>
 
-        {/* 2. JSON Message (Manual) */}
-        <div className="space-y-4">
-          <div className="p-4 border rounded bg-blue-50 border-blue-200 h-full">
-            <h2 className="font-bold mb-3 text-blue-800 border-b border-blue-200 pb-2">2. JSON 메시지 전송</h2>
-            <textarea
-              value={jsonInput}
-              onChange={(e) => setJsonInput(e.target.value)}
-              className="w-full h-48 p-2 border rounded text-xs font-mono mb-2"
-              placeholder='{"type": "session.update", ...}'
-            />
-            <button
-              onClick={handleSendJson}
-              className="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
-              disabled={!state.isConnected}
-            >
-              JSON 전송
-            </button>
-          </div>
-        </div>
-
-        {/* 3. Actions (Text) */}
+        {/* 2. Actions (Text & Controls) */}
         <div className="space-y-4">
           <div className="p-4 border rounded bg-purple-50 border-purple-200 h-full">
-            <h2 className="font-bold mb-3 text-purple-800 border-b border-purple-200 pb-2">3. 텍스트 전송</h2>
+            <h2 className="font-bold mb-3 text-purple-800 border-b border-purple-200 pb-2">2. 액션 및 컨트롤</h2>
             
             <div className="space-y-4">
               <div className="border-t border-purple-200 pt-4">
@@ -275,6 +241,62 @@ export default function ConversationTestPage() {
                   </button>
                 </div>
               </div>
+
+              <div className="border-t border-purple-200 pt-4">
+                <label className="block text-xs font-medium mb-2 text-gray-600">AI 목소리 선택</label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedVoice}
+                    onChange={(e) => setSelectedVoice(e.target.value)}
+                    className="flex-1 p-2 border rounded text-sm"
+                    disabled={!state.isConnected}
+                  >
+                    <option value="alloy">Alloy</option>
+                    <option value="ash">Ash</option>
+                    <option value="ballad">Ballad</option>
+                    <option value="coral">Coral</option>
+                    <option value="echo">Echo</option>
+                    <option value="sage">Sage</option>
+                    <option value="shimmer">Shimmer</option>
+                    <option value="verse">Verse</option>
+                  </select>
+                  <button
+                    onClick={() => updateVoice(selectedVoice)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+                    disabled={!state.isConnected}
+                  >
+                    변경
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-purple-200 pt-4">
+                <label className="block text-xs font-medium mb-2 text-gray-600">AI 응답 제어</label>
+                <button
+                  onClick={requestResponse}
+                  className="w-full px-3 py-2 bg-green-600 text-white rounded text-sm disabled:opacity-50"
+                  disabled={!state.isConnected}
+                >
+                  AI 응답 요청 (Response Create)
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  서버가 먼저 말하게 하거나 강제로 응답을 받을 때 사용
+                </p>
+              </div>
+
+              <div className="border-t border-purple-200 pt-4">
+                <label className="block text-xs font-medium mb-2 text-gray-600">오디오 컨트롤 (테스트용)</label>
+                <button
+                  onClick={commitAudio}
+                  className="w-full px-3 py-2 bg-orange-500 text-white rounded text-xs disabled:opacity-50"
+                  disabled={!state.isConnected}
+                >
+                  발화 종료 (Commit Audio)
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  ⚠️ Server VAD 모드에서는 불필요 (자동 감지)
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -290,7 +312,7 @@ export default function ConversationTestPage() {
           </div>
           <div>
             <span className="text-xs font-bold text-purple-600 block mb-1">AI (한국어)</span>
-            <div className="bg-purple-50 p-3 rounded text-gray-800 text-sm min-h-[60px]">{state.aiMessageKR || "-"}</div>
+            <div className="bg-purple-50 p-3 rounded text-gray-800 text-sm min-h-[60px]">{state.aiMessageKR || "-"}</div >
           </div>
           <div>
             <span className="text-xs font-bold text-green-600 block mb-1">User</span>

@@ -257,7 +257,7 @@ export default function ScenarioTestPage() {
               </div>
 
               <div className="border-t border-purple-200 pt-4">
-                1. 사용자 : 연결 및 오디오 초기화 - 마이크 클릭 - 사용자가 먼지 말하기
+                1. 사용자 : 연결 및 오디오 초기화 - 마이크 클릭 - 사용자가 먼저 말하기
                 <br />
                 2. 말랭이 : 어디서 대화하고 싶은지 물음 - 사용자 : 답변
                 <br />

@@ -13,6 +13,7 @@ export interface ConversationChatStateNew {
   userTranscript: string;
   isAiSpeaking: boolean;
   isUserSpeaking: boolean;
+  sessionReport: any | null;
 }
 
 export function useConversationChatNew(sessionId: string, voice: string = "alloy") {
@@ -25,6 +26,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
     userTranscript: "",
     isAiSpeaking: false,
     isUserSpeaking: false,
+    sessionReport: null,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -161,7 +163,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
 
     ws.onopen = () => {
       addLog("WebSocket Connected");
-      setState(prev => ({ ...prev, isConnected: true }));
+      setState((prev) => ({ ...prev, isConnected: true }));
     };
 
     ws.onmessage = (event) => {
@@ -169,8 +171,8 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
         const data = JSON.parse(event.data);
 
         switch (data.type) {
-          case "session.created":
-            addLog("Received 'session.created'. Sending init messages...");
+          case "session.update":
+            addLog("Received 'session.update'. Sending init messages...");
             setState(prev => ({ ...prev, isReady: true }));
             
             // 1. Session Update (문서 기준: config 필드 사용, 불필요한 파라미터 제거)
@@ -181,18 +183,16 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
               }
             }));
             addLog("Sent session.update (config)");
-
-            // 2. Response Create (문서 기준: 파라미터 없음)
-            ws.send(JSON.stringify({
-              type: "response.create"
-            }));
-            addLog("Sent response.create");
             break;
 
           case "audio.delta":
             playAudio(data.delta, 24000);
             break;
-          
+
+          case "audio.done":
+            addLog("AI audio stream completed");
+            break;
+
           case "transcript.done":
             setState(prev => ({ ...prev, aiMessage: data.transcript }));
             addLog(`AI: ${data.transcript}`);
@@ -218,7 +218,15 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
             setState(prev => ({ ...prev, userTranscript: data.transcript }));
             addLog(`User: ${data.transcript}`);
             break;
-            
+
+          case "disconnected":
+            addLog(`Session disconnected: ${data.reason || "Unknown"}`);
+            if (data.report) {
+              setState(prev => ({ ...prev, sessionReport: data.report }));
+              addLog(`Session report received: ${JSON.stringify(data.report)}`);
+            }
+            break;
+
           case "error":
             addLog(`Error: ${data.message}`);
             break;
@@ -240,11 +248,14 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   }, [playAudio, stopAudio, sessionId, voice]); // voice 의존성 추가
 
   const disconnect = useCallback(() => {
-    wsRef.current?.close();
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      // 서버에 disconnect 메시지를 보내서 리포트를 받음
+      wsRef.current.send(JSON.stringify({ type: "disconnect" }));
+      addLog("Sent disconnect request");
+    }
     stopAudio();
     audioContextRef.current?.close();
     audioContextRef.current = null;
-    addLog("Disconnected manually");
   }, [stopAudio]);
 
   const sendAudio = useCallback((float32Data: Float32Array) => {
@@ -281,11 +292,29 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
     }
   }, []);
 
-  // 임의의 JSON 메시지 전송 (추가됨)
-  const sendJson = useCallback((json: any) => {
+  const commitAudio = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify(json));
-      addLog(`Sent JSON: ${JSON.stringify(json)}`);
+      wsRef.current.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+      addLog("Sent input_audio_buffer.commit");
+    }
+  }, []);
+
+  const updateVoice = useCallback((newVoice: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: "session.update",
+        config: {
+          voice: newVoice
+        }
+      }));
+      addLog(`Sent session.update with voice: ${newVoice}`);
+    }
+  }, []);
+
+  const requestResponse = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "response.create" }));
+      addLog("Sent response.create (manual trigger)");
     }
   }, []);
 
@@ -296,7 +325,9 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
     initAudio,
     sendAudio,
     sendText,
+    commitAudio,
+    updateVoice,
+    requestResponse,
     toggleMute,
-    sendJson // 반환
   };
 }
