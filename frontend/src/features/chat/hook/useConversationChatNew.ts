@@ -15,7 +15,7 @@ export interface ConversationChatStateNew {
   isUserSpeaking: boolean;
 }
 
-export function useConversationChatNew(sessionId: string) {
+export function useConversationChatNew(sessionId: string, voice: string = "alloy") {
   const [state, setState] = useState<ConversationChatStateNew>({
     isConnected: false,
     isReady: false,
@@ -31,7 +31,7 @@ export function useConversationChatNew(sessionId: string) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextStartTimeRef = useRef<number>(0);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
-  const gainNodeRef = useRef<GainNode | null>(null); // GainNode 추가
+  const gainNodeRef = useRef<GainNode | null>(null);
 
   const addLog = (msg: string) => {
     setState((prev) => ({ ...prev, logs: [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.logs] }));
@@ -65,7 +65,7 @@ export function useConversationChatNew(sessionId: string) {
 
     const params = new URLSearchParams();
     if (token) params.append("token", token);
-    params.append("voice", "alloy");
+    params.append("voice", voice); // 전달받은 voice 사용
     params.append("show_text", "true");
 
     return `${wsBaseUrl}${endpoint}?${params.toString()}`;
@@ -76,7 +76,6 @@ export function useConversationChatNew(sessionId: string) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
       
-      // GainNode 생성 및 연결
       gainNodeRef.current = audioContextRef.current.createGain();
       gainNodeRef.current.connect(audioContextRef.current.destination);
       
@@ -109,7 +108,6 @@ export function useConversationChatNew(sessionId: string) {
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     
-    // GainNode를 통해 출력 연결
     if (gainNodeRef.current) {
       source.connect(gainNodeRef.current);
     } else {
@@ -175,23 +173,18 @@ export function useConversationChatNew(sessionId: string) {
             addLog("Received 'session.created'. Sending init messages...");
             setState(prev => ({ ...prev, isReady: true }));
             
-            // 1. Session Update
+            // 1. Session Update (문서 기준: config 필드 사용, 불필요한 파라미터 제거)
             ws.send(JSON.stringify({
               type: "session.update",
-              session: {
-                instructions: "You are an English conversation tutor. Speak naturally.",
-                turn_detection: { type: "server_vad", threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 1000 }
+              config: {
+                voice: voice // voice 설정만 전송
               }
             }));
-            addLog("Sent session.update");
+            addLog("Sent session.update (config)");
 
-            // 2. Response Create
+            // 2. Response Create (문서 기준: 파라미터 없음)
             ws.send(JSON.stringify({
-              type: "response.create",
-              response: {
-                modalities: ["text", "audio"],
-                instructions: "Say hello to the user."
-              }
+              type: "response.create"
             }));
             addLog("Sent response.create");
             break;
@@ -244,7 +237,7 @@ export function useConversationChatNew(sessionId: string) {
       addLog("WebSocket Error");
     };
 
-  }, [playAudio, stopAudio, sessionId]);
+  }, [playAudio, stopAudio, sessionId, voice]); // voice 의존성 추가
 
   const disconnect = useCallback(() => {
     wsRef.current?.close();
@@ -282,9 +275,17 @@ export function useConversationChatNew(sessionId: string) {
       wsRef.current.send(JSON.stringify({ type: "text", text }));
       addLog(`Sent Text: ${text}`);
 
-      // 2. 응답 생성 요청 (강제 트리거)
+      // 2. 응답 생성 요청 (문서 기준: 파라미터 없음)
       wsRef.current.send(JSON.stringify({ type: "response.create" }));
       addLog("Sent response.create (after text)");
+    }
+  }, []);
+
+  // 임의의 JSON 메시지 전송 (추가됨)
+  const sendJson = useCallback((json: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(json));
+      addLog(`Sent JSON: ${JSON.stringify(json)}`);
     }
   }, []);
 
@@ -295,6 +296,7 @@ export function useConversationChatNew(sessionId: string) {
     initAudio,
     sendAudio,
     sendText,
-    toggleMute // 추가됨
+    toggleMute,
+    sendJson // 반환
   };
 }

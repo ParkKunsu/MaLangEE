@@ -16,7 +16,7 @@ export interface ScenarioChatStateNew {
   scenarioResult: any | null;
 }
 
-export function useScenarioChatNew() {
+export function useScenarioChatNew(voice: string = "alloy") {
   const [state, setState] = useState<ScenarioChatStateNew>({
     isConnected: false,
     isReady: false,
@@ -62,12 +62,13 @@ export function useScenarioChatNew() {
     const endpoint = token ? "/api/v1/ws/scenario" : "/api/v1/ws/guest-scenario";
     const params = new URLSearchParams();
     if (token) params.append("token", token);
+    params.append("voice", voice); // 전달받은 voice 사용
 
     return `${wsBaseUrl}${endpoint}?${params.toString()}`;
   };
 
-  // 시나리오 모드는 16000Hz 권장 (가이드 기준)
-  const SAMPLE_RATE = 16000;
+  // 샘플 레이트 24000Hz로 통일
+  const SAMPLE_RATE = 24000;
 
   const initAudio = useCallback(() => {
     if (!audioContextRef.current) {
@@ -100,7 +101,6 @@ export function useScenarioChatNew() {
       samples[i] = sample / 32768;
     }
 
-    // 서버 응답은 24k일 수 있으므로 파라미터로 받은 sampleRate 사용
     const buffer = ctx.createBuffer(1, samples.length, sampleRate);
     buffer.copyToChannel(samples, 0);
 
@@ -168,12 +168,19 @@ export function useScenarioChatNew() {
             addLog("Received 'ready'. Sending init messages...");
             setState(prev => ({ ...prev, isReady: true }));
             
+            // 1. Session Update (문서 기준: config 필드 사용, 불필요한 파라미터 제거)
             ws.send(JSON.stringify({
-              type: "response.create",
-              response: {
-                modalities: ["text", "audio"],
-                instructions: "Greet the user and ask what kind of situation they want to practice."
+              type: "session.update",
+              config: {
+                // voice: voice, // 시나리오 모드는 voice 변경이 안 될 수도 있음
+                // instructions: "...", // 문서에 없으므로 제거
               }
+            }));
+            addLog("Sent session.update (config)");
+
+            // 2. Response Create (문서 기준: 파라미터 없음)
+            ws.send(JSON.stringify({
+              type: "response.create"
             }));
             addLog("Sent response.create");
             break;
@@ -185,7 +192,6 @@ export function useScenarioChatNew() {
           case "response.audio_transcript.done":
             setState(prev => ({ ...prev, aiMessage: data.transcript }));
             addLog(`AI: ${data.transcript}`);
-            // 번역 수행
             translateToKorean(data.transcript).then(translated => {
               setState(prev => ({ ...prev, aiMessageKR: translated }));
               addLog(`AI (KR): ${translated}`);
@@ -199,8 +205,11 @@ export function useScenarioChatNew() {
             break;
 
           case "input_audio.transcript":
-            setState(prev => ({ ...prev, userTranscript: data.transcript, isUserSpeaking: false }));
-            addLog(`User: ${data.transcript}`);
+            console.log("[ScenarioChat] input_audio.transcript:", data);
+            if (data.transcript) {
+              setState(prev => ({ ...prev, userTranscript: data.transcript, isUserSpeaking: false }));
+              addLog(`User: ${data.transcript}`);
+            }
             break;
 
           case "scenario.completed":
@@ -226,19 +235,13 @@ export function useScenarioChatNew() {
       addLog("WebSocket Error");
     };
 
-  }, [playAudio, stopAudio]);
+  }, [playAudio, stopAudio, voice]); // voice 의존성 추가
 
   const disconnect = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
+    wsRef.current?.close();
     stopAudio();
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    setState(prev => ({ ...prev, isConnected: false, isReady: false }));
+    audioContextRef.current?.close();
+    audioContextRef.current = null;
     addLog("Disconnected manually");
   }, [stopAudio]);
 
@@ -260,7 +263,7 @@ export function useScenarioChatNew() {
       wsRef.current.send(JSON.stringify({
         type: "input_audio_chunk",
         audio: base64,
-        sample_rate: 16000
+        sample_rate: 24000 // 24000으로 변경
       }));
     }
   }, []);
@@ -280,10 +283,44 @@ export function useScenarioChatNew() {
   }, []);
 
   const sendMockAudio = useCallback(() => {
-    const mockData = new Float32Array(16000).fill(0);
+    const mockData = new Float32Array(24000).fill(0); // 24000으로 변경
     sendAudio(mockData);
     addLog("Sent Mock Audio (Silence)");
   }, [sendAudio]);
+
+  const clearAudioBuffer = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+      addLog("Sent input_audio_buffer.clear");
+    }
+  }, []);
+
+  const commitAudio = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+      addLog("Sent input_audio_buffer.commit");
+    }
+  }, []);
+
+  const updateSession = useCallback((threshold: number) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: "session.update",
+        config: { // 문서 기준: config 필드 사용
+          turn_detection: { type: "server_vad", threshold, prefix_padding_ms: 300, silence_duration_ms: 1000 }
+        }
+      }));
+      addLog(`Sent session.update (threshold: ${threshold})`);
+    }
+  }, []);
+
+  // 임의의 JSON 메시지 전송 (추가됨)
+  const sendJson = useCallback((json: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(json));
+      addLog(`Sent JSON: ${JSON.stringify(json)}`);
+    }
+  }, []);
 
   return {
     state,
@@ -294,6 +331,10 @@ export function useScenarioChatNew() {
     sendText,
     forceResponseCreate,
     sendMockAudio,
-    toggleMute
+    toggleMute,
+    clearAudioBuffer,
+    commitAudio,
+    updateSession,
+    sendJson // 반환
   };
 }
