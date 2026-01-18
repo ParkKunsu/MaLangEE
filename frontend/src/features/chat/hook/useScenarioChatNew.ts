@@ -53,7 +53,7 @@ export function useScenarioChatNew() {
   }, []);
 
   // onMessage 콜백을 ref로 관리
-  const onMessageRef = useRef<(event: MessageEvent) => void>();
+  const onMessageRef = useRef<((event: MessageEvent) => void) | undefined>(undefined);
 
   // useWebSocketBase 사용
   const base = useWebSocketBase({

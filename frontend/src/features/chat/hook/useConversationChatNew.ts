@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { tokenStorage } from "@/features/auth";
 import { translateToKorean } from "@/shared/lib/translate";
 import { useWebSocketBase } from "./useWebSocketBase";
@@ -61,7 +61,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   }, [sessionId, voice]);
 
   // onMessage 콜백을 ref로 관리
-  const onMessageRef = useRef<(event: MessageEvent) => void>();
+  const onMessageRef = useRef<((event: MessageEvent) => void) | undefined>(undefined);
 
   // useWebSocketBase 사용
   const base = useWebSocketBase({
@@ -83,12 +83,14 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
           base.setIsReady(true);
 
           // Session Update (config 필드 사용)
-          base.wsRef.current?.send(JSON.stringify({
-            type: "session.update",
-            config: {
-              voice: voice
-            }
-          }));
+          base.wsRef.current?.send(
+            JSON.stringify({
+              type: "session.update",
+              config: {
+                voice: voice,
+              },
+            })
+          );
           base.addLog("Sent session.update (config)");
           break;
 
@@ -103,7 +105,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
         case "transcript.done":
           setAiMessage(data.transcript);
           base.addLog(`AI: ${data.transcript}`);
-          translateToKorean(data.transcript).then(translated => {
+          translateToKorean(data.transcript).then((translated) => {
             setAiMessageKR(translated);
             base.addLog(`AI (KR): ${translated}`);
           });
@@ -143,15 +145,20 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   };
 
   // 오디오 전송 콜백 (Conversation 메시지 타입 사용)
-  const sendAudioCallback = useCallback((audioData: Float32Array) => {
-    if (base.wsRef.current?.readyState === WebSocket.OPEN) {
-      const base64 = base.encodeAudio(audioData);
-      base.wsRef.current.send(JSON.stringify({
-        type: "input_audio_buffer.append",
-        audio: base64
-      }));
-    }
-  }, [base.wsRef, base.encodeAudio]);
+  const sendAudioCallback = useCallback(
+    (audioData: Float32Array) => {
+      if (base.wsRef.current?.readyState === WebSocket.OPEN) {
+        const base64 = base.encodeAudio(audioData);
+        base.wsRef.current.send(
+          JSON.stringify({
+            type: "input_audio_buffer.append",
+            audio: base64,
+          })
+        );
+      }
+    },
+    [base.wsRef, base.encodeAudio]
+  );
 
   // 마이크 시작 (base의 startMicrophone + sendAudioCallback)
   const startMicrophone = useCallback(() => {
@@ -159,15 +166,18 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   }, [base.startMicrophone, sendAudioCallback]);
 
   // 텍스트 전송
-  const sendText = useCallback((text: string) => {
-    if (base.wsRef.current?.readyState === WebSocket.OPEN) {
-      base.wsRef.current.send(JSON.stringify({ type: "text", text }));
-      base.addLog(`Sent Text: ${text}`);
+  const sendText = useCallback(
+    (text: string) => {
+      if (base.wsRef.current?.readyState === WebSocket.OPEN) {
+        base.wsRef.current.send(JSON.stringify({ type: "text", text }));
+        base.addLog(`Sent Text: ${text}`);
 
-      base.wsRef.current.send(JSON.stringify({ type: "response.create" }));
-      base.addLog("Sent response.create (after text)");
-    }
-  }, [base.wsRef, base.addLog]);
+        base.wsRef.current.send(JSON.stringify({ type: "response.create" }));
+        base.addLog("Sent response.create (after text)");
+      }
+    },
+    [base.wsRef, base.addLog]
+  );
 
   // 오디오 커밋
   const commitAudio = useCallback(() => {
@@ -178,17 +188,22 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   }, [base.wsRef, base.addLog]);
 
   // 목소리 변경
-  const updateVoice = useCallback((newVoice: string) => {
-    if (base.wsRef.current?.readyState === WebSocket.OPEN) {
-      base.wsRef.current.send(JSON.stringify({
-        type: "session.update",
-        config: {
-          voice: newVoice
-        }
-      }));
-      base.addLog(`Sent session.update with voice: ${newVoice}`);
-    }
-  }, [base.wsRef, base.addLog]);
+  const updateVoice = useCallback(
+    (newVoice: string) => {
+      if (base.wsRef.current?.readyState === WebSocket.OPEN) {
+        base.wsRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            config: {
+              voice: newVoice,
+            },
+          })
+        );
+        base.addLog(`Sent session.update with voice: ${newVoice}`);
+      }
+    },
+    [base.wsRef, base.addLog]
+  );
 
   // AI 응답 요청
   const requestResponse = useCallback(() => {
