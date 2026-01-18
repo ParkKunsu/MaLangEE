@@ -2,7 +2,7 @@
 
 // Welcome back page: Displays the last chat session and allows the user to continue or start a new one.
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button, MalangEE } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat/api/use-chat-sessions";
@@ -11,7 +11,8 @@ import { AuthGuard, useCurrentUser } from "@/features/auth";
 function WelcomeBackPage() {
   const router = useRouter();
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  let sessionId = searchParams.get("sessionId");
   const textOpacity = 1;
 
   // 현재 사용자 정보 조회
@@ -20,9 +21,6 @@ function WelcomeBackPage() {
   // 로컬 스토리지에서 sessionId 가져오기 및 entryType 설정
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const storedSessionId = localStorage.getItem("chatSessionId");
-      setSessionId(storedSessionId);
-
       // entryType 설정
       if (currentUser) {
         localStorage.setItem("entryType", "member");
@@ -35,8 +33,16 @@ function WelcomeBackPage() {
     }
   }, [currentUser]);
 
-  // 세션 상세 정보 조회
-  const { data: sessionDetail, isLoading } = useGetChatSession(sessionId || "");
+  if (sessionId == null) {
+    sessionId = localStorage.getItem("chatSessionId");
+    // 2. 세션 ID가 없을 경우 최근 세션 조회
+    //const { data: sessionDetail, isLoading: isLoading } = useGetRecentSession();
+  }else{
+    localStorage.setItem("chatSessionId", sessionId);
+  }
+
+  // 1. 특정 세션 ID가 있을 경우 해당 세션 조회
+  const { data: sessionDetail, isLoading } = useGetChatSession(sessionId);
 
   // 세션 정보 로컬 스토리지 저장 (voice, subtitleEnabled, scenario info)
   useEffect(() => {
@@ -85,11 +91,7 @@ function WelcomeBackPage() {
   const handleContinueChat = () => {
     // 텍스트 변경
     setIsConfirmed(true);
-
-    // 1초 후 대화 페이지로 이동
-    setTimeout(() => {
-      router.push("/chat/conversation");
-    }, 100);
+    router.push("/chat/conversation");
   };
 
   const handleNewTopic = () => {
