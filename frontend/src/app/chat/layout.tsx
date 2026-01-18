@@ -102,17 +102,6 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
         {isMuted ? <VolumeX size={24} strokeWidth={2.5} /> : <Volume2 size={24} strokeWidth={2.5} />}
       </button>
 
-      {/* 일시정지 버튼 (소켓 연결 상태이고 대화 페이지일 때만 표시) */}
-      {isSocketConnected && pathname === "/chat/conversation" && (
-        <button
-          className="flex h-10 w-10 items-center justify-center rounded-full text-[#6A667A] transition-colors hover:bg-gray-100 hover:text-[#5F51D9]"
-          onClick={handlePauseToggle}
-          aria-label={isPaused ? "재개" : "일시정지"}
-        >
-          <Pause size={24} strokeWidth={2.5} fill={isPaused ? "currentColor" : "none"} />
-        </button>
-      )}
-
       {/* 대화 종료 버튼 */}
       <button
         className="flex h-10 w-10 items-center justify-center rounded-full text-[#6A667A] transition-colors hover:bg-gray-100 hover:text-[#5F51D9]"
