@@ -69,7 +69,7 @@ class AnalyticsProcessor:
         new_word_counts = Counter(all_keywords)
         
         # 2. 기존 통계 가져오기 (Row Lock for Concurrency)
-        stmt = select(ScenarioStatistics).where(ScenarioStatistics.scenario_id == scenario_key).with_for_update()
+        stmt = select(ScenarioStatistics).where(ScenarioStatistics.scenario_id == scenario_id).with_for_update()
         result = await self.db.execute(stmt)
         stat = result.scalars().first()
         
@@ -77,7 +77,7 @@ class AnalyticsProcessor:
             # Insert 시에는 Lock이 없음 (트랜잭션 격리수준에 따름)
             # 엄밀히는 Upsert(INSERT ON CONFLICT)가 필요하지만, SQLAlchemy ORM에서는 복잡하므로 
             # 여기서는 '없으면 생성' 로직 유지 (매우 낮은 확률의 Insert 충돌은 감수)
-            stat = ScenarioStatistics(scenario_id=scenario_key, total_plays=0, avg_turns=0.0, top_keywords={})
+            stat = ScenarioStatistics(scenario_id=scenario_id, total_plays=0, avg_turns=0.0, top_keywords={})
             self.db.add(stat)
 
         # 3. 데이터 업데이트 (누적)
