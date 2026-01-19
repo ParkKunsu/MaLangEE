@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button, ChatMicButton, MalangEE, MalangEEStatus } from "@/shared/ui";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +18,9 @@ export default function ConversationPage() {
 
   // sessionId 상태 (초기값은 빈 문자열, 클라이언트에서 설정)
   const [sessionId, setSessionId] = useState<string>("");
+
+  // 팝업 상태 (useEffect에서 사용하므로 상단에 선언)
+  const [showSessionErrorPopup, setShowSessionErrorPopup] = useState(false);
 
   // sessionId 초기화 (우선순위: URL > localStorage)
   useEffect(() => {
@@ -70,6 +73,14 @@ export default function ConversationPage() {
     toggleMute
   } = useConversationChatNew(sessionId, selectedVoice);
 
+  // disconnect 함수를 ref로 관리 (useEffect 의존성 문제 방지)
+  const disconnectRef = useRef(disconnect);
+
+  // disconnect ref 업데이트
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
+
   // 연결 상태 추적
   useEffect(() => {
     if (state.isConnected) {
@@ -95,19 +106,6 @@ export default function ConversationPage() {
     setIsMounted(true);
   }, []);
 
-  // 대화 종료 이벤트 리스닝 (layout.tsx의 "대화종료하기" 버튼)
-  useEffect(() => {
-    const handleEndConversation = () => {
-      debugLog("[Event] end-conversation event received");
-      setShowEndChatPopup(true);
-    };
-
-    window.addEventListener("end-conversation", handleEndConversation);
-
-    return () => {
-      window.removeEventListener("end-conversation", handleEndConversation);
-    };
-  }, []);
 
   // 페이지 로드 시 자동 연결
   useEffect(() => {
@@ -127,12 +125,13 @@ export default function ConversationPage() {
     connect();
     debugLog("[Auto-Connect] connect() called");
 
-    // 언마운트 시 정리
+    // 언마운트 시 정리 (ref 사용으로 의존성 배열에서 disconnect 제거)
     return () => {
       debugLog("[Auto-Connect] Cleaning up connection");
-      disconnect();
+      disconnectRef.current();
     };
-  }, [isMounted, sessionId, initAudio, connect, disconnect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMounted, sessionId, initAudio, connect]);
 
   // 연결 완료 후 마이크 시작 + AI에게 첫 인사 요청
   useEffect(() => {
@@ -229,12 +228,25 @@ export default function ConversationPage() {
     isMicEnabled,
   ]);
 
+  // confirm-end-conversation 이벤트 리스닝 (Layout에서 발생)
+  useEffect(() => {
+    const handleConfirmEndConversation = async () => {
+      debugLog("[Event] confirm-end-conversation received");
+      const report = await disconnect();
+      debugLog("[Disconnect] Complete, report:", report);
+      router.push("/dashboard");
+    };
+
+    window.addEventListener("confirm-end-conversation", handleConfirmEndConversation);
+    return () => {
+      window.removeEventListener("confirm-end-conversation", handleConfirmEndConversation);
+    };
+  }, [disconnect, router]);
+
   // 팝업 상태
   const [showLoginPopup, setShowLoginPopup] = useState(false);
   const [showInactivityMessage, setShowInactivityMessage] = useState(false);
   const [showWaitPopup, setShowWaitPopup] = useState(false);
-  const [showEndChatPopup, setShowEndChatPopup] = useState(false);
-  const [showSessionErrorPopup, setShowSessionErrorPopup] = useState(false);
 
   const getMalangEEStatus = (): MalangEEStatus => {
     if (showInactivityMessage) return "humm";
@@ -310,19 +322,12 @@ export default function ConversationPage() {
   };
 
   const handleStopFromWait = () => {
-    router.push("/dashboard");
-  };
-
-  const handleStopFromEnd = () => {
+    disconnect();
     router.push("/dashboard");
   };
 
   const handleContinueChat = () => {
     setShowWaitPopup(false);
-  };
-
-  const handleContinueFromEnd = () => {
-    setShowEndChatPopup(false);
   };
 
   const handleLogin = () => {
@@ -332,21 +337,6 @@ export default function ConversationPage() {
   const handleSignup = () => {
     router.push("/auth/signup");
   };
-
-  // 대화 종료 확인
-  const handleEndChatConfirm = useCallback(() => {
-    setShowEndChatPopup(false);
-    // 대시보드로 이동
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1000); // disconnect 메시지 전송 후 이동
-  }, [router]);
-
-  // 대화 종료 취소
-  const handleEndChatCancel = useCallback(() => {
-    setShowEndChatPopup(false);
-    // 팝업 닫히면 음소거 해제 (원래 상태가 음소거가 아니었다면)
-  }, []);
 
   // 자막 표시 여부 (자막이 켜져 있고, 내용이 있을 때)
   const hasSubtitleContent = showSubtitle && (state.aiMessage || state.userTranscript);
@@ -542,61 +532,6 @@ export default function ConversationPage() {
               </Button>
               <Button variant="primary" size="xl" onClick={handleContinueChat} className="flex-1">
                 이어 말하기
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
-      )}
-
-      {/* End Chat Popup */}
-      {showEndChatPopup && (
-        <PopupLayout
-          onClose={() => setShowEndChatPopup(false)}
-          maxWidth="md"
-          showCloseButton={false}
-        >
-          <div className="flex flex-col items-center gap-6 py-6">
-            <div className="text-center">
-              <p className="text-xl font-semibold leading-relaxed text-gray-800">
-                지금은 여기까지만 할까요?
-                <br />
-                나중에 같은 주제로 다시 대화할 수 있어요.
-              </p>
-            </div>
-            <div className="flex w-full gap-3">
-              <Button
-                onClick={handleStopFromEnd}
-                variant="outline"
-                className="h-14 flex-1 rounded-full border-2 border-gray-300 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                대화 그만하기
-              </Button>
-              <Button
-                variant="primary"
-                size="xl"
-                onClick={handleContinueFromEnd}
-                className="flex-1"
-              >
-                이어 말하기
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
-      )}
-
-      {/* 대화 종료 확인 팝업 */}
-      {showEndChatPopup && (
-        <PopupLayout onClose={handleEndChatCancel} showCloseButton={false} maxWidth="sm">
-          <div className="flex flex-col items-center gap-6 py-2">
-            <MalangEE status="humm" size={120} />
-            <div className="text-xl font-bold text-[#1F1C2B]">대화를 종료하시겠어요?</div>
-            <p className="text-center text-sm text-gray-600">현재까지의 대화 내용은 저장됩니다.</p>
-            <div className="flex w-full gap-3">
-              <Button variant="outline-purple" size="md" fullWidth onClick={handleEndChatCancel}>
-                취소
-              </Button>
-              <Button variant="primary" size="md" fullWidth onClick={handleEndChatConfirm}>
-                종료하기
               </Button>
             </div>
           </div>
