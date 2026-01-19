@@ -114,7 +114,7 @@ export default function ScenarioTestPage() {
 
             {/* Scenario Result */}
             <div className="mt-4 rounded border border-green-200 bg-green-50 p-3">
-              <h3 className="mb-2 text-xs font-bold text-green-800">시나리오 결과</h3>
+              <h3 className="mb-2 text-xs font-bold text-green-800">✅ 시나리오 결과</h3>
               {state.scenarioResult ? (
                 <div className="space-y-1 text-xs">
                   <div>
@@ -131,6 +131,9 @@ export default function ScenarioTestPage() {
                   <div>
                     <span className="font-semibold">세션ID:</span>{" "}
                     {state.scenarioResult.sessionId || "-"}
+                  </div>
+                  <div className="mt-2 border-t border-green-300 pt-2 text-xs italic text-green-700">
+                    💾 시나리오가 DB에 자동 저장되었습니다
                   </div>
                 </div>
               ) : (
@@ -198,16 +201,33 @@ export default function ScenarioTestPage() {
               </div>
 
               <div className="border-t border-purple-200 pt-4">
-                1. 사용자 : 연결 및 오디오 초기화 - 마이크 클릭 - 사용자가 먼저 말하기
-                <br />
-                2. 말랭이 : 어디서 대화하고 싶은지 물음 - 사용자 : 답변
-                <br />
-                3. 누구랑 영어회화 연습하고 싶은지 물음 - 사용자 : 답변
-                <br />
-                4. 대하를 통해 무엇을 성취하고 싶은지 물음 - 사용자 : 답변
-                <br />
-                5. 주제확정되고 말랭이는 더이상 답변하지 않음
-                <br />
+                <h3 className="mb-2 text-sm font-bold text-purple-900">📋 사용 가이드</h3>
+                <div className="space-y-1 text-xs text-gray-700">
+                  <div>
+                    <strong className="text-purple-700">1. 연결:</strong> "연결 및 오디오 초기화" 클릭
+                  </div>
+                  <div className="ml-4 text-gray-600">
+                    ➜ 서버가 자동으로 AI 첫 인사를 시작합니다
+                  </div>
+                  <div>
+                    <strong className="text-purple-700">2. AI 인사:</strong> 말랭이가 먼저 시나리오 정보를 물음
+                  </div>
+                  <div>
+                    <strong className="text-purple-700">3. 대화:</strong> 장소(place), 상대(partner), 목표(goal)를 말하기
+                  </div>
+                  <div className="ml-4 text-gray-600">
+                    ➜ 한 번에 모두 말해도 되고, AI 질문에 순차적으로 답변해도 됩니다
+                  </div>
+                  <div>
+                    <strong className="text-purple-700">4. 완료:</strong> 3가지 정보가 모두 추출되면 시나리오 자동 생성
+                  </div>
+                  <div className="ml-4 text-gray-600">
+                    ➜ DB에 자동 저장되며 sessionId를 반환합니다
+                  </div>
+                  <div className="mt-2 rounded bg-purple-100 p-2 text-xs italic text-purple-800">
+                    💡 <strong>Tip:</strong> 텍스트 입력 기능으로 빠른 테스트도 가능합니다
+                  </div>
+                </div>
               </div>
             </div>
           </div>
