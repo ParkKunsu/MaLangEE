@@ -6,33 +6,30 @@ from sqlalchemy import select
 from app.api import deps
 from app.db import models
 from app.db.database import get_db
-from app.analytics.models import ScenarioStatistics, UserLearningMap
-from app.schemas.analytics import UserStatsResponse, ScenarioStatsResponse
+from app.analytics.models import ScenarioStatistics, SessionAnalytics
+from app.schemas.analytics import ScenarioStatsResponse
+from app.schemas.chat import SessionAnalyticsSchema
 
 router = APIRouter()
 
-@router.get("/user/me", response_model=UserStatsResponse, summary="내 학습 통계 조회")
+@router.get("/user/me", response_model=List[SessionAnalyticsSchema], summary="내 학습 통계 조회 (최근 10개)")
 async def get_my_stats(
     current_user: models.User = Depends(deps.get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    로그인한 사용자의 누적 학습 통계(어휘력, 총 발화량 등)를 조회합니다.
+    로그인한 사용자의 최근 10개 세션별 학습 통계(성적표)를 조회합니다.
     """
-    stmt = select(UserLearningMap).where(UserLearningMap.user_id == current_user.id)
+    stmt = (
+        select(SessionAnalytics)
+        .where(SessionAnalytics.user_id == current_user.id)
+        .order_by(SessionAnalytics.created_at.desc())
+        .limit(10)
+    )
     result = await db.execute(stmt)
-    user_map = result.scalars().first()
+    analytics_list = result.scalars().all()
     
-    if not user_map:
-        # 아직 데이터가 없으면 0으로 채워서 반환 (404 아님)
-        return UserStatsResponse(
-            user_id=current_user.id,
-            total_spoken_words=0,
-            vocabulary_size=0,
-            expression_richness_score=0.0
-        )
-        
-    return user_map
+    return analytics_list
 
 @router.get("/scenario/{scenario_id}", response_model=ScenarioStatsResponse, summary="시나리오 커뮤니티 통계 조회")
 async def get_scenario_stats(
