@@ -45,6 +45,10 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
     </div>
   );
 
+  const hasScenarioInfo = sessionDetail?.scenario_partner ||
+    sessionDetail?.scenario_place ||
+    sessionDetail?.scenario_goal;
+
   return (
     <>
       <PopupLayout onClose={onClose} headerContent={headerContent} maxWidth="2xl">
@@ -66,59 +70,81 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
         ) : (
           <>
             {/* 첫 번째 행: 시나리오 정보 (있을 경우에만) */}
-            {(sessionDetail?.scenario_partner ||
-              sessionDetail?.scenario_place ||
-              sessionDetail?.scenario_goal) && (
-                <div className="mb-6 space-y-3 rounded-2xl bg-gray-50 p-5">
+            {hasScenarioInfo && (
+              <div className="mb-6 space-y-3 rounded-2xl bg-gray-50 p-5">
+                <div className="flex items-center justify-between">
                   <h3 className="text-base font-semibold text-[#1F1C2B]">시나리오 정보</h3>
-                  <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                    {sessionDetail.scenario_partner && (
-                      <div className="flex gap-2">
-                        <span className="font-medium text-[#6A667A]">대화 상대:</span>
-                        <span className="text-[#1F1C2B]">{sessionDetail.scenario_partner}</span>
-                      </div>
-                    )}
-                    {sessionDetail.scenario_place && (
-                      <div className="flex gap-2">
-                        <span className="font-medium text-[#6A667A]">장소:</span>
-                        <span className="text-[#1F1C2B]">{sessionDetail.scenario_place}</span>
-                      </div>
-                    )}
-                    {sessionDetail.scenario_goal && (
-                      <div className="col-span-full flex gap-2">
-                        <span className="shrink-0 font-medium text-[#6A667A]">미션:</span>
-                        <span className="text-[#1F1C2B]">{sessionDetail.scenario_goal}</span>
-                      </div>
-                    )}
+                  <div id="scenario-info-actions" className="flex items-center gap-2">
+                    <Button
+                      variant="solid"
+                      size="sm"
+                      onClick={() => setShowTranscript(true)}
+                      disabled={messages.length === 0}
+                    >
+                      전문보기
+                    </Button>
+                    <Button
+                      variant="outline-purple"
+                      size="sm"
+                      onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
+                    >
+                      다시 대화하기
+                    </Button>
                   </div>
                 </div>
-              )}
+                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  {sessionDetail.scenario_partner && (
+                    <div className="flex gap-2">
+                      <span className="font-medium text-[#6A667A]">대화 상대:</span>
+                      <span className="text-[#1F1C2B]">{sessionDetail.scenario_partner}</span>
+                    </div>
+                  )}
+                  {sessionDetail.scenario_place && (
+                    <div className="flex gap-2">
+                      <span className="font-medium text-[#6A667A]">장소:</span>
+                      <span className="text-[#1F1C2B]">{sessionDetail.scenario_place}</span>
+                    </div>
+                  )}
+                  {sessionDetail.scenario_goal && (
+                    <div className="col-span-full flex gap-2">
+                      <span className="shrink-0 font-medium text-[#6A667A]">미션:</span>
+                      <span className="text-[#1F1C2B]">{sessionDetail.scenario_goal}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* 두 번째 행: 대화 요약 + 전문보기 버튼 */}
             <div className="space-y-3">
               <h3 className="text-lg font-semibold text-[#1F1C2B]">대화 요약</h3>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <p className="flex-1 leading-relaxed text-[#6A667A]">
-                  {messages.length > 0
-                    ? `이 대화에서는 ${messages.length}개의 메시지가 오갔습니다. ${session.title} 주제로 효과적인 의사소통이 진행되었습니다.`
-                    : "대화 내용이 없습니다."}
+                  {sessionDetail?.scenario_summary ||
+                    (messages.length > 0
+                      ? `이 대화에서는 ${messages.length}개의 메시지가 오갔습니다. ${session.title} 주제로 효과적인 의사소통이 진행되었습니다.`
+                      : "대화 내용이 없습니다.")}
                 </p>
                 <div className="flex shrink-0 gap-2">
-                  <Button
-                    variant="solid"
-                    size="sm"
-                    onClick={() => setShowTranscript(true)}
-                    disabled={messages.length === 0}
-                  >
-                    전문보기
-                  </Button>
-                  <Button
-                    variant="outline-purple"
-                    size="sm"
-                    onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
-                  >
-                    다시 대화하기
-                  </Button>
+                  {!hasScenarioInfo && (
+                    <>
+                      <Button
+                        variant="solid"
+                        size="sm"
+                        onClick={() => setShowTranscript(true)}
+                        disabled={messages.length === 0}
+                      >
+                        전문보기
+                      </Button>
+                      <Button
+                        variant="outline-purple"
+                        size="sm"
+                        onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
+                      >
+                        다시 대화하기
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -126,8 +152,10 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
             {/* 세 번째 행: 피드백 목록 */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-[#1F1C2B]">피드백</h3>
-              <div className="flex items-center justify-center rounded-2xl bg-gray-50 p-8">
-                <p className="text-sm text-[#6A667A]">피드백 기능은 곧 제공될 예정입니다.</p>
+              <div className="max-h-[300px] overflow-y-auto rounded-2xl bg-gray-50 p-8">
+                <p className="whitespace-pre-wrap text-sm text-[#6A667A]">
+                  {sessionDetail?.feedback || "피드백이 없습니다."}
+                </p>
               </div>
             </div>
           </>

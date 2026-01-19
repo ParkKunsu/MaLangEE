@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/navigation";
+import Link from "next/link";
 import { useForm, type Resolver } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
