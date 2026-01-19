@@ -25,6 +25,25 @@ async def add_is_analyzed_column():
             await conn.execute(text("ALTER TABLE conversation_sessions ADD COLUMN is_analyzed BOOLEAN DEFAULT FALSE"))
             print("Successfully added 'is_analyzed' column.")
             
+            # [NEW] ChatMessage Columns
+            try:
+                await conn.execute(text("ALTER TABLE chat_messages ADD COLUMN is_feedback BOOLEAN DEFAULT FALSE"))
+                print("Added 'is_feedback' column.")
+            except Exception:
+                pass
+                
+            try:
+                await conn.execute(text("ALTER TABLE chat_messages ADD COLUMN feedback VARCHAR"))
+                print("Added 'feedback' column.")
+            except Exception:
+                pass
+
+            try:
+                await conn.execute(text("ALTER TABLE chat_messages ADD COLUMN reason VARCHAR"))
+                print("Added 'reason' column.")
+            except Exception:
+                pass
+            
         except Exception as e:
             if "duplicate" in str(e).lower() or "exists" in str(e).lower():
                 print("Column 'is_analyzed' already exists. Skipping.")

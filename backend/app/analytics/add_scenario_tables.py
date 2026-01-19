@@ -15,8 +15,18 @@ async def add_scenario_tables():
         # (SQLAlchemy Auto-Create가 동작하지 않는 환경을 대비해 Raw SQL 사용하거나, create_all 호출)
         # 여기서는 create_all을 호출하는게 가장 안전 (Model에 정의되어 있으므로)
         from app.db.models import Base
+        # [NEW] SessionAnalytics 모델을 임포트해야 Base.metadata.create_all에서 인식함
+        from app.analytics.models import SessionAnalytics 
+        
+        # [Cleanup] 기존 UserLearningMap 테이블 삭제 (User IDs FK constraint might exist, but cascade should handle or just drop)
+        try:
+            await conn.execute(text("DROP TABLE IF EXISTS user_learning_map"))
+            print("Dropped 'user_learning_map' table (Cleanup).")
+        except Exception as e:
+            print(f"Error dropping user_learning_map: {e}")
+
         await conn.run_sync(Base.metadata.create_all)
-        print("Created 'scenario_definitions' table (if not exists).")
+        print("Created 'scenario_definitions' and 'session_analytics' tables (if not exists).")
         
         # 2. Foreign Key 컬럼 추가
         # create_all은 기존 테이블(conversation_sessions)의 변경사항을 반영하지 않음.

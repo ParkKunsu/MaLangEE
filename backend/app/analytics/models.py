@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer, Float, DateTime, JSON, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.models import Base
 
@@ -23,18 +24,25 @@ class ScenarioStatistics(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
-class UserLearningMap(Base):
+class SessionAnalytics(Base):
     """
-    유저 개인별 학습 성장 지표
-    - 나 vs 집단 비교 분석용
+    세션별 학습 통계 데이터 (Per-Session Analytics)
+    - 각 대화 세션의 분석 결과 (단어 수, 다양성 점수 등)를 저장
+    - 누적 데이터가 아닌 개별 이력 데이터
     """
-    __tablename__ = "user_learning_map"
+    __tablename__ = "session_analytics"
     
-    # users 테이블의 id를 참조 (User가 삭제되면 통계도 삭제되는게 깔끔하므로 ForeignKey 설정)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    # 세션 ID (1:1 관계)
+    session_id = Column(String, ForeignKey("conversation_sessions.session_id", ondelete="CASCADE"), primary_key=True)
     
-    total_spoken_words = Column(Integer, default=0)       # 누적 발화 단어 수
-    vocabulary_size = Column(Integer, default=0)          # 사용해본 고유 단어(Unique Words) 개수
-    expression_richness_score = Column(Float, default=0.0) # 어휘 다양성 점수 (Type-Token Ratio 등)
+    # 조회 편의성을 위한 User ID 역정규화 (Index 설정)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     
-    last_calculated_at = Column(DateTime(timezone=True), server_default=func.now())
+    word_count = Column(Integer, default=0)         # 총 발화 단어 수
+    unique_words_count = Column(Integer, default=0) # 고유 단어 수
+    richness_score = Column(Float, default=0.0)     # 어휘 다양성 점수 (0~100)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationship
+    session = relationship("ConversationSession", back_populates="analytics")
