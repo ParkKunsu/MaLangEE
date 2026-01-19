@@ -6,6 +6,8 @@ import { translateToKorean } from "@/shared/lib/translate";
 import { useWebSocketBase } from "./useWebSocketBase";
 import { debugLog, debugError } from "@/shared/lib/debug";
 
+const DISCONNECT_TIMEOUT_MS = 5000;
+
 export interface ConversationChatStateNew {
   isConnected: boolean;
   isReady: boolean;
@@ -63,6 +65,10 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
 
   // onMessage 콜백을 ref로 관리
   const onMessageRef = useRef<((event: MessageEvent) => void) | undefined>(undefined);
+  // disconnect 타임아웃 관리
+  const disconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // disconnect Promise resolve 함수 저장
+  const disconnectResolveRef = useRef<((report: any | null) => void) | null>(null);
 
   // useWebSocketBase 사용
   const base = useWebSocketBase({
@@ -143,13 +149,32 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
           base.addLog(`User: ${data.transcript}`);
           break;
 
-        case "disconnected":
+        case "disconnected": {
+          // 타임아웃 취소
+          if (disconnectTimeoutRef.current) {
+            clearTimeout(disconnectTimeoutRef.current);
+            disconnectTimeoutRef.current = null;
+          }
           base.addLog(`Session disconnected: ${data.reason || "Unknown"}`);
-          if (data.report) {
-            setSessionReport(data.report);
-            base.addLog(`Session report received: ${JSON.stringify(data.report)}`);
+          debugLog("[WebSocket] Received disconnected response");
+
+          const report = data.report || null;
+          if (report) {
+            setSessionReport(report);
+            base.addLog(`Session report received: ${JSON.stringify(report)}`);
+            debugLog("[WebSocket] Session report:", report);
+          }
+
+          // disconnected 응답을 받은 후 WebSocket 정리
+          base.disconnect();
+
+          // Promise resolve 호출
+          if (disconnectResolveRef.current) {
+            disconnectResolveRef.current(report);
+            disconnectResolveRef.current = null;
           }
           break;
+        }
 
         case "error":
           debugError("[WebSocket] ❌ Error received:", data.message);
@@ -236,14 +261,45 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
     }
   }, [base.wsRef, base.addLog]);
 
-  // 연결 해제 시 disconnect 메시지 전송
-  const disconnect = useCallback(() => {
-    if (base.wsRef.current?.readyState === WebSocket.OPEN) {
-      base.wsRef.current.send(JSON.stringify({ type: "disconnect" }));
-      base.addLog("Sent disconnect request");
-    }
-    base.disconnect();
-  }, [base.wsRef, base.addLog, base.disconnect]);
+  // 연결 해제 시 disconnect 메시지 전송 (Promise 반환)
+  const disconnect = useCallback((): Promise<any | null> => {
+    return new Promise((resolve) => {
+      // 이미 disconnect 요청 중이면 중복 요청 방지
+      if (disconnectTimeoutRef.current) {
+        debugLog("[WebSocket] Disconnect already in progress");
+        resolve(null);
+        return;
+      }
+
+      if (base.wsRef.current?.readyState === WebSocket.OPEN) {
+        // resolve 함수 저장 (disconnected 응답 시 호출됨)
+        disconnectResolveRef.current = resolve;
+
+        // ✅ 마이크 먼저 중지 (오디오 전송 중단)
+        base.stopMicrophone();
+        base.addLog("Microphone stopped before disconnect");
+        debugLog("[WebSocket] Microphone stopped before disconnect");
+
+        base.wsRef.current.send(JSON.stringify({ type: "disconnect" }));
+        base.addLog("Sent disconnect request, waiting for disconnected response...");
+        debugLog("[WebSocket] Sent disconnect request, waiting for server response...");
+
+        // 타임아웃 설정: 서버 응답이 없으면 강제 연결 해제
+        disconnectTimeoutRef.current = setTimeout(() => {
+          debugLog("[WebSocket] Disconnect timeout - forcing close");
+          base.addLog("Disconnect timeout - forcing close");
+          disconnectTimeoutRef.current = null;
+          disconnectResolveRef.current = null;
+          base.disconnect();
+          resolve(null);
+        }, DISCONNECT_TIMEOUT_MS);
+      } else {
+        // WebSocket이 이미 닫혀있으면 바로 정리
+        base.disconnect();
+        resolve(null);
+      }
+    });
+  }, [base]);
 
   return {
     state: {

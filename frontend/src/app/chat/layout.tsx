@@ -67,13 +67,7 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
   }, []);
 
   const handleEndChat = () => {
-    // conversation 페이지에서는 custom event 발생 (대화 종료)
-    if (pathname === "/chat/conversation") {
-      window.dispatchEvent(new CustomEvent("end-conversation"));
-    } else {
-      // 다른 페이지에서는 기존 로그아웃 팝업 표시
-      setShowEndChatPopup(true);
-    }
+    setShowEndChatPopup(true);
   };
 
   const handleMuteToggle = () => {
@@ -84,8 +78,13 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
 
   const handleEndChatConfirm = () => {
     setShowEndChatPopup(false);
-    // 완료 페이지로 이동
-    router.push("/chat/complete");
+    // conversation 페이지에서는 이벤트 발생 (page에서 disconnect 후 라우팅)
+    if (pathname === "/chat/conversation") {
+      window.dispatchEvent(new CustomEvent("confirm-end-conversation"));
+    } else {
+      // 다른 페이지에서는 바로 대시보드로 이동
+      router.push("/dashboard");
+    }
   };
 
   const handleEndChatCancel = () => {
