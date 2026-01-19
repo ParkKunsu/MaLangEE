@@ -1,5 +1,8 @@
 {
-    "modalities": ["audio", "text"],
+    "modalities": [
+        "audio",
+        "text"
+    ],
     "voice": "alloy",
     "input_audio_format": "pcm16",
     "output_audio_format": "pcm16",
@@ -11,5 +14,6 @@
     },
     "input_audio_transcription": {
         "model": "whisper-1"
-    }
+    },
+    "max_response_output_tokens": 500
 }

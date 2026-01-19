@@ -62,8 +62,14 @@ class ConversationManager:
                 "voice": "alloy",
                 "input_audio_format": "pcm16",
                 "output_audio_format": "pcm16",
-                "turn_detection": {"type": "server_vad", "threshold": 0.7},
-                "input_audio_transcription": {"model": "whisper-1"}
+                "turn_detection": {
+                    "type": "server_vad",
+                    "threshold": 0.7,
+                    "prefix_padding_ms": 300,
+                    "silence_duration_ms": 1500
+                },
+                "input_audio_transcription": {"model": "whisper-1"},
+                "max_response_output_tokens": 500
             }
         
         # 기본값으로 초기 설정 세팅
