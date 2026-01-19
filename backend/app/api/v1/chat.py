@@ -7,7 +7,9 @@ from app.schemas.chat import (
     SessionCreate,
     SessionResponse,
     SessionSummary,
+
     SyncSessionResponse,
+    SessionStartRequest,
 )
 from app.schemas.common import PaginatedResponse
 from app.services.chat_service import ChatService
@@ -40,6 +42,21 @@ async def sync_guest_session(
     except Exception as e:
         # 이미 존재하는 세션 ID 등 에러 처리
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/sessions", response_model=SessionResponse, summary="새 대화 세션 시작")
+async def start_new_session(
+    session_in: SessionStartRequest,
+    current_user: Optional[models.User] = Depends(deps.get_current_user_optional), # 비회원도 가능하도록 Optional
+    service: ChatService = Depends(deps.get_chat_service),
+):
+    """
+    [Scenario Start]
+    시나리오 정보를 받아 새로운 대화 세션을 생성합니다.
+    - scenario_id만 보내면, DB에서 나머지 정보(장소, 상대, 목표)를 자동으로 채워줍니다.
+    """
+    user_id = current_user.id if current_user else None
+    return await service.create_new_session(session_in, user_id)
 
 
 @router.get("/sessions", response_model=PaginatedResponse[SessionSummary], summary="사용자 대화 세션 목록 조회")

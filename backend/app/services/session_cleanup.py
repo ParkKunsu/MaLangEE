@@ -38,7 +38,7 @@ async def soft_delete_expired_sessions() -> int:
             await session.commit()
             count = result.rowcount or 0
             if count > 0:
-                logger.info(f"Cleaned up {count} expired guest sessions (older than {ttl_hours}h).")
+                logger.info(f"Cleaned up {count} expired guest sessions (older than {ttl_minutes}m).")
             return count
         except Exception as e:
             logger.error(f"Error during session cleanup: {e}")
