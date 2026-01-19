@@ -1,24 +1,38 @@
 
+import sys
+import os
+import argparse
 import asyncio
 from sqlalchemy import text
-from app.db.database import engine
+from dotenv import load_dotenv
+
+# Path setup
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, backend_dir)
+
+# Load environment variables
+load_dotenv(os.path.join(backend_dir, ".env"))
+load_dotenv(os.path.join(backend_dir, ".env.local"))
+
+from app.core.config import settings
+from app.db import database 
 
 async def add_scenario_tables():
     """
     Scenario 관련 테이블 및 컬럼을 수동으로 추가합니다.
-    (ScenarioDefinition 테이블 생성 + ConversationSession 컬럼 추가)
     """
-    print("Starting Phase 2 Migration...")
+    engine = database.engine
+    print(f"Starting Phase 2 Migration... (SQLite: {settings.USE_SQLITE})")
     
     async with engine.begin() as conn:
         # 1. ScenarioDefinition 테이블 생성
-        # (SQLAlchemy Auto-Create가 동작하지 않는 환경을 대비해 Raw SQL 사용하거나, create_all 호출)
-        # 여기서는 create_all을 호출하는게 가장 안전 (Model에 정의되어 있으므로)
         from app.db.models import Base
-        # [NEW] SessionAnalytics 모델을 임포트해야 Base.metadata.create_all에서 인식함
-        from app.analytics.models import SessionAnalytics 
+        from app.analytics.models import Base as AnalyticsBase # Assuming models use same Base or need separate import
+        # Note: In Step 32, analytics models import Base from app.db.models. So just importing app.db.models and app.analytics.models is enough.
+        # But we need to make sure the modules are imported so the metadata is populated.
+        import app.analytics.models 
         
-        # [Cleanup] 기존 UserLearningMap 테이블 삭제 (User IDs FK constraint might exist, but cascade should handle or just drop)
+        # [Cleanup]
         try:
             await conn.execute(text("DROP TABLE IF EXISTS user_learning_map"))
             print("Dropped 'user_learning_map' table (Cleanup).")
@@ -29,29 +43,18 @@ async def add_scenario_tables():
         print("Created 'scenario_definitions' and 'session_analytics' tables (if not exists).")
         
         # 2. Foreign Key 컬럼 추가
-        # create_all은 기존 테이블(conversation_sessions)의 변경사항을 반영하지 않음.
-        # 따라서 수동으로 ADD COLUMN 해야 함.
         try:
             await conn.execute(text("ALTER TABLE conversation_sessions ADD COLUMN scenario_id VARCHAR"))
-             # SQLite/MySQL/Postgres 호환성 고려하여 VARCHAR 타입 사용 (String)
-             # FK 제약조건은 ALTER TABLE ADD CONSTRAINT로 걸어야 하나, SQLite는 제한적임.
-             # 일단 컬럼만 추가하여 데이터 저장만 가능하게 함. (ORM 레벨에서 관계 처리)
             print("Added 'scenario_id' column to 'conversation_sessions'.")
         except Exception as e:
             if "duplicate" in str(e).lower() or "exists" in str(e).lower():
                 print("Column 'scenario_id' already exists. Skipping.")
             else:
-                print(f"Error adding column: {e}")
+                print(f"Error adding column 'scenario_id': {e}")
                 
-        # 3. Seed Data (기초 데이터) 입력
+        # 3. Seed Data
         try:
-             # 임시 Session 생성하여 Seed Data 입력
-            from sqlalchemy.orm import Session
-            from app.db.models import ScenarioDefinition
-            
-            # Async 엔진에서 Sync 처리는 run_sync로 해야 함
             await conn.run_sync(insert_seed_data)
-            
         except Exception as e:
              print(f"Seed data error: {e}")
 
@@ -59,7 +62,6 @@ def insert_seed_data(connection):
     from sqlalchemy import insert
     from app.db.models import ScenarioDefinition
     
-    # 기초 시나리오 데이터
     seeds = [
         {
             "id": "airport_checkin",
@@ -83,18 +85,43 @@ def insert_seed_data(connection):
         }
     ]
     
-    # 중복 무시하고 Insert (SQLite: OR IGNORE, PG: ON CONFLICT DO NOTHING)
-    # 여기서는 간단히 try-except 래핑보다는, select 후 없으면 insert 하는 로직이 좋으나
-    # run_sync 내부라 ORM Session 쓰기가 애매함. Core 레벨 Insert 사용.
-    
-    # 간단하게: 그냥 시도하고 에러나면 패스 (PK 중복)
     for seed in seeds:
         try:
             connection.execute(insert(ScenarioDefinition).values(**seed))
             print(f"Seeded: {seed['id']}")
         except Exception:
-            # PK 중복 등 에러 무시
             pass
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Add scenario tables and seed data")
+    parser.add_argument("--production", action="store_true", help="Force use of production database (PostgreSQL)")
+    parser.add_argument("--db-name", type=str, help="Database name")
+    parser.add_argument("--db-user", type=str, help="Database user")
+    parser.add_argument("--db-password", type=str, help="Database password")
+    parser.add_argument("--db-host", type=str, help="Database host", default="localhost")
+    parser.add_argument("--db-port", type=str, help="Database port", default="5432")
+
+    args = parser.parse_args()
+
+    if args.production:
+        print("Switching to PRODUCTION mode (PostgreSQL)")
+        settings.USE_SQLITE = False
+        
+        if args.db_name:
+            settings.POSTGRES_DB = args.db_name
+        if args.db_user:
+            settings.POSTGRES_USER = args.db_user
+        if args.db_password:
+            settings.POSTGRES_PASSWORD = args.db_password
+        if args.db_host:
+            settings.POSTGRES_SERVER = args.db_host
+        if args.db_port:
+            settings.POSTGRES_PORT = args.db_port
+            
+        database.engine = database.create_async_engine(
+            settings.DATABASE_URL,
+            echo=True,
+            isolation_level="AUTOCOMMIT"
+        )
+    
     asyncio.run(add_scenario_tables())
