@@ -4,7 +4,7 @@ from collections import Counter
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import ConversationSession, ChatMessage
-from app.analytics.models import ScenarioStatistics, UserLearningMap
+from app.analytics.models import ScenarioStatistics, SessionAnalytics
 
 class TextAnalyzer:
     """
@@ -88,61 +88,48 @@ class AnalyticsProcessor:
         
         # Top 20만 남기기
         stat.top_keywords = dict(total_counter.most_common(20))
-        stat.total_plays += 1
         
         # 평균 턴 수 업데이트 (Moving Average)
-        # avg_new = (avg_old * (n-1) + current_turn) / n 
-        # (여기서는 간단히 처리하기 위해 생략하거나 별도 로직 필요, 일단 단순 +1 처리만 함)
+        # Formula: new_avg = ((old_avg * old_count) + current_turns) / (old_count + 1)
+        current_turns = len(new_user_messages)
+        old_avg = stat.avg_turns
+        old_count = stat.total_plays
+        
+        new_avg = ((old_avg * old_count) + current_turns) / (old_count + 1)
+        
+        stat.avg_turns = round(new_avg, 2)
+        stat.total_plays += 1
         
         await self.db.commit()
 
-    async def update_user_stats(self, user_id: int, new_user_messages: List[str]):
+    async def save_session_analytics(self, session_id: str, user_id: int, new_user_messages: List[str]):
         """
-        유저의 학습 데이터를 갱신합니다.
+        세션별 통계(성적표)를 저장합니다. (누적 아님)
         """
         if not new_user_messages:
             return
 
-        # 1. 키워드 추출
+        # 1. 키워드 추출 & 분석
         session_words = []
         for msg in new_user_messages:
             session_words.extend(TextAnalyzer.extract_keywords(msg))
             
-        session_word_count = len(session_words)
-        session_unique_words = set(session_words)
+        word_count = len(session_words)
+        unique_words_count = len(set(session_words))
         
-        # 2. DB 조회 (Row Lock)
-        stmt = select(UserLearningMap).where(UserLearningMap.user_id == user_id).with_for_update()
-        result = await self.db.execute(stmt)
-        user_map = result.scalars().first()
+        # 2. 다양성 점수
+        richness_score = TextAnalyzer.calculate_richness_score(session_words)
         
-        if not user_map:
-            user_map = UserLearningMap(user_id=user_id, total_spoken_words=0, vocabulary_size=0, expression_richness_score=0.0)
-            self.db.add(user_map)
-            
-        # 3. 업데이트
-        user_map.total_spoken_words += session_word_count
-        
-        # *주의*: vocabulary_size는 '누적' 고유 단어 수이므로, 
-        # 정확히 하려면 별도의 'UserVocabulary' 테이블(단어장)이 있어야 중복 여부를 알 수 있음.
-        # MVP 단계에서는 단순 합산 보다는, 이번 세션의 다양성을 '점수'에 반영하는 것으로 타협.
-        
-        # 다양성 점수 (이번 세션 기준)
-        current_richness = TextAnalyzer.calculate_richness_score(session_words)
-        
-        # 기존 점수와 평균 내기 (최근 10개 세션 평균 등 복잡한 로직 대신, 50:50 가중치 적용 등 단순화)
-        if user_map.expression_richness_score == 0:
-             user_map.expression_richness_score = current_richness
-        else:
-            # 기존 점수 70%, 이번 점수 30% 반영 (변화 체감용)
-            user_map.expression_richness_score = round(user_map.expression_richness_score * 0.7 + current_richness * 0.3, 2)
-
-        # Vocabulary Size: (MVP) 일단 session_unique 값을 더하는 건 부정확하지만, 
-        # 성장 그래프를 보여주기 위해 'Increment' 방식으로 처리 (실제로는 Set DB 필요)
-        # 여기서는 보수적으로 '이번 세션의 신규 단어 추정치'를 더함 (예: 20%)
-        estimated_new_words = int(len(session_unique_words) * 0.2) 
-        user_map.vocabulary_size += max(1, estimated_new_words)
-
+        # 3. SessionAnalytics 생성 및 저장
+        # (기존 유저 누적 로직은 삭제됨)
+        analytics = SessionAnalytics(
+            session_id=session_id,
+            user_id=user_id,
+            word_count=word_count,
+            unique_words_count=unique_words_count,
+            richness_score=richness_score
+        )
+        self.db.add(analytics)
         await self.db.commit()
 
     async def process_session_analytics(self, session_id: str):
@@ -177,6 +164,12 @@ class AnalyticsProcessor:
             await self.db.commit()
             return True
             
+        # [Filter] 너무 짧은 세션은 통계에서 제외 (데이터 오염 방지)
+        if len(user_messages) < 3:
+            session.is_analyzed = True
+            await self.db.commit()
+            return True
+            
         
         # 4. 통계 업데이트
         # A. 시나리오 통계
@@ -184,9 +177,9 @@ class AnalyticsProcessor:
         scenario_key = session.scenario_id or session.scenario_place or "unknown_scenario"
         await self.update_scenario_stats(scenario_key, user_messages)
         
-        # B. 유저 통계
+        # B. 유저 통계 (세션별 저장)
         if session.user_id:
-            await self.update_user_stats(session.user_id, user_messages)
+            await self.save_session_analytics(session.session_id, session.user_id, user_messages)
             
         # 5. 플래그 업데이트
         session.is_analyzed = True
