@@ -198,6 +198,11 @@ class ConnectionHandler:
                         should_reconnect = await self.conversation_manager.update_session_settings(new_config)
                         
                         if should_reconnect:
+                            # [Fix] 재연결 시 새로운 목소리가 적용되도록 self.voice 변수 업데이트
+                            if "voice" in new_config:
+                                self.voice = new_config["voice"]
+                                logger.info(f"Voice setting updated to: {self.voice}")
+
                             await self.reconnect_to_openai()
 
                 elif data.get("type") == "disconnect":
