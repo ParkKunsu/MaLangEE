@@ -44,7 +44,7 @@ export default function ConversationPage() {
     }
   }, [sessionId, searchParams, router]);
 
-  // localStorage에서 설정 읽기
+  // TODO: localStorage에서 설정 읽기 -> api에서 읽는 것으로 변경해야 할듯.
   const [selectedVoice, setSelectedVoice] = useState("shimmer"); //목소리
   const [showSubtitle, setShowSubtitle] = useState(true); //자막 표시 상태
 
