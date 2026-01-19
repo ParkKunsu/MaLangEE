@@ -231,6 +231,28 @@ async def handle_client(client_ws, user_id: Optional[int] = None) -> None:
         openai_task.cancel()
         return
     await client_ws.send(json.dumps({"type": "ready"}))
+
+    # [Trigger] 강제 발화 유도: "Let's start" 가짜 사용자 메시지 주입
+    logger.info("Triggering AI First Turn with 'Let's start'")
+    await openai_client.send_event({
+        "type": "conversation.item.create",
+        "item": {
+            "type": "message",
+            "role": "user",
+            "content": [
+                {
+                    "type": "input_text",
+                    "text": "Let's start" 
+                }
+            ]
+        }
+    })
+    await openai_client.send_event({
+        "type": "response.create",
+        "response": {
+            "modalities": ["audio", "text"]
+        }
+    })
     try:
         async for message in client_ws:
             # logger.info("Client event: %s", _safe_event_type(message))
