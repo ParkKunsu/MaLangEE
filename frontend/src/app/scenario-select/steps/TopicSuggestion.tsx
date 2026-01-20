@@ -198,16 +198,33 @@ export function TopicSuggestion({
 
       {/* 상세정보 팝업 */}
       {showDetailPopup && selectedScenario && (
-        <PopupLayout onClose={() => setShowDetailPopup(false)} maxWidth="md" showCloseButton={true}>
+        <PopupLayout
+          onClose={() => setShowDetailPopup(false)}
+          maxWidth="md"
+          showCloseButton={true}
+        >
           <div className="flex flex-col gap-6 py-6">
-            <div className="text-center">
-              <h2 className="text-text-primary mb-2 text-xl font-bold">{selectedScenario.title}</h2>
-              <p className="text-text-secondary text-sm">{selectedScenario.description}</p>
+            <div id="detail-title" className="flex items-start gap-4 px-2">
+              {/* 난이도 표시: 2줄 높이의 큰 텍스트 */}
+              <div className="flex flex-shrink-0 items-center justify-center">
+                <span className="text-brand text-4xl font-black leading-none tracking-tighter">
+                  Lv{selectedScenario.level}
+                </span>
+              </div>
+              
+              <div className="flex flex-col text-left">
+                <h2 className="text-text-primary text-xl font-bold leading-tight">
+                  {selectedScenario.title}
+                </h2>
+                <p className="text-text-secondary mt-1 text-sm leading-snug">
+                  {selectedScenario.description}
+                </p>
+              </div>
             </div>
 
             <div className="space-y-6">
               {/* 시나리오 정보 카드 */}
-              <div className="space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-6">
+              <div className="space-y-4 rounded-2xl bg-gray-50 p-6 border border-gray-100">
                 <div className="flex items-start gap-3">
                   <span className="text-brand min-w-[60px] text-sm font-bold">장소:</span>
                   <span className="text-text-primary text-sm">{selectedScenario.place}</span>
@@ -224,28 +241,28 @@ export function TopicSuggestion({
 
               {/* 대화 설정 섹션 */}
               <div className="space-y-4">
-                <h3 className="px-1 text-sm font-bold text-gray-700">대화 설정</h3>
-                <div className="space-y-5 rounded-2xl border border-gray-100 bg-gray-50 p-6">
+                <h3 className="text-sm font-bold text-gray-700 px-1">대화 설정</h3>
+                <div className="space-y-5 rounded-2xl bg-gray-50 p-6 border border-gray-100">
                   <Toggle label="자막 표시" enabled={showSubtitle} onChange={setShowSubtitle} />
-
+                  
                   <div className="space-y-2">
-                    <p className="px-1 text-sm font-bold text-gray-700">목소리 톤</p>
-                    <div className="flex items-center gap-4 rounded-xl border border-gray-100  bg-white p-3">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">목소리 톤</p>
+                    <div className="flex items-center gap-4 rounded-xl bg-white p-3 shadow-sm border border-gray-100">
                       <button
                         onClick={handlePrevVoice}
-                        className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-50"
+                        className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-gray-50 text-gray-400"
                       >
                         <ChevronLeft size={24} />
                       </button>
                       <div className="flex-1 text-center">
                         <p className="font-bold text-gray-800">{voiceOptions[voiceIndex].name}</p>
-                        <p className="text-[11px] leading-tight text-gray-500">
+                        <p className="text-[11px] text-gray-500 leading-tight">
                           {voiceOptions[voiceIndex].description}
                         </p>
                       </div>
                       <button
                         onClick={handleNextVoice}
-                        className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-50"
+                        className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-gray-50 text-gray-400"
                       >
                         <ChevronRight size={24} />
                       </button>
@@ -256,8 +273,13 @@ export function TopicSuggestion({
             </div>
 
             {/* 버튼 영역 */}
-            <div className="mt-2 flex gap-3">
-              <Button variant="primary" size="lg" className="flex-1 " onClick={handleStartOriginal}>
+            <div className="flex gap-3 mt-2">
+              <Button
+                variant="primary"
+                size="lg"
+                className="flex-1 h-14 rounded-2xl text-lg font-bold shadow-lg shadow-brand/20"
+                onClick={handleStartOriginal}
+              >
                 이 주제로 시작하기
               </Button>
             </div>
