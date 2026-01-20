@@ -89,13 +89,55 @@ Java(Spring Boot) 개발자분들이 Python(FastAPI) 환경에 적응하기 쉽�
 
 ### 4. API (Interface Layer)
 
+#### `app/api/v1/auth.py`
+*   **역할**: 인증 및 회원가입 관련 API.
+*   **Java 비유**: `AuthController.java`
+*   **상세**:
+    *   `POST /signup`: 회원가입 처리.
+    *   `POST /login`: OAuth2 호환 로그인 및 JWT 토큰 발급.
+    *   `POST /check-login-id`, `POST /check-nickname`: 중복 확인 API.
+
+#### `app/api/v1/users.py`
+*   **역할**: 사용자 정보 관리 API.
+*   **Java 비유**: `UserController.java`
+*   **상세**:
+    *   `GET /me`: 내 정보 조회.
+    *   `PUT /me`: 내 정보 수정.
+    *   `DELETE /me`: 회원 탈퇴 (Soft Delete).
+
+#### `app/api/v1/scenario.py`
+*   **역할**: 시나리오(대화 주제) 관리 및 실시간 주제 생성 API.
+*   **Java 비유**: `ScenarioController.java`
+*   **상세**:
+    *   `GET /`: 전체 시나리오 목록 조회.
+    *   `GET /{scenario_id}`: 시나리오 상세 조회.
+    *   `WS /ws/scenario`: (회원용) 실시간 주제 생성 WebSocket.
+    *   `WS /ws/guest-scenario`: (게스트용) 실시간 주제 생성 WebSocket.
+
 #### `app/api/v1/chat.py`
-*   **역할**: 실제 API 엔드포인트(URL) 처리.
+*   **역할**: 대화 세션 관리 및 실시간 채팅 API.
 *   **Java 비유**: `ChatController.java`
 *   **상세**:
-    *   `@router.post("/logs")`: POST 요청을 받습니다.
-    *   `db: AsyncSession = Depends(get_db)`: 스프링의 `@Autowired`처럼 DB 세션을 주입받습니다.
-    *   Repository를 호출하여 비즈니스 로직을 수행하고 결과를 반환합니다.
+    *   `POST /sessions`: 새 대화 세션 시작.
+    *   `GET /sessions`: 내 대화 목록 조회.
+    *   `GET /sessions/{session_id}`: 대화 상세 조회.
+    *   `PUT /sessions/{session_id}/sync`: 게스트 세션 계정 연동.
+    *   `WS /ws/chat/{session_id}`: (회원용) 실시간 대화 WebSocket.
+    *   `WS /ws/guest-chat/{session_id}`: (게스트용) 실시간 대화 WebSocket.
+    *   `GET /hints/{session_id}`: 대화 힌트 생성.
+
+#### `app/api/v1/analytics.py`
+*   **역할**: 학습 통계 및 분석 API.
+*   **Java 비유**: `AnalyticsController.java`
+*   **상세**:
+    *   `GET /user/me`: 내 학습 통계 조회.
+    *   `GET /scenario/{scenario_id}`: 시나리오별 커뮤니티 통계 조회.
+
+#### `app/api/v1/feedback.py`
+*   **역할**: 대화 피드백 생성 API.
+*   **Java 비유**: `FeedbackController.java`
+*   **상세**:
+    *   `POST /{session_id}`: 특정 세션에 대한 AI 피드백 생성 요청.
 
 ---
 

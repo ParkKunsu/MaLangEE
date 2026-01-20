@@ -38,7 +38,7 @@ MaLangEE는 **두 가지 독립적인 WebSocket 기능**을 제공하며, 각각
 게스트: /api/v1/scenario/ws/guest-scenario
 ```
 
-**백엔드 구현**: `backend/app/api/v1/scenario.py:45, 61`
+**백엔드 구현**: `backend/app/api/v1/scenario.py:108, 123`
 
 **용도:**
 - 대화 주제(시나리오) 자동 생성
@@ -63,7 +63,7 @@ MaLangEE는 **두 가지 독립적인 WebSocket 기능**을 제공하며, 각각
 게스트: /api/v1/chat/ws/guest-chat/{session_id}?voice=alloy&show_text=true
 ```
 
-**백엔드 구현**: `backend/app/api/v1/chat.py:90, 112`
+**백엔드 구현**: `backend/app/api/v1/chat.py:108, 124`
 
 **용도:**
 - 실시간 영어 회화 연습
@@ -1173,7 +1173,7 @@ export function useScenarioWebSocket(token: string) {
       console.error('WebSocket error:', error);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       console.log('Scenario WebSocket closed');
     };
 
