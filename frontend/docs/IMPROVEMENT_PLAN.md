@@ -6,7 +6,7 @@
 
 ---
 
-## 현재 상태 분석
+## 현재 상태 분석 (2025-01-20 업데이트)
 
 ### 완료된 기능
 - 랜딩 페이지 (/)
@@ -15,12 +15,14 @@
 - 대시보드 페이지 (/dashboard)
 - 토픽 선택 페이지 (/topic-select)
 - 인증 시스템 (JWT, GuestGuard, AuthGuard)
+- **WebSocket 연동 (시나리오/대화 모드 모두 구현 완료)**
+- **음성 녹음/재생 기능 (PCM16, 24kHz)**
 
 ### 개선이 필요한 영역
-1. **코드 구조**: FSD 아키텍처 완전 적용 필요
-2. **UI/UX**: 디자인 시스템 일관성, 컴포넌트 추상화
-3. **핵심 기능**: WebSocket 연동, 음성 녹음/재생 기능 미구현
-4. **테스트**: 단위 테스트, E2E 테스트 부재
+1. **코드 구조**: FSD 아키텍처 일부 영역 추가 필요 (entities, widgets)
+2. **UI/UX**: 반응형 디자인, 접근성, 애니메이션 개선
+3. ~~**핵심 기능**: WebSocket 연동, 음성 녹음/재생 기능~~ ✅ 완료
+4. **테스트**: E2E 테스트 부재, 단위 테스트 보강 필요
 5. **접근성**: WCAG 가이드라인 준수 필요
 
 ---
@@ -28,24 +30,29 @@
 ## Phase 1: 기초 코드 품질 및 FSD 구조 개선
 
 ### 오버뷰
-프로젝트의 기반을 다지는 단계입니다. FSD(Feature-Sliced Design) 아키텍처를 완전히 적용하고, 코드 품질을 향상시키며, 공용 컴포넌트를 정리합니다. 이 단계가 완료되면 이후 모든 기능 개발이 일관된 구조를 따르게 됩니다.
+프로젝트의 기반을 다지는 단계입니다. FSD(Feature-Sliced Design) 아키텍처를 완전히 적용하고, 코드 품질을 향상시키며, 공용 컴포넌트를 정리합니다.
 
 ### 컨텍스트
-- **현재 상태**: FSD 구조가 부분적으로만 적용됨. features/auth만 존재.
-- **목표 상태**: 모든 기능이 FSD 슬라이스로 구조화되고, shared 레이어가 완전히 정리됨
+- **현재 상태**: FSD 구조 부분 적용됨 (features/auth, features/chat 구현 완료)
+- **목표 상태**: entities, widgets 레이어 구축 및 모든 기능이 FSD 슬라이스로 구조화
 - **작업 디렉토리**: `/frontend/src/`
 - **참고 문서**: `/frontend/docs/tailwind.md`, `/frontend/CLAUDE.md`
 
 ### 수정/개선 체크리스트
 
 #### shared 레이어 정리
-- [ ] `shared/ui/` - 공용 UI 컴포넌트 인덱스 파일 정리 및 re-export 구조화
-- [ ] `shared/ui/Button.tsx` - brand, brand-outline variant 문서화 및 타입 export
-- [ ] `shared/ui/MicButton/` - 마이크 버튼 컴포넌트 리팩토링 (props 인터페이스 개선)
-- [ ] `shared/ui/GlassCard/` - 글래스모피즘 카드 컴포넌트 props 타입 개선
-- [ ] `shared/lib/utils.ts` - cn 함수 및 유틸리티 함수 확장
+- [x] `shared/ui/` - 공용 UI 컴포넌트 인덱스 파일 정리 및 re-export 구조화 (18개 컴포넌트)
+- [x] `shared/ui/Button.tsx` - brand, brand-outline variant 구현 완료
+- [x] `shared/ui/MicButton/` - 마이크 버튼 컴포넌트 구현
+- [x] `shared/ui/GlassCard/` - 글래스모피즘 카드 컴포넌트 구현
+- [x] `shared/lib/utils.ts` - cn 함수 및 유틸리티 함수 구현
 - [ ] `shared/types/` - 공용 타입 정의 (ApiResponse, PaginatedResponse 등)
-- [ ] `shared/api/` - API 클라이언트 설정 및 React Query 기본 설정
+- [x] `shared/lib/api-client.ts` - API 클라이언트 설정 완료
+- [x] `shared/lib/websocket-client.ts` - WebSocket 클라이언트 구현 완료
+
+#### shared/hooks 구현 상태
+- [x] `shared/hooks/useAudioRecorder.ts` - PCM16 오디오 캡처, 24kHz, 볼륨 감지
+- [x] `shared/hooks/useInactivityTimer.ts` - 비활성 타이머 훅
 
 #### entities 레이어 구축
 - [ ] `entities/user/` - 사용자 엔티티 (model, ui, api)
@@ -55,11 +62,14 @@
 - [ ] `entities/scenario/model/scenario.ts` - Scenario 타입 (place, partner, goal)
 
 #### features 레이어 확장
-- [ ] `features/auth/` - 기존 인증 기능 리팩토링 (index.ts export 정리)
-- [ ] `features/auth/ui/` - LoginForm, SignupForm 컴포넌트 분리
-- [ ] `features/auth/hook/` - useAuth, useLogin, useRegister 훅 정리
-- [ ] `features/voice-recording/` - 음성 녹음 기능 슬라이스 생성 (stub)
-- [ ] `features/scenario-chat/` - 시나리오 채팅 기능 슬라이스 생성 (stub)
+- [x] `features/auth/` - 인증 기능 완전 구현 (api, hook, model, ui)
+- [x] `features/auth/api/` - useLogin, useRegister, useLogout, useDeleteAccount 등
+- [x] `features/auth/hook/` - useAuth, useLoginIdCheck, useNicknameCheck, usePasswordValidation
+- [x] `features/auth/model/` - loginSchema, registerSchema, tokenSchema, userSchema 등
+- [x] `features/auth/ui/` - AuthGuard, GuestGuard, TokenKeepAlive
+- [x] `features/chat/` - 채팅 기능 슬라이스 구현 완료
+- [x] `features/chat/hook/useScenarioChatNew.ts` - 시나리오 WebSocket 훅
+- [x] `features/chat/hook/useConversationChatNew.ts` - 대화 WebSocket 훅
 
 #### 코드 품질
 - [ ] ESLint 경고 모두 해결
@@ -67,39 +77,57 @@
 - [ ] Prettier 포맷팅 전체 적용
 - [ ] 미사용 import 및 변수 제거
 
-### 예상 산출물
+### 현재 구현된 산출물
 ```
 src/
 ├── shared/
 │   ├── ui/
-│   │   ├── index.ts              # 모든 UI 컴포넌트 re-export
+│   │   ├── index.ts              # 18개 UI 컴포넌트 re-export
 │   │   ├── Button.tsx
 │   │   ├── input.tsx
+│   │   ├── textarea.tsx
+│   │   ├── card.tsx
 │   │   ├── MicButton/
-│   │   └── GlassCard/
-│   ├── lib/
-│   │   └── utils.ts
-│   ├── types/
-│   │   └── api.ts
-│   └── api/
-│       └── client.ts
+│   │   ├── ChatMicButton/
+│   │   ├── GlassCard/
+│   │   ├── GlassmorphicCard.tsx
+│   │   ├── DecorativeCircle.tsx
+│   │   ├── PageBackground.tsx
+│   │   ├── Logo.tsx
+│   │   ├── MalangEE.tsx
+│   │   ├── PopupLayout.tsx
+│   │   ├── FullLayout.tsx
+│   │   ├── SplitViewLayout.tsx
+│   │   ├── DebugStatus.tsx
+│   │   └── ChatStatusBadge.tsx
+│   ├── hooks/
+│   │   ├── useAudioRecorder.ts   # ✅ PCM16 오디오 캡처
+│   │   └── useInactivityTimer.ts
+│   └── lib/
+│       ├── api-client.ts         # ✅ Axios 인스턴스
+│       ├── websocket-client.ts   # ✅ WebSocket 클라이언트
+│       ├── jwt.ts                # JWT 유틸리티
+│       ├── utils.ts              # cn 함수 등
+│       ├── config.ts             # 환경 설정
+│       ├── debug.ts              # 디버그 유틸리티
+│       └── translate.ts          # 한국어 번역 유틸리티
 ├── entities/
-│   ├── user/
+│   └── __init__.ts               # 🔲 구현 필요
+├── features/
+│   ├── auth/                     # ✅ 완전 구현
+│   │   ├── api/
+│   │   ├── hook/
 │   │   ├── model/
 │   │   ├── ui/
 │   │   └── index.ts
-│   └── scenario/
-│       ├── model/
+│   └── chat/                     # ✅ 완전 구현
+│       ├── api/
+│       ├── hook/
+│       │   ├── useScenarioChatNew.ts
+│       │   └── useConversationChatNew.ts
 │       └── index.ts
-└── features/
-    ├── auth/
-    │   ├── api/
-    │   ├── model/
-    │   ├── ui/
-    │   ├── hook/
-    │   └── index.ts
-    ├── voice-recording/     # stub
-    └── scenario-chat/       # stub
+└── widgets/
+    └── __init__.ts               # 🔲 구현 필요
 ```
 
 ### 검증 방법
@@ -114,29 +142,29 @@ yarn build       # 빌드 성공
 ## Phase 2: UI/UX 개선 및 디자인 시스템 일관성
 
 ### 오버뷰
-디자인 시스템의 일관성을 높이고, 사용자 경험을 개선하는 단계입니다. Tailwind CSS v4 테마 변수를 최대한 활용하고, 하드코딩된 색상값을 테마 변수로 교체합니다. 반응형 디자인을 개선하고 접근성을 향상시킵니다.
+디자인 시스템의 일관성을 높이고, 사용자 경험을 개선하는 단계입니다. Tailwind CSS v4 테마 변수를 최대한 활용하고, 하드코딩된 색상값을 테마 변수로 교체합니다.
 
 ### 컨텍스트
-- **현재 상태**: 색상값이 하드코딩됨 (예: `#7B6CF6`, `#1F1C2B`)
-- **목표 상태**: 모든 색상이 Tailwind 테마 변수 사용 (예: `text-primary`, `bg-gray-900`)
+- **현재 상태**: 대부분의 색상이 테마 변수로 마이그레이션 완료
+- **목표 상태**: 반응형 디자인 및 접근성 개선
 - **디자인 참고**: `/frontend/docs/tailwind.md`
 - **Figma**: https://www.figma.com/design/Fl5FSDITnfaalJhepW2p1d/
 
 ### 수정/개선 체크리스트
 
 #### 색상 시스템 통일
-- [x] `app/globals.css` - 테마 색상 변수 추가 (brand-700, brand-200, brand-50, text-primary, text-secondary, gradient-purple, gradient-blue)
+- [x] `app/globals.css` - 테마 색상 변수 추가 완료
 - [x] `app/auth/login/page.tsx` - 색상값을 테마 변수로 마이그레이션
 - [x] `app/auth/signup/page.tsx` - 색상값을 테마 변수로 마이그레이션
 - [x] `app/topic-select/page.tsx` - 테마 변수 적용
 - [x] `shared/ui/Button.tsx` - 버튼 variant 색상을 테마 변수로 업데이트
 
 #### 공용 컴포넌트 추가
-- [x] `shared/ui/DecorativeCircle.tsx` - 배경 장식 원형 컴포넌트 추출
-- [x] `shared/ui/GlassmorphicCard.tsx` - 글래스모피즘 카드 컴포넌트 (로그인/회원가입용)
+- [x] `shared/ui/DecorativeCircle.tsx` - 배경 장식 원형 컴포넌트
+- [x] `shared/ui/GlassmorphicCard.tsx` - 글래스모피즘 카드 컴포넌트
 - [x] `shared/ui/PageBackground.tsx` - 공용 페이지 배경 컴포넌트
 - [x] `shared/ui/Logo.tsx` - MalangEE 로고 컴포넌트
-- [x] `shared/ui/Mascot.tsx` - 마스코트 이미지 컴포넌트
+- [x] `shared/ui/MalangEE.tsx` - 마스코트 이미지 컴포넌트
 - [x] `shared/ui/index.ts` - Button import 경로 수정
 
 #### 반응형 디자인 개선
@@ -158,15 +186,6 @@ yarn build       # 빌드 성공
 - [ ] 로딩 스켈레톤 컴포넌트 추가
 - [ ] 마이크 녹음 중 펄스 애니메이션 개선
 
-### 예상 산출물
-```tsx
-// Before (하드코딩)
-<div className="text-[#7B6CF6] bg-[#1F1C2B]">
-
-// After (테마 변수)
-<div className="text-primary-700 bg-gray-900">
-```
-
 ### 검증 방법
 ```bash
 yarn storybook   # 모든 컴포넌트 시각적 검토
@@ -176,101 +195,99 @@ yarn build       # 빌드 성공
 
 ---
 
-## Phase 3: 음성 녹음 및 WebSocket 기능 구현
+## Phase 3: 음성 녹음 및 WebSocket 기능 ✅ 완료
 
 ### 오버뷰
-플랫폼의 핵심 기능인 실시간 음성 대화를 구현하는 단계입니다. 브라우저 마이크 캡처, PCM16 오디오 변환, WebSocket 연동, TTS 재생 기능을 구현합니다.
+플랫폼의 핵심 기능인 실시간 음성 대화가 구현 완료되었습니다.
 
-### 컨텍스트
-- **현재 상태**: 마이크 버튼 UI만 존재, 실제 기능 미구현
-- **목표 상태**: 완전한 음성 입력/출력 파이프라인 구현
-- **백엔드 엔드포인트**:
-  - 로그인 사용자: `ws://[host]/api/v1/ws/scenario?token=...`
-  - 게스트: `ws://[host]/api/v1/ws/guest-scenario`
-- **참고 문서**: `/docs/03-FRONTEND_SCENARIO_GUIDE.md`
+### 구현 완료 내역
 
-### 수정/개선 체크리스트
+#### WebSocket 두 가지 타입 구현 (참고: `/docs/WEBSOCKET_GUIDE.md`)
 
-#### features/voice-recording 구현
-- [ ] `features/voice-recording/model/types.ts` - 오디오 관련 타입 정의
-- [ ] `features/voice-recording/lib/audio-utils.ts` - PCM16 변환 유틸리티
-  - [ ] `base64ToBytes()` - base64 → Uint8Array
-  - [ ] `pcm16ToFloat32()` - PCM16 → Float32 (재생용)
-  - [ ] `float32ToPCM16()` - Float32 → PCM16 (전송용)
-  - [ ] `bytesToBase64()` - Uint8Array → base64
-- [ ] `features/voice-recording/hook/useMicrophoneCapture.ts` - 마이크 캡처 훅
-  - [ ] MediaRecorder API 또는 AudioWorklet 기반 구현
-  - [ ] 16kHz 다운샘플링
-  - [ ] PCM16 모노 출력
-- [ ] `features/voice-recording/hook/useAudioPlayback.ts` - 오디오 재생 훅
-  - [ ] Web Audio API AudioContext 관리
-  - [ ] 스트리밍 오디오 큐잉 및 재생
-  - [ ] 24kHz 샘플레이트 지원
-- [ ] `features/voice-recording/ui/VoiceRecorder.tsx` - 통합 녹음/재생 컴포넌트
-- [ ] `features/voice-recording/index.ts` - Public API export
+**1. 시나리오 WebSocket (토픽 선택)**
+- **엔드포인트**: `ws://[host]/api/v1/ws/scenario?token=...`
+- **구현 파일**: `features/chat/hook/useScenarioChatNew.ts` (225줄)
+- **기능**: 시나리오 생성을 위한 음성 대화
+- **이벤트 처리**:
+  - [x] `ready` - 연결 준비 완료
+  - [x] `response.audio.delta` - TTS 오디오 스트리밍
+  - [x] `response.audio_transcript.delta/done` - AI 응답 텍스트
+  - [x] `input_audio.transcript` - 사용자 음성 텍스트 변환
+  - [x] `scenario.completed` - 시나리오 생성 완료
 
-#### features/scenario-chat 구현
-- [ ] `features/scenario-chat/model/types.ts` - 채팅 메시지 타입
-  - [ ] `ScenarioJson` - { place, conversation_partner, conversation_goal }
-  - [ ] `WebSocketMessage` - 서버 메시지 타입 유니온
-- [ ] `features/scenario-chat/api/websocket.ts` - WebSocket 클라이언트
-  - [ ] 연결 관리 (connect, disconnect, reconnect)
-  - [ ] 메시지 핸들러 등록
-  - [ ] 에러 처리 및 재연결 로직
-- [ ] `features/scenario-chat/hook/useScenarioWebSocket.ts` - WebSocket 훅
-  - [ ] `ready` 이벤트 처리
-  - [ ] `response.audio.delta` 이벤트 처리
-  - [ ] `response.audio_transcript.delta/done` 처리
-  - [ ] `input_audio.transcript` 처리
-  - [ ] `scenario.completed` 처리
-  - [ ] `error` 처리
-- [ ] `features/scenario-chat/hook/useGeneralChat.ts` - 채팅 상태 관리 훅
-- [ ] `features/scenario-chat/ui/ScenarioChat.tsx` - 채팅 UI 컴포넌트
-- [ ] `features/scenario-chat/index.ts` - Public API export
+**2. 대화 WebSocket (실제 대화)**
+- **엔드포인트**: `ws://[host]/api/v1/chat/ws/chat/{session_id}?token=...`
+- **구현 파일**: `features/chat/hook/useConversationChatNew.ts` (329줄)
+- **기능**: 생성된 시나리오로 실제 영어 대화
+- **이벤트 처리**:
+  - [x] `session.update` - 세션 설정 업데이트
+  - [x] `audio.delta` - TTS 오디오 스트리밍
+  - [x] `transcript.done` - AI 응답 완료
+  - [x] `user.transcript` - 사용자 발화 텍스트
+  - [x] `speech.started/stopped` - VAD 감지 상태
+  - [x] `disconnected` - 연결 해제
 
-#### 페이지 통합
-- [ ] `app/scenario-select/page.tsx` - 실제 WebSocket 연동
-- [ ] `app/topic-select/page.tsx` - 음성 기능 통합
+#### 오디오 기능 구현
+- [x] `shared/hooks/useAudioRecorder.ts` - 마이크 캡처 훅
+  - [x] PCM16 모노 오디오 캡처
+  - [x] 24kHz 샘플레이트 지원
+  - [x] 볼륨 감지 (RMS 계산)
+  - [x] AudioWorklet/ScriptProcessor 폴백 지원
+- [x] `shared/lib/websocket-client.ts` - WebSocket 클라이언트 클래스
+  - [x] 연결 관리 (connect, disconnect, reconnect)
+  - [x] 메시지 핸들러 등록
+  - [x] 에러 처리 및 재연결 로직
 
 ### WebSocket 메시지 스펙
 
-#### Client → Server
+#### 시나리오 WebSocket (Client → Server)
 ```typescript
 // 오디오 청크 전송
-{ type: "input_audio_chunk", audio: "<base64 pcm16>", sample_rate: 16000 }
-// 텍스트 전송 (테스트용)
-{ type: "text", text: "I am at a cafe..." }
+{ type: "input_audio_chunk", audio: "<base64 pcm16>", sample_rate: 24000 }
 ```
 
-#### Server → Client
+#### 시나리오 WebSocket (Server → Client)
 ```typescript
 // 연결 준비 완료
 { type: "ready" }
 // TTS 오디오 스트리밍
-{ type: "response.audio.delta", delta: "<base64 pcm16>", sample_rate: 24000 }
+{ type: "response.audio.delta", delta: "<base64 pcm16>" }
 // 시나리오 완료
-{ type: "scenario.completed", json: { place, conversation_partner, conversation_goal }, completed: true }
+{ type: "scenario.completed", json: { place, conversation_partner, conversation_goal } }
 ```
 
-### 예상 산출물
+#### 대화 WebSocket (Client → Server)
+```typescript
+// 오디오 버퍼 추가
+{ type: "input_audio_buffer.append", audio: "<base64 pcm16>" }
+// 세션 설정
+{ type: "session.update", session: { modalities: ["audio", "text"], ... } }
 ```
-src/features/
-├── voice-recording/
-│   ├── model/types.ts
-│   ├── lib/audio-utils.ts
-│   ├── hook/
-│   │   ├── useMicrophoneCapture.ts
-│   │   └── useAudioPlayback.ts
-│   ├── ui/VoiceRecorder.tsx
-│   └── index.ts
-└── scenario-chat/
-    ├── model/types.ts
-    ├── api/websocket.ts
-    ├── hook/
-    │   ├── useScenarioWebSocket.ts
-    │   └── useGeneralChat.ts
-    ├── ui/ScenarioChat.tsx
-    └── index.ts
+
+#### 대화 WebSocket (Server → Client)
+```typescript
+// TTS 오디오 스트리밍
+{ type: "audio.delta", delta: "<base64 pcm16>" }
+// AI 응답 텍스트 완료
+{ type: "transcript.done", transcript: "..." }
+// 사용자 발화 텍스트
+{ type: "user.transcript", transcript: "..." }
+```
+
+### 구현된 산출물
+```
+src/
+├── shared/
+│   ├── hooks/
+│   │   └── useAudioRecorder.ts   # ✅ PCM16 마이크 캡처
+│   └── lib/
+│       └── websocket-client.ts   # ✅ WebSocket 클라이언트
+└── features/
+    └── chat/
+        ├── hook/
+        │   ├── useScenarioChatNew.ts     # ✅ 시나리오 WebSocket 훅
+        │   └── useConversationChatNew.ts # ✅ 대화 WebSocket 훅
+        └── index.ts
 ```
 
 ### 검증 방법
@@ -363,25 +380,33 @@ yarn build       # 빌드 성공
 ## Phase 5: 테스트 및 품질 보증
 
 ### 오버뷰
-프로젝트의 안정성을 보장하기 위해 테스트 코드를 작성하고, 성능을 최적화하는 단계입니다. 단위 테스트, 통합 테스트, E2E 테스트를 작성합니다.
+프로젝트의 안정성을 보장하기 위해 테스트 코드를 작성하고, 성능을 최적화하는 단계입니다.
 
 ### 컨텍스트
-- **현재 상태**: 테스트 코드 없음
+- **현재 상태**: 일부 단위 테스트 존재, E2E 테스트 없음
 - **목표 상태**: 핵심 기능 테스트 커버리지 80% 이상
 - **테스트 도구**: Vitest (단위), Playwright (E2E)
+
+### 현재 테스트 상태
+- [x] `src/shared/ui/Button.test.tsx` - 버튼 컴포넌트 테스트
+- [x] `src/shared/ui/input.test.tsx` - 인풋 컴포넌트 테스트
+- [ ] E2E 테스트 - 미구현
 
 ### 수정/개선 체크리스트
 
 #### 단위 테스트 (Vitest)
+- [x] `shared/ui/button.test.tsx` - 버튼 컴포넌트 테스트
+- [x] `shared/ui/input.test.tsx` - 인풋 컴포넌트 테스트
 - [ ] `shared/lib/utils.test.ts` - 유틸리티 함수 테스트
 - [ ] `features/auth/hook/useLogin.test.ts` - 로그인 훅 테스트
 - [ ] `features/auth/hook/useRegister.test.ts` - 회원가입 훅 테스트
-- [ ] `features/voice-recording/lib/audio-utils.test.ts` - 오디오 유틸리티 테스트
-- [ ] `features/scenario-chat/hook/useScenarioWebSocket.test.ts` - WebSocket 훅 테스트
+- [ ] `shared/hooks/useAudioRecorder.test.ts` - 오디오 레코더 훅 테스트
+- [ ] `features/chat/hook/useScenarioChatNew.test.ts` - 시나리오 WebSocket 훅 테스트
+- [ ] `features/chat/hook/useConversationChatNew.test.ts` - 대화 WebSocket 훅 테스트
 
 #### 컴포넌트 테스트
-- [ ] `shared/ui/button.test.tsx` - 버튼 컴포넌트 테스트
 - [ ] `shared/ui/MicButton/MicButton.test.tsx` - 마이크 버튼 테스트
+- [ ] `shared/ui/GlassCard/GlassCard.test.tsx` - 글래스 카드 테스트
 - [ ] `features/auth/ui/LoginForm.test.tsx` - 로그인 폼 테스트
 - [ ] `features/auth/ui/SignupForm.test.tsx` - 회원가입 폼 테스트
 
@@ -436,20 +461,21 @@ yarn build             # 프로덕션 빌드 성공
 ## 실행 순서 및 의존성
 
 ```
-Phase 1 (기초)
+Phase 1 (기초) - 70% 완료
     ↓
-Phase 2 (UI/UX) ←── Phase 1 완료 필수
+Phase 2 (UI/UX) - 60% 완료 ←── Phase 1 완료 필수
     ↓
-Phase 3 (음성/WebSocket) ←── Phase 1 완료 필수
+Phase 3 (음성/WebSocket) ✅ 완료
     ↓
 Phase 4 (대시보드/학습) ←── Phase 2, 3 완료 권장
     ↓
-Phase 5 (테스트/품질) ←── Phase 1~4 완료 후 진행
+Phase 5 (테스트/품질) - 10% 완료 ←── Phase 1~4 완료 후 진행
 ```
 
 ### 병렬 작업 가능 영역
-- Phase 2와 Phase 3는 Phase 1 완료 후 병렬 진행 가능
+- Phase 1의 entities 구축과 Phase 2의 반응형/접근성 개선 병렬 진행 가능
 - Phase 4의 각 학습 모드는 병렬 개발 가능
+- Phase 5의 테스트 작성은 해당 기능 구현 직후 바로 시작 가능
 
 ---
 
@@ -458,11 +484,21 @@ Phase 5 (테스트/품질) ←── Phase 1~4 완료 후 진행
 각 Phase 완료 시 태그 생성:
 - `v0.1.0` - Phase 1 완료
 - `v0.2.0` - Phase 2 완료
-- `v0.3.0` - Phase 3 완료
+- `v0.3.0` - Phase 3 완료 ✅
 - `v0.4.0` - Phase 4 완료
 - `v1.0.0` - Phase 5 완료 (MVP)
 
 ---
 
-**작성일**: 2025-01-10
+## 참고 문서
+
+- `/frontend/docs/api.md` - REST API 명세
+- `/frontend/docs/ws.md` - WebSocket 엔드포인트
+- `/frontend/docs/WEBSOCKET_GUIDE.md` - WebSocket 구현 상세 가이드
+- `/frontend/docs/tailwind.md` - Tailwind CSS v4 디자인 시스템
+
+---
+
+**최초 작성일**: 2025-01-10
+**마지막 업데이트**: 2025-01-20
 **작성자**: Claude Code Agent
