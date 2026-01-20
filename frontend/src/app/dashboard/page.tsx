@@ -6,7 +6,7 @@ import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
 import { Button, MalangEE, PopupLayout } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useInfiniteChatSessions } from "@/features/chat/api/use-chat-sessions";
-import { AuthGuard, useAuth, useCurrentUser } from "@/features/auth";
+import { AuthGuard, useAuth, useCurrentUser, useDeleteUser } from "@/features/auth";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatDetailPopup } from "./ChatDetailPopup";
 import { NicknameChangePopup } from "./NicknameChangePopup";
@@ -26,7 +26,9 @@ export default function DashboardPage() {
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+  const [showDeleteUserPopup, setShowDeleteUserPopup] = useState(false);
   const { logout } = useAuth();
+  const { mutate: deleteUser, isPending: isDeletingUser } = useDeleteUser();
 
   // 사용자 정보 조회
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
@@ -69,6 +71,8 @@ export default function DashboardPage() {
           duration: `${userDurationStr} / ${totalDurationStr}`,
           totalDurationSec: session.total_duration_sec,
           userSpeechDurationSec: session.user_speech_duration_sec,
+          userDurationStr,
+          totalDurationStr,
         };
       })
     );
@@ -132,6 +136,19 @@ export default function DashboardPage() {
     setShowLogoutPopup(false);
   };
 
+  const handleDeleteUserClick = () => {
+    setShowDeleteUserPopup(true);
+  };
+
+  const handleDeleteUserConfirm = () => {
+    deleteUser();
+    setShowDeleteUserPopup(false);
+  };
+
+  const handleDeleteUserCancel = () => {
+    setShowDeleteUserPopup(false);
+  };
+
   const handleNewChatClick = () => {
     // 공통 저장 정보 (회원 진입)
     localStorage.setItem("entryType", "member");
@@ -154,7 +171,7 @@ export default function DashboardPage() {
 
   // 왼쪽 컨텐츠
   const leftContent = (
-    <div className="w-full max-w-sm tracking-tight">
+    <div className="w-full max-w-full md:max-w-sm tracking-tight">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
@@ -188,13 +205,23 @@ export default function DashboardPage() {
       </div>
       <Button
         variant="solid"
-        size="md"
+        size="lg"
         fullWidth
         className="mt-10"
         onClick={handleNewChatClick}
       >
         말랭이랑 새로운 대화를 해볼까요?
       </Button>
+
+      {/* 회원탈퇴 버튼 추가 */}
+      <div className="mt-4 flex justify-center">
+        <button
+          onClick={handleDeleteUserClick}
+          className="text-xs text-gray-400 underline hover:text-gray-600"
+        >
+          회원탈퇴
+        </button>
+      </div>
     </div>
   );
 
@@ -256,8 +283,16 @@ export default function DashboardPage() {
 
                   {/* 시간 */}
                   <div className="flex shrink-0 items-center gap-1">
-                    <span className="whitespace-nowrap text-sm font-normal text-[#6A667A]">
+                    <span className="whitespace-nowrap text-sm font-normal text-[#6A667A] md:hidden">
+                      {/* 모바일: 한 줄로 표시 */}
                       {item.duration}
+                    </span>
+                    <span className="hidden whitespace-nowrap text-sm font-normal text-[#6A667A] md:block">
+                      {/* 데스크탑: 두 줄로 표시 */}
+                      <div className="flex flex-col items-end">
+                        <span>{item.userDurationStr}</span>
+                        <span className="text-xs text-gray-400">/ {item.totalDurationStr}</span>
+                      </div>
                     </span>
                   </div>
                 </div>
@@ -327,6 +362,36 @@ export default function DashboardPage() {
               </Button>
               <Button variant="primary" size="md" fullWidth onClick={handleLogoutConfirm}>
                 로그아웃
+              </Button>
+            </div>
+          </div>
+        </PopupLayout>
+      )}
+
+      {/* 회원탈퇴 확인 팝업 */}
+      {showDeleteUserPopup && (
+        <PopupLayout onClose={handleDeleteUserCancel} showCloseButton={false} maxWidth="sm">
+          <div className="flex flex-col items-center gap-6 py-2">
+            <MalangEE status="sad" size={120} />
+            <div className="text-center">
+              <div className="text-xl font-bold text-[#1F1C2B]">정말 탈퇴하시겠어요?</div>
+              <div className="mt-2 text-sm text-gray-500">
+                탈퇴 시 모든 대화 기록이 삭제되며 복구할 수 없습니다.
+              </div>
+            </div>
+            <div className="flex w-full gap-3">
+              <Button variant="outline-purple" size="md" fullWidth onClick={handleDeleteUserCancel}>
+                취소
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={handleDeleteUserConfirm}
+                disabled={isDeletingUser}
+                className="bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600"
+              >
+                {isDeletingUser ? "탈퇴 중..." : "탈퇴하기"}
               </Button>
             </div>
           </div>

@@ -27,11 +27,11 @@ export const SplitViewLayout = ({
   leftColSpan = 5,
   rightColSpan = 7,
   showHeader = true, // 기본값 true
-  leftClassName = "w-full px-4 py-8 md:p-10",
+  leftClassName = "w-full px-0 pb-4 md:p-10 md:pr-5",
   rightClassName = "",
   glassClassName = "p-6 md:p-10",
   glassMaxWidth = "max-w-full md:max-w-2xl lg:max-w-4xl", // 기본값
-  gap = "gap-0 md:gap-8", // 기본값 (모바일 0, 데스크탑 8)
+  gap = "gap-0 md:gap-6", // 기본값 (모바일 0, 데스크탑 8)
 }: SplitViewLayoutProps) => {
   const colSpans: Record<number, string> = {
     4: "md:col-span-4",
@@ -75,7 +75,11 @@ export const SplitViewLayout = ({
                 <MalangEE size={120} />
               </div>
             </>
-            {leftChildren && <div className="space-y-2">{leftChildren}</div>}
+            {leftChildren && (
+              <div id="sv-left-children" className="w-[80%] md:w-[60%] min-w-[270px] flex justify-center md:justify-start">
+                <div className="w-full space-y-2">{leftChildren}</div>
+              </div>
+            )}
           </div>
 
           {/* Right Content Section */}

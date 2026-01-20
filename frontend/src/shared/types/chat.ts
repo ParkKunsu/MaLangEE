@@ -6,10 +6,14 @@
  * 대화 메시지
  */
 export interface ChatMessage {
-  role: "user" | "assistant";
+  id?: number;
+  role: "user" | "assistant" | string;
   content: string;
   timestamp: string;
   duration_sec: number;
+  is_feedback?: boolean;
+  feedback?: string | null;
+  reason?: string | null;
 }
 
 /**
@@ -37,7 +41,6 @@ export interface ChatSessionDetail {
   ended_at: string;
   total_duration_sec: number;
   user_speech_duration_sec: number;
-  feedback?: string | null;
   scenario_summary?: string | null;
   messages: ChatMessage[];
   scenario_place?: string | null;
@@ -45,11 +48,18 @@ export interface ChatSessionDetail {
   scenario_goal?: string | null;
   scenario_state_json?: Record<string, unknown> | null;
   scenario_completed_at?: string | null;
+  scenario_id?: string | null;
   deleted?: boolean | null;
   voice?: string | null;
   show_text?: boolean | null;
   created_at: string;
   updated_at: string;
+  analytics?: {
+    word_count: number;
+    unique_words_count: number;
+    richness_score: number;
+    created_at: string;
+  } | null;
 }
 
 export interface ChatSessionsResponse {
@@ -67,4 +77,6 @@ export interface ChatHistoryItem {
   duration: string;
   totalDurationSec: number;
   userSpeechDurationSec: number;
+  userDurationStr?: string;
+  totalDurationStr?: string;
 }
