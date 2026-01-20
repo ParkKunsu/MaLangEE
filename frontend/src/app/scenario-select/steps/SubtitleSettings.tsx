@@ -2,12 +2,12 @@
 
 import { Button } from "@/shared/ui";
 
-interface Step2Props {
+interface SubtitleSettingsProps {
   textOpacity: number;
   onNext: () => void;
 }
 
-export function Step2({ textOpacity, onNext }: Step2Props) {
+export function SubtitleSettings({ textOpacity, onNext }: SubtitleSettingsProps) {
   const handleChoice = (enabled: boolean) => {
     localStorage.setItem("subtitleEnabled", enabled.toString());
     onNext();

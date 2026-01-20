@@ -8,7 +8,7 @@ import "@/shared/styles/scenario.css";
 import {FullLayout} from "@/shared/ui/FullLayout";
 import {useScenarioChatNew} from "@/features/chat/hook/useScenarioChatNew"; // useScenarioChatNew 사용
 import {useInactivityTimer} from "@/shared/hooks";
-import {Step1, Step2, Step3, TopicSuggestion} from "@/app/scenario-select/steps";
+import {DirectSpeech, SubtitleSettings, VoiceSelection, TopicSuggestion} from "@/app/scenario-select/steps";
 import { MapPin, Users, Target } from "lucide-react";
 
 export default function ScenarioSelectPage() {
@@ -67,15 +67,15 @@ export default function ScenarioSelectPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 페이지 로드 시 자동으로 연결 시작 (재연결도 포함)
+    // "직접 말하기" 선택 시 자동으로 연결 시작 (재연결도 포함)
     useEffect(() => {
-        if (!hasStarted && stepIndex === 1 && !chatState.isConnected) {
+        if (!hasStarted && stepIndex === 1 && !chatState.isConnected && !showTopicSuggestion) {
             initAudio();
             connect();
             setHasStarted(true);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hasStarted, stepIndex, chatState.isConnected]); // hasStarted가 false로 변경되면 재실행
+    }, [hasStarted, stepIndex, chatState.isConnected, showTopicSuggestion]); // TopicSuggestion에서는 연결하지 않음
 
     // WebSocket 연결 후 ready 상태가 되면 시나리오 세션 시작
     useEffect(() => {
@@ -292,7 +292,7 @@ export default function ScenarioSelectPage() {
           {/* Steps: 1. 주제 선택 → 2. 자막 설정 → 3. 목소리 선택 → 대화 시작 */}
 
           {stepIndex === 1 && !showTopicSuggestion && (
-            <Step1
+            <DirectSpeech
               textOpacity={textOpacity}
               isListening={isListening}
               isLocalSpeaking={chatState.isRecording}
@@ -333,9 +333,9 @@ export default function ScenarioSelectPage() {
             />
           )}
 
-          {stepIndex === 2 && <Step2 textOpacity={textOpacity} onNext={() => setStepIndex(3)} />}
+          {stepIndex === 2 && <SubtitleSettings textOpacity={textOpacity} onNext={() => setStepIndex(3)} />}
 
-          {stepIndex === 3 && <Step3 textOpacity={textOpacity} onNext={() => {}} />}
+          {stepIndex === 3 && <VoiceSelection textOpacity={textOpacity} onNext={() => {}} />}
         </FullLayout>
 
         {/* 시나리오 결과 확인 팝업 */}
@@ -412,6 +412,7 @@ export default function ScenarioSelectPage() {
                     setIsListening(false);
                     setHasStarted(false);
                     setStepIndex(1);
+                    setShowTopicSuggestion(true); // TopicSuggestion 화면으로 복귀
                     initialPromptSentRef.current = false;
                     prevAiSpeakingRef.current = false;
                   }}

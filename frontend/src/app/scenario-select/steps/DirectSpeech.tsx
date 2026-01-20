@@ -9,7 +9,7 @@ import type { ScenarioChatStateNew } from "@/features/chat/hook/useScenarioChatN
 import { isDev } from "@/shared/lib/debug";
 import { debugLog } from "@/shared/lib/debug";
 
-interface Step1Props {
+interface DirectSpeechProps {
   textOpacity: number;
   isListening: boolean;
   isLocalSpeaking: boolean;
@@ -40,7 +40,7 @@ interface Step1Props {
   onShowTopicSuggestion: () => void;
 }
 
-export function Step1({
+export function DirectSpeech({
   textOpacity,
   isListening,
   isAiSpeaking,
@@ -67,7 +67,7 @@ export function Step1({
   setIsMuted,
   toggleMute,
   onShowTopicSuggestion,
-}: Step1Props) {
+}: DirectSpeechProps) {
   const router = useRouter();
   const { user } = useAuth();
   const userName = user?.nickname || "나";

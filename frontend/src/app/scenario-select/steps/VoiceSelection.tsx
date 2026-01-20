@@ -13,7 +13,7 @@ interface VoiceOption {
   sampleUrl: string;
 }
 
-interface Step3Props {
+interface VoiceSelectionProps {
   textOpacity: number;
   onNext: () => void;
 }
@@ -45,7 +45,7 @@ const voiceOptions: VoiceOption[] = [
   },
 ];
 
-export function Step3({ textOpacity, onNext }: Step3Props) {
+export function VoiceSelection({ textOpacity, onNext }: VoiceSelectionProps) {
   const router = useRouter();
   const [currentVoiceIndex, setCurrentVoiceIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);

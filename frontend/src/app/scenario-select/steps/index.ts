@@ -1,4 +1,4 @@
-export { Step1 } from "./Step1";
-export { Step2 } from "./Step2";
-export { Step3 } from "./Step3";
+export { DirectSpeech } from "./DirectSpeech";
+export { SubtitleSettings } from "./SubtitleSettings";
+export { VoiceSelection } from "./VoiceSelection";
 export { TopicSuggestion } from "./TopicSuggestion";
