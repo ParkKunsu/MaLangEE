@@ -48,12 +48,6 @@ export function TopicSuggestion({
   const [displayedScenarios, setDisplayedScenarios] = useState<Scenario[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   const [showDetailPopup, setShowDetailPopup] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-
-  // 시나리오 편집 상태
-  const [editedPlace, setEditedPlace] = useState("");
-  const [editedPartner, setEditedPartner] = useState("");
-  const [editedGoal, setEditedGoal] = useState("");
 
   // 자막/목소리 설정 상태
   const [showSubtitle, setShowSubtitle] = useState(true);
@@ -76,28 +70,7 @@ export function TopicSuggestion({
   const handleDetailClick = (scenario: Scenario, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedScenario(scenario);
-    setEditedPlace(scenario.place);
-    setEditedPartner(scenario.partner);
-    setEditedGoal(scenario.goal);
-    setIsEditing(false);
     setShowDetailPopup(true);
-  };
-
-  const handleTopicSelect = (scenario: Scenario) => {
-    onTopicSelect(`${scenario.place}에서 ${scenario.goal}`);
-  };
-
-  const handleEditMode = () => {
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    if (selectedScenario) {
-      setEditedPlace(selectedScenario.place);
-      setEditedPartner(selectedScenario.partner);
-      setEditedGoal(selectedScenario.goal);
-    }
-    setIsEditing(false);
   };
 
   // 목소리 선택 핸들러
@@ -144,7 +117,7 @@ export function TopicSuggestion({
     }
   };
 
-  // "이 주제로 시작하기" 핸들러 (편집하지 않은 원본)
+  // "이 주제로 시작하기" 핸들러
   const handleStartOriginal = () => {
     if (!selectedScenario) return;
     setShowDetailPopup(false);
@@ -153,21 +126,6 @@ export function TopicSuggestion({
       selectedScenario.place,
       selectedScenario.partner,
       selectedScenario.goal,
-      voiceOptions[voiceIndex].id,
-      showSubtitle
-    );
-  };
-
-  // "이 내용으로 시작하기" 핸들러 (편집한 내용)
-  const handleStartWithEdited = () => {
-    if (!selectedScenario) return;
-    setShowDetailPopup(false);
-    setIsEditing(false);
-    startConversation(
-      selectedScenario,
-      editedPlace,
-      editedPartner,
-      editedGoal,
       voiceOptions[voiceIndex].id,
       showSubtitle
     );
@@ -210,24 +168,20 @@ export function TopicSuggestion({
         </div>
 
         <div className="mt-8 flex w-full max-w-2xl flex-col gap-4">
-          {/* 주제 버튼들 (텍스트 길이에 맞게 자동 배치) */}
           <div className="flex flex-wrap justify-center gap-3">
             {displayedScenarios.map((scenario) => (
               <div key={scenario.id} className="relative flex items-center gap-2">
                 <Button
                   variant="outline-gray"
-                  //onClick={() => handleTopicSelect(scenario)}
                   onClick={(e) => handleDetailClick(scenario, e)}
                   size="md"
                 >
-                  {" "}
                   {scenario.title}
                 </Button>
               </div>
             ))}
           </div>
 
-          {/* 하단 버튼들 (한 행에 표시) */}
           <div className="mt-5 flex justify-center gap-3">
             <Button onClick={handleShowMore} variant="primary" size="lg" className="flex gap-2">
               <RefreshCw size={20} />
@@ -244,142 +198,68 @@ export function TopicSuggestion({
 
       {/* 상세정보 팝업 */}
       {showDetailPopup && selectedScenario && (
-        <PopupLayout
-          onClose={() => {
-            setShowDetailPopup(false);
-            setIsEditing(false);
-          }}
-          maxWidth="md"
-          showCloseButton={true}
-        >
+        <PopupLayout onClose={() => setShowDetailPopup(false)} maxWidth="md" showCloseButton={true}>
           <div className="flex flex-col gap-6 py-6">
             <div className="text-center">
               <h2 className="text-text-primary mb-2 text-xl font-bold">{selectedScenario.title}</h2>
               <p className="text-text-secondary text-sm">{selectedScenario.description}</p>
             </div>
 
-            {isEditing ? (
-              <div className="space-y-6">
-                {/* 시나리오 정보 */}
-                <h3 className="mb-2 text-sm font-bold text-gray-700">시나리오 정보</h3>
-                <div className="space-y-4 rounded-2xl bg-gray-50 p-6">
-                  {/* 장소 */}
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand min-w-[60px] text-sm font-bold">장소</span>
-                    <div>{editedPlace}</div>
-                  </div>
-
-                  {/* 상대 */}
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand min-w-[60px] text-sm font-bold">상대</span>
-                    <div>{editedPartner}</div>
-                  </div>
-
-                  {/* 목표 */}
-                  <div className="flex items-start gap-3">
-                    <span className="text-brand min-w-[60px] text-sm font-bold">목표</span>
-                    <div>{editedGoal}</div>
-                  </div>
-                </div>
-
-                {/* 자막 및 목소리 설정 */}
-                <h3 className="text-sm font-bold text-gray-700">자막 및 목소리 설정</h3>
-                <div className="space-y-4 rounded-2xl bg-gray-50 p-6">
-                  <Toggle label="자막 표시" enabled={showSubtitle} onChange={setShowSubtitle} />
-
-                  <h3 className="text-sm font-bold text-gray-700">목소리 톤</h3>
-                  <div className="flex items-center gap-4 rounded-lg bg-gray-50 p-4">
-                    <button
-                      onClick={handlePrevVoice}
-                      className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <div className="flex-1 text-center">
-                      <p className="font-bold text-gray-800">{voiceOptions[voiceIndex].name}</p>
-                      <p className="text-xs text-gray-500">
-                        {voiceOptions[voiceIndex].description}
-                      </p>
-                    </div>
-                    <button
-                      onClick={handleNextVoice}
-                      className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4 rounded-2xl bg-gray-50 p-6">
-                {/* 장소 */}
+            <div className="space-y-6">
+              {/* 시나리오 정보 카드 */}
+              <div className="space-y-4 rounded-2xl border border-gray-100 bg-gray-50 p-6">
                 <div className="flex items-start gap-3">
                   <span className="text-brand min-w-[60px] text-sm font-bold">장소:</span>
                   <span className="text-text-primary text-sm">{selectedScenario.place}</span>
                 </div>
-
-                {/* 상대 */}
                 <div className="flex items-start gap-3">
                   <span className="text-brand min-w-[60px] text-sm font-bold">상대:</span>
                   <span className="text-text-primary text-sm">{selectedScenario.partner}</span>
                 </div>
-
-                {/* 목표 */}
                 <div className="flex items-start gap-3">
                   <span className="text-brand min-w-[60px] text-sm font-bold">목표:</span>
                   <span className="text-text-primary text-sm">{selectedScenario.goal}</span>
                 </div>
+              </div>
 
-                {/* 레벨 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-brand min-w-[60px] text-sm font-bold">레벨:</span>
-                  <span className="text-text-primary text-sm">Level {selectedScenario.level}</span>
-                </div>
+              {/* 대화 설정 섹션 */}
+              <div className="space-y-4">
+                <h3 className="px-1 text-sm font-bold text-gray-700">대화 설정</h3>
+                <div className="space-y-5 rounded-2xl border border-gray-100 bg-gray-50 p-6">
+                  <Toggle label="자막 표시" enabled={showSubtitle} onChange={setShowSubtitle} />
 
-                {/* 카테고리 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-brand min-w-[60px] text-sm font-bold">카테고리:</span>
-                  <span className="text-text-primary text-sm">{selectedScenario.category}</span>
+                  <div className="space-y-2">
+                    <p className="px-1 text-sm font-bold text-gray-700">목소리 톤</p>
+                    <div className="flex items-center gap-4 rounded-xl border border-gray-100  bg-white p-3">
+                      <button
+                        onClick={handlePrevVoice}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-50"
+                      >
+                        <ChevronLeft size={24} />
+                      </button>
+                      <div className="flex-1 text-center">
+                        <p className="font-bold text-gray-800">{voiceOptions[voiceIndex].name}</p>
+                        <p className="text-[11px] leading-tight text-gray-500">
+                          {voiceOptions[voiceIndex].description}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleNextVoice}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-50"
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* 버튼 영역 */}
-            <div className="flex gap-3">
-              {isEditing ? (
-                <>
-                  <Button variant="outline-gray" size={"lg"} onClick={handleCancelEdit}>
-                    취소
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size={"lg"}
-                    className="flex-1"
-                    onClick={handleStartWithEdited}
-                  >
-                    이 내용으로 시작하기
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline-purple"
-                    size={"lg"}
-                    className="flex-1"
-                    onClick={handleEditMode}
-                  >
-                    직접 입력하기
-                  </Button>
-                  <Button
-                    variant="primary"
-                    size={"lg"}
-                    className="flex-1"
-                    onClick={handleStartOriginal}
-                  >
-                    이 주제로 시작하기
-                  </Button>
-                </>
-              )}
+            <div className="mt-2 flex gap-3">
+              <Button variant="primary" size="lg" className="flex-1 " onClick={handleStartOriginal}>
+                이 주제로 시작하기
+              </Button>
             </div>
           </div>
         </PopupLayout>
