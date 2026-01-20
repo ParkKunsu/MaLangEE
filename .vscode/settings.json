@@ -6,5 +6,16 @@
     "python.autoComplete.extraPaths": [
         "./ai-engine",
         "./backend"
-    ]
+    ],
+    "[shellscript]": {
+        "editor.defaultFormatter": "mkhl.shfmt",
+        "editor.formatOnSave": true
+    },
+    "shfmt.executablePath": "shfmt",
+    "shfmt.indent": 2,
+    "shfmt.binaryNextLine": true,
+    "shfmt.switchCaseIndent": true,
+    "shfmt.spaceRedirection": false,
+    "shfmt.keepPadding": false,
+    "shfmt.functionNextLine": false
 }
