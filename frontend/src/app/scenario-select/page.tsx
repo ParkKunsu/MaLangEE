@@ -21,7 +21,7 @@ export default function ScenarioSelectPage() {
     const [showScenarioResultPopup, setShowScenarioResultPopup] = useState(false);
     const [stepIndex, setStepIndex] = useState<1 | 2 | 3>(1);
     const [isMuted, setIsMuted] = useState(false); // 음소거 상태
-    const [showTopicSuggestion, setShowTopicSuggestion] = useState(false); // 주제 제안 표시 여부
+    const [showTopicSuggestion, setShowTopicSuggestion] = useState(true); // 주제 제안 표시 여부
 
     // 커스텀 훅 사용
     const {
@@ -268,7 +268,7 @@ export default function ScenarioSelectPage() {
               onClick={handleExitClick}
               className="btn-exit text-text-secondary hover:text-text-primary transition-colors"
             >
-              대화 종료하기
+              그만두기
             </button>
           }
         >
@@ -348,47 +348,63 @@ export default function ScenarioSelectPage() {
             <div className="flex flex-col items-center gap-8 py-6">
               <div className="w-full space-y-6">
                 <div className="text-center">
-                  <h2 className="text-text-primary text-2xl font-bold tracking-tight">좋아요! 상황을 파악했어요.</h2>
-                  <p className="text-text-secondary mt-2 text-sm">연습할 시나리오 정보를 확인해주세요.</p>
+                  <h2 className="text-text-primary text-2xl font-bold tracking-tight">
+                    좋아요! 상황을 파악했어요.
+                  </h2>
+                  <p className="text-text-secondary mt-2 text-sm">
+                    연습할 시나리오 정보를 확인해주세요.
+                  </p>
                 </div>
 
                 <div className="grid gap-3">
                   {/* 장소 */}
-                  <div className="flex items-center gap-4 bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
                       <MapPin size={20} className="text-brand" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">연습 장소</span>
-                      <p className="text-text-primary font-bold">{chatState.scenarioResult.place || "알수없음"}</p>
+                      <span className="text-[11px] font-bold uppercase tracking-tight text-gray-400">
+                        연습 장소
+                      </span>
+                      <p className="text-text-primary font-bold">
+                        {chatState.scenarioResult.place || "알수없음"}
+                      </p>
                     </div>
                   </div>
 
                   {/* 상대 */}
-                  <div className="flex items-center gap-4 bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                  <div className="flex items-center gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
                       <Users size={20} className="text-brand" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">대화 상대</span>
-                      <p className="text-text-primary font-bold">{chatState.scenarioResult.conversationPartner || "알수없음"}</p>
+                      <span className="text-[11px] font-bold uppercase tracking-tight text-gray-400">
+                        대화 상대
+                      </span>
+                      <p className="text-text-primary font-bold">
+                        {chatState.scenarioResult.conversationPartner || "알수없음"}
+                      </p>
                     </div>
                   </div>
 
                   {/* 미션 */}
-                  <div className="flex items-start gap-4 bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    <div className="flex-shrink-0 w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm mt-0.5">
+                  <div className="flex items-start gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
                       <Target size={20} className="text-brand" />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">나의 미션</span>
-                      <p className="text-text-primary font-bold leading-snug">{chatState.scenarioResult.conversationGoal || "알수없음"}</p>
+                      <span className="text-[11px] font-bold uppercase tracking-tight text-gray-400">
+                        나의 미션
+                      </span>
+                      <p className="text-text-primary font-bold leading-snug">
+                        {chatState.scenarioResult.conversationGoal || "알수없음"}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex w-full gap-3 mt-2">
+              <div className="mt-2 flex w-full gap-3">
                 <Button
                   onClick={() => {
                     setShowScenarioResultPopup(false);
@@ -400,7 +416,8 @@ export default function ScenarioSelectPage() {
                     prevAiSpeakingRef.current = false;
                   }}
                   variant="outline-purple"
-                  className="h-14 flex-1 rounded-2xl border-2 border-gray-200 text-base font-semibold text-gray-600 transition hover:bg-gray-50"
+                  className="flex-1"
+                  size="lg"
                 >
                   주제 다시 정하기
                 </Button>
@@ -411,7 +428,7 @@ export default function ScenarioSelectPage() {
                     setShowScenarioResultPopup(false);
                     setStepIndex(2);
                   }}
-                  className="flex-1 h-14 rounded-2xl text-lg font-bold shadow-lg shadow-brand/20"
+                  className="flex-1"
                 >
                   다음단계
                 </Button>
@@ -420,7 +437,7 @@ export default function ScenarioSelectPage() {
           </PopupLayout>
         )}
 
-        {/* End Chat Popup - 대화 종료 팝업 */}
+        {/* End Chat Popup - 그만하기 팝업 */}
         {showEndChatPopup && (
           <PopupLayout
             onClose={() => setShowEndChatPopup(false)}
@@ -433,7 +450,7 @@ export default function ScenarioSelectPage() {
                 <p className="text-xl font-semibold leading-relaxed text-gray-800">
                   지금은 여기까지만 할까요?
                   <br />
-                  나중에 같은 주제로 다시 대화할 수 있어요.
+                  언제든지 다시 시작할 수 있어요.
                 </p>
               </div>
 
@@ -441,14 +458,15 @@ export default function ScenarioSelectPage() {
               <div className="flex w-full gap-3">
                 <Button
                   onClick={handleStopFromEnd}
-                  variant="outline"
-                  className="h-14 flex-1 rounded-full border-2 border-gray-300 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
+                  variant="outline-gray"
+                  size="md"
+                  className="flex-1 "
                 >
-                  대화 그만하기
+                  다음에 하기
                 </Button>
                 <Button
                   variant="primary"
-                  size="xl"
+                  size="md"
                   onClick={handleContinueFromEnd}
                   className="flex-1"
                 >

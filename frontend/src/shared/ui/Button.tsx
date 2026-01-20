@@ -9,9 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-md",
-        outline: "border border-border bg-background hover:bg-accent rounded-md",
-        ghost: "hover:bg-accent hover:text-accent-foreground rounded-md",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90  rounded-full",
+        outline: "border-2 border-border bg-background hover:bg-accent ounded-full",
+        ghost: "hover:bg-accent hover:text-accent-foreground rounded-md ",
         brand: "bg-brand text-brand-foreground hover:bg-brand/90 rounded-full",
         "brand-outline":
           "border-2 border-brand bg-background text-brand hover:bg-brand-muted rounded-full",

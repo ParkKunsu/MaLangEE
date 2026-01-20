@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Toggle } from "@/shared/ui";
-import { Mic, RefreshCw, Info, ChevronLeft, ChevronRight } from "lucide-react";
-import { useScenarios, type Scenario } from "@/features/chat/api/scenarios";
+import { Button, Toggle } from "@/shared/ui";
+import { ChevronLeft, ChevronRight, Mic, RefreshCw } from "lucide-react";
+import { type Scenario, useScenarios } from "@/features/chat/api/scenarios";
 import { useCreateChatSession } from "@/features/chat/api/use-chat-sessions";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 
@@ -32,12 +32,15 @@ const voiceOptions: VoiceOption[] = [
 // 랜덤하게 5개 선택하는 함수
 const getRandomScenarios = (scenarios: Scenario[]): Scenario[] => {
   if (scenarios.length <= 5) return scenarios;
-  return [...scenarios]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 5);
+  return [...scenarios].sort(() => Math.random() - 0.5).slice(0, 5);
 };
 
-export function TopicSuggestion({ textOpacity, onTopicSelect, onBack, onShowMore }: TopicSuggestionProps) {
+export function TopicSuggestion({
+  textOpacity,
+  onTopicSelect,
+  onBack,
+  onShowMore,
+}: TopicSuggestionProps) {
   const router = useRouter();
   const { data: scenarios, isLoading, error } = useScenarios();
   const createSessionMutation = useCreateChatSession();
@@ -263,39 +266,24 @@ export function TopicSuggestion({ textOpacity, onTopicSelect, onBack, onShowMore
                   {/* 장소 */}
                   <div className="flex items-start gap-3">
                     <span className="text-brand min-w-[60px] text-sm font-bold">장소</span>
-                    <Input
-                      type="text"
-                      value={editedPlace}
-                      onChange={(e) => setEditedPlace(e.target.value)}
-                      placeholder="장소를 입력하세요"
-                    />
+                    <div>{editedPlace}</div>
                   </div>
 
                   {/* 상대 */}
                   <div className="flex items-start gap-3">
                     <span className="text-brand min-w-[60px] text-sm font-bold">상대</span>
-                    <Input
-                      type="text"
-                      value={editedPartner}
-                      onChange={(e) => setEditedPartner(e.target.value)}
-                      placeholder="상대를 입력하세요"
-                    />
+                    <div>{editedPartner}</div>
                   </div>
 
                   {/* 목표 */}
                   <div className="flex items-start gap-3">
                     <span className="text-brand min-w-[60px] text-sm font-bold">목표</span>
-                    <Input
-                      type="text"
-                      value={editedGoal}
-                      onChange={(e) => setEditedGoal(e.target.value)}
-                      placeholder="목표를 입력하세요"
-                    />
+                    <div>{editedGoal}</div>
                   </div>
                 </div>
 
                 {/* 자막 및 목소리 설정 */}
-                <h3 className="text-sm font-bold text-gray-700">자막 설정</h3>
+                <h3 className="text-sm font-bold text-gray-700">자막 및 목소리 설정</h3>
                 <div className="space-y-4 rounded-2xl bg-gray-50 p-6">
                   <Toggle label="자막 표시" enabled={showSubtitle} onChange={setShowSubtitle} />
 
@@ -360,19 +348,34 @@ export function TopicSuggestion({ textOpacity, onTopicSelect, onBack, onShowMore
             <div className="flex gap-3">
               {isEditing ? (
                 <>
-                  <Button variant="outline-gray" className="flex-1" onClick={handleCancelEdit}>
+                  <Button variant="outline-gray" size={"lg"} onClick={handleCancelEdit}>
                     취소
                   </Button>
-                  <Button variant="primary" className="flex-1" onClick={handleStartWithEdited}>
+                  <Button
+                    variant="primary"
+                    size={"lg"}
+                    className="flex-1"
+                    onClick={handleStartWithEdited}
+                  >
                     이 내용으로 시작하기
                   </Button>
                 </>
               ) : (
                 <>
-                  <Button variant="outline-purple" className="flex-1" onClick={handleEditMode}>
+                  <Button
+                    variant="outline-purple"
+                    size={"lg"}
+                    className="flex-1"
+                    onClick={handleEditMode}
+                  >
                     직접 입력하기
                   </Button>
-                  <Button variant="primary" className="flex-1" onClick={handleStartOriginal}>
+                  <Button
+                    variant="primary"
+                    size={"lg"}
+                    className="flex-1"
+                    onClick={handleStartOriginal}
+                  >
                     이 주제로 시작하기
                   </Button>
                 </>
