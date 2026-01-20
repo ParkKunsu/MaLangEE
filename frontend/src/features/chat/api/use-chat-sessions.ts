@@ -7,6 +7,18 @@ import { apiClient } from "@/shared/lib/api-client";
 import type { ChatSession, ChatSessionDetail, ChatSessionsResponse } from "@/shared/types/chat";
 
 /**
+ * 대화 세션 생성 요청 타입
+ */
+export interface CreateChatSessionRequest {
+  scenario_id: string;
+  scenario_place: string;
+  scenario_partner: string;
+  scenario_goal: string;
+  voice: string;
+  show_text: boolean;
+}
+
+/**
  * 대화 세션 목록 조회 (pagination 지원)
  * @param skip - 스킵할 항목 수 (기본값: 0)
  * @param limit - 가져올 항목 수 (기본값: 20)
@@ -128,8 +140,8 @@ export function useCreateChatSession() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { mode: string; metadata?: Record<string, unknown> }) => {
-      return await apiClient.post<ChatSession>("/chat/sessions", data);
+    mutationFn: async (data: CreateChatSessionRequest) => {
+      return await apiClient.post<ChatSessionDetail>("/chat/sessions", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chatSessions"] });
