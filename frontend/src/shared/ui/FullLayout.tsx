@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, ReactNode } from "react";
 import { GlassCard } from "./GlassCard";
 

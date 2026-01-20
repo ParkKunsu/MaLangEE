@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
 import { Providers } from "./providers";
 import "./globals.css";
+import { GlobalPopup } from "@/shared/ui";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,7 +52,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${notoSans.variable} h-full antialiased`}
         style={{ fontFamily: "var(--font-noto-sans)" }}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <GlobalPopup />
+        </Providers>
       </body>
     </html>
   );

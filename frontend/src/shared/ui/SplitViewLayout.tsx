@@ -1,4 +1,6 @@
-﻿import React, { useEffect } from "react";
+﻿"use client";
+
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { GlassCard } from "./GlassCard";
 import { MalangEE } from "./MalangEE";

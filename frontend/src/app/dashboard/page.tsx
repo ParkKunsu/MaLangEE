@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
-import { Button, MalangEE, PopupLayout } from "@/shared/ui";
+import { Button, MalangEE } from "@/shared/ui";
 import { useRouter } from "next/navigation";
 import { useInfiniteChatSessions } from "@/features/chat/api/use-chat-sessions";
-import { AuthGuard, useAuth, useCurrentUser, useDeleteUser } from "@/features/auth";
+import { AuthGuard, useAuth, useCurrentUser } from "@/features/auth";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatDetailPopup } from "./ChatDetailPopup";
 import { NicknameChangePopup } from "./NicknameChangePopup";
+import { usePopupStore } from "@/shared/lib/store";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -25,10 +26,7 @@ export default function DashboardPage() {
   const [showDetailPopup, setShowDetailPopup] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ChatHistoryItem | null>(null);
   const [showNicknamePopup, setShowNicknamePopup] = useState(false);
-  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-  const [showDeleteUserPopup, setShowDeleteUserPopup] = useState(false);
-  const { logout } = useAuth();
-  const { mutate: deleteUser, isPending: isDeletingUser } = useDeleteUser();
+  const { openPopup } = usePopupStore();
 
   // 사용자 정보 조회
   const { data: currentUser, isLoading: isUserLoading } = useCurrentUser();
@@ -124,29 +122,11 @@ export default function DashboardPage() {
   };
 
   const handleLogoutClick = () => {
-    setShowLogoutPopup(true);
-  };
-
-  const handleLogoutConfirm = () => {
-    setShowLogoutPopup(false);
-    logout();
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutPopup(false);
+    openPopup("logout");
   };
 
   const handleDeleteUserClick = () => {
-    setShowDeleteUserPopup(true);
-  };
-
-  const handleDeleteUserConfirm = () => {
-    deleteUser();
-    setShowDeleteUserPopup(false);
-  };
-
-  const handleDeleteUserCancel = () => {
-    setShowDeleteUserPopup(false);
+    openPopup("deleteUser");
   };
 
   const handleNewChatClick = () => {
@@ -171,7 +151,7 @@ export default function DashboardPage() {
 
   // 왼쪽 컨텐츠
   const leftContent = (
-    <div className="w-full max-w-full md:max-w-sm tracking-tight">
+    <div className="w-full max-w-[70%] md:max-w-sm tracking-tight">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
@@ -205,7 +185,7 @@ export default function DashboardPage() {
       </div>
       <Button
         variant="solid"
-        size="lg"
+        size="md"
         fullWidth
         className="mt-10"
         onClick={handleNewChatClick}
@@ -348,54 +328,6 @@ export default function DashboardPage() {
             // 사용자 프로필 새로고침이 필요한 경우 여기에 로직 추가
           }}
         />
-      )}
-
-      {/* 로그아웃 확인 팝업 */}
-      {showLogoutPopup && (
-        <PopupLayout onClose={handleLogoutCancel} showCloseButton={false} maxWidth="sm">
-          <div className="flex flex-col items-center gap-6 py-2">
-            <MalangEE status="humm" size={120} />
-            <div className="text-xl font-bold text-[#1F1C2B]">정말 로그아웃 하실건가요?</div>
-            <div className="flex w-full gap-3">
-              <Button variant="outline-purple" size="md" fullWidth onClick={handleLogoutCancel}>
-                닫기
-              </Button>
-              <Button variant="primary" size="md" fullWidth onClick={handleLogoutConfirm}>
-                로그아웃
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
-      )}
-
-      {/* 회원탈퇴 확인 팝업 */}
-      {showDeleteUserPopup && (
-        <PopupLayout onClose={handleDeleteUserCancel} showCloseButton={false} maxWidth="sm">
-          <div className="flex flex-col items-center gap-6 py-2">
-            <MalangEE status="sad" size={120} />
-            <div className="text-center">
-              <div className="text-xl font-bold text-[#1F1C2B]">정말 탈퇴하시겠어요?</div>
-              <div className="mt-2 text-sm text-gray-500">
-                탈퇴 시 모든 대화 기록이 삭제되며 복구할 수 없습니다.
-              </div>
-            </div>
-            <div className="flex w-full gap-3">
-              <Button variant="outline-purple" size="md" fullWidth onClick={handleDeleteUserCancel}>
-                취소
-              </Button>
-              <Button
-                variant="primary"
-                size="md"
-                fullWidth
-                onClick={handleDeleteUserConfirm}
-                disabled={isDeletingUser}
-                className="bg-red-500 hover:bg-red-600 border-red-500 hover:border-red-600"
-              >
-                {isDeletingUser ? "탈퇴 중..." : "탈퇴하기"}
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
       )}
     </AuthGuard>
   );

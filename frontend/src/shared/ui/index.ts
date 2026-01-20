@@ -17,3 +17,4 @@ export { DecorativeCircle } from "./DecorativeCircle";
 export { DebugStatus } from "./DebugStatus";
 export { ChatStatusBadge } from "./ChatStatusBadge";
 export { Toggle } from "./Toggle";
+export { GlobalPopup } from "./GlobalPopup";
