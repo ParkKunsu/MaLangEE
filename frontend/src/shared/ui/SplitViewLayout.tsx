@@ -29,7 +29,7 @@ export const SplitViewLayout = ({
   leftColSpan = 5,
   rightColSpan = 7,
   showHeader = true, // 기본값 true
-  leftClassName = "w-full px-0 pb-4 md:p-10 md:pr-5",
+  leftClassName = "px-0 md:p-10 md:pr-15", // PC 오른쪽 여백을 15로 조정
   rightClassName = "",
   glassClassName = "p-6 md:p-10",
   glassMaxWidth = "max-w-full md:max-w-2xl lg:max-w-4xl", // 기본값
@@ -62,7 +62,7 @@ export const SplitViewLayout = ({
           {/* Left Content Section */}
           <div
             id="sv-left-content"
-            className={`flex w-full flex-col items-center justify-center gap-6 pt-20 text-center md:items-start md:pt-0 md:text-left ${colSpans[leftColSpan] || "md:col-span-6"} ${leftClassName}`}
+            className={`flex w-full max-w-[80%] mx-auto flex-col items-center justify-center gap-6 pb-10 pt-20 text-center md:max-w-none md:mx-0 md:items-start md:pt-0 md:text-left ${colSpans[leftColSpan] || "md:col-span-6"} ${leftClassName}`}
           >
             <>
               <div
@@ -73,16 +73,16 @@ export const SplitViewLayout = ({
                   <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={50} />
                 </Link>
               </div>
-              <div className="flex items-center justify-center">
+              <div className="flex w-full items-center justify-center md:justify-start">
                 <MalangEE size={120} />
               </div>
             </>
             {leftChildren && (
               <div
                 id="sv-left-children"
-                className="flex w-full min-w-[270px]  items-center justify-center md:w-[80%] md:items-start "
+                className="flex w-full min-w-[270px] items-center justify-center md:w-full md:items-start md:justify-start"
               >
-                <div className="flex w-full flex-col items-center space-y-2 text-center sm:w-[80%] md:w-full">
+                <div className="flex w-full flex-col items-center space-y-2 text-center md:w-full md:items-start md:text-left">
                   {leftChildren}
                 </div>
               </div>
@@ -91,7 +91,7 @@ export const SplitViewLayout = ({
 
           {/* Right Content Section */}
           <div
-            className={`flex items-center justify-center gap-6 ${colSpans[rightColSpan] || "md:col-span-6"} ${rightClassName}`}
+            className={`flex items-start justify-center gap-6 md:items-center ${colSpans[rightColSpan] || "md:col-span-6"} ${rightClassName}`}
           >
             <GlassCard
               showHeader={showHeader}

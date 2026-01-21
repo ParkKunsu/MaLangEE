@@ -36,7 +36,6 @@ export default function LoginPage() {
   const [activeTitleIndex, setActiveTitleIndex] = useState(0);
   const titleRotationMs = 4000;
 
-
   const titleMessages = [
     {
       top: "Talk like there",
@@ -88,9 +87,12 @@ export default function LoginPage() {
 
   // 왼쪽 콘텐츠
   const leftContent = (
-    <div className="space-y-7 md:space-y-9">
+    <div className="mb-10 w-full space-y-7  md:space-y-9">
       <div className="space-y-2" id={"title-wrapper"} key={activeTitleIndex}>
-        <p className="text-brand title-rotate mb-4 text-xl font-medium" style={{ letterSpacing: "-0.2px" }}>
+        <p
+          className="text-brand title-rotate mb-4 text-xl font-medium"
+          style={{ letterSpacing: "-0.2px" }}
+        >
           {titleMessages[activeTitleIndex].top}
         </p>
         <h1
@@ -103,7 +105,10 @@ export default function LoginPage() {
         </h1>
       </div>
 
-      <div className="flex items-center gap-2" id={"icon-wrapper"}>
+      <div
+        id="icon-wrapper"
+        className="flex w-full items-center justify-center gap-2 md:justify-start"
+      >
         {titleMessages.map((_, index) => (
           <div
             key={index}
@@ -122,7 +127,7 @@ export default function LoginPage() {
   // 오른쪽 콘텐츠(로그인 폼)
   const rightContent = (
     <div className="mx-auto w-full space-y-7 md:space-y-9">
-      <p className="text-text-primary mb-15 text-3xl font-semibold leading-snug md:text-4xl">
+      <p className="text-text-primary text-3xl font-semibold leading-snug md:text-4xl">
         Hello,
         <br />
         I&#39;m MalangEE
@@ -226,8 +231,8 @@ export default function LoginPage() {
       />
 
       {showComingSoonModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-dim-light backdrop-blur-sm">
-          <div className="relative mx-4 w-full max-w-sm rounded-3xl border border-border bg-card shadow-xl backdrop-blur-2xl">
+        <div className="bg-dim-light fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className="border-border bg-card relative mx-4 w-full max-w-sm rounded-3xl border shadow-xl backdrop-blur-2xl">
             <div className="space-y-6 px-8 py-8">
               <div className="space-y-2">
                 <p className="text-text-primary text-center text-2xl font-semibold">준비중입니다</p>

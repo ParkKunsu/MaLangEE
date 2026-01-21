@@ -151,7 +151,7 @@ export default function DashboardPage() {
 
   // 왼쪽 컨텐츠
   const leftContent = (
-    <div className="w-full max-w-[70%] md:max-w-sm tracking-tight">
+    <div className="w-full max-w-[90%] md:max-w-sm tracking-tight">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{userProfile?.nickname || "닉네임"}</div>
@@ -165,7 +165,7 @@ export default function DashboardPage() {
             <Pencil size={16} stroke="currentColor" />
           </Button>
         </div>
-        <Button variant="secondary" size="auto" onClick={handleLogoutClick}>
+        <Button variant="secondary" size="sm" onClick={handleLogoutClick}>
           로그아웃
         </Button>
       </div>
