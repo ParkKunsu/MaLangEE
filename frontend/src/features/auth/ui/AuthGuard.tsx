@@ -39,8 +39,10 @@ export const AuthGuard: FC<AuthGuardProps> = ({
     const isAuthenticated = hasToken && hasUser;
 
     if (isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthState("authenticated");
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuthState("unauthenticated");
     }
   }, []);

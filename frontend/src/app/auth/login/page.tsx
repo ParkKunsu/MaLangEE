@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useForm, type Resolver } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { SplitViewLayout } from "@/shared/ui/SplitViewLayout";
@@ -31,7 +30,6 @@ const loginResolver: Resolver<LoginFormData> = async (values) => {
 };
 
 export default function LoginPage() {
-  const router = useRouter();
   const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const [activeTitleIndex, setActiveTitleIndex] = useState(0);
   const titleRotationMs = 4000;
@@ -203,14 +201,8 @@ export default function LoginPage() {
             {loginMutation.isPending ? "로그인 중.." : "로그인"}
           </Button>
 
-          <Button
-            type="button"
-            variant="outline-purple"
-            size="lg"
-            fullWidth
-            onClick={() => router.push("/scenario-select")}
-          >
-            바로 체험해보기
+          <Button asChild variant="outline-purple" size="lg" fullWidth>
+            <Link href="/chat/scenario-select">바로 체험해보기</Link>
           </Button>
         </div>
       </form>

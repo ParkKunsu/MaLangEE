@@ -301,7 +301,7 @@ test.describe("새 대화 시작", () => {
     await page.getByText("말랭이랑 새로운 대화를 해볼까요?").click();
 
     // 시나리오 선택 페이지로 이동 확인
-    await expect(page).toHaveURL(/\/scenario-select/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/chat\/scenario-select/, { timeout: 10000 });
   });
 
   // TODO: welcome-back 페이지 접근 시 인증 유실 이슈 조사 필요

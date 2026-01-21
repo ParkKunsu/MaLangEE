@@ -242,7 +242,7 @@ export default function ConversationTestPage() {
                     ➜ 같은 세션으로 재연결 시 이전 대화가 자동 복원됩니다
                   </div>
                   <div>
-                    <strong className="text-purple-700">2. 연결:</strong> "연결 및 마이크 시작" 클릭
+                    <strong className="text-purple-700">2. 연결:</strong> &ldquo;연결 및 마이크 시작&rdquo; 클릭
                   </div>
                   <div className="ml-4 text-gray-600">
                     ➜ 서버가 자동으로 AI 첫 인사를 시작합니다
@@ -254,7 +254,7 @@ export default function ConversationTestPage() {
                     ➜ Server VAD가 자동으로 발화 시작/종료를 감지합니다
                   </div>
                   <div>
-                    <strong className="text-purple-700">4. 종료:</strong> "연결 종료" 클릭
+                    <strong className="text-purple-700">4. 종료:</strong> &ldquo;연결 종료&rdquo; 클릭
                   </div>
                   <div className="ml-4 text-gray-600">
                     ➜ 세션 리포트와 피드백이 자동 생성됩니다 (메시지 10개 이상 시)
@@ -302,8 +302,8 @@ export default function ConversationTestPage() {
                 <h3 className="text-sm font-bold text-blue-700 mb-2">세션 정보</h3>
                 <div className="space-y-1 text-xs">
                   <div><span className="font-semibold">세션 ID:</span> {state.sessionReport.session_id?.substring(0, 8)}...</div>
-                  <div><span className="font-semibold">시작:</span> {new Date(state.sessionReport.started_at).toLocaleString()}</div>
-                  <div><span className="font-semibold">종료:</span> {new Date(state.sessionReport.ended_at).toLocaleString()}</div>
+                  {state.sessionReport.started_at && <div><span className="font-semibold">시작:</span> {new Date(state.sessionReport.started_at).toLocaleString()}</div>}
+                  {state.sessionReport.ended_at && <div><span className="font-semibold">종료:</span> {new Date(state.sessionReport.ended_at).toLocaleString()}</div>}
                   <div><span className="font-semibold">총 대화 시간:</span> {Math.floor(state.sessionReport.total_duration_sec || 0)}초</div>
                   <div><span className="font-semibold">발화 시간:</span> {Math.floor(state.sessionReport.user_speech_duration_sec || 0)}초</div>
                   <div><span className="font-semibold">메시지 수:</span> {state.sessionReport.messages?.length || 0}개</div>

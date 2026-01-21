@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { tokenStorage } from "@/features/auth";
 import { translateToKorean } from "@/shared/lib/translate";
+import { debugLog } from "@/shared/lib/debug";
+import { buildScenarioWebSocketUrl } from "@/shared/lib/websocket";
 import { useWebSocketBase } from "./useWebSocketBase";
+import type { ScenarioResult } from "./types";
 
 export interface ScenarioChatStateNew {
   isConnected: boolean;
@@ -14,7 +17,7 @@ export interface ScenarioChatStateNew {
   userTranscript: string;
   isAiSpeaking: boolean;
   isRecording: boolean;
-  scenarioResult: any | null;
+  scenarioResult: ScenarioResult | null;
 }
 
 export function useScenarioChatNew() {
@@ -22,41 +25,15 @@ export function useScenarioChatNew() {
   const [aiMessage, setAiMessage] = useState("");
   const [aiMessageKR, setAiMessageKR] = useState("");
   const [userTranscript, setUserTranscript] = useState("");
-  const [scenarioResult, setScenarioResult] = useState<any | null>(null);
+  const [scenarioResult, setScenarioResult] = useState<ScenarioResult | null>(null);
 
   // WebSocket URL 생성
   const getWebSocketUrl = useCallback(() => {
     const token = tokenStorage.get();
-    const envWsUrl = process.env.NEXT_PUBLIC_WS_URL;
-    let wsBaseUrl = envWsUrl;
+    debugLog("[Scenario WS] Token:", token ? "EXISTS" : "NONE");
 
-    console.log("🔧 [DEBUG] Token:", token ? "EXISTS" : "NONE");
-    console.log("🔧 [DEBUG] NEXT_PUBLIC_WS_URL:", envWsUrl);
-
-    if (!wsBaseUrl && process.env.NEXT_PUBLIC_API_URL) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      wsBaseUrl = apiUrl.replace(/^http/, "ws");
-      if (window.location.protocol === "https:" && wsBaseUrl.startsWith("ws:")) {
-        wsBaseUrl = wsBaseUrl.replace(/^ws:/, "wss:");
-      }
-      console.log("🔧 [DEBUG] wsBaseUrl from API_URL:", wsBaseUrl);
-    }
-
-    if (!wsBaseUrl) {
-      const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-      const host = window.location.hostname;
-      const port = window.location.port ? `:${window.location.port}` : "";
-      wsBaseUrl = `${protocol}://${host}${port}`;
-      console.log("🔧 [DEBUG] wsBaseUrl from location:", wsBaseUrl);
-    }
-
-    const endpoint = token ? "/api/v1/scenarios/ws/scenario" : "/api/v1/scenarios/ws/guest-scenario";
-    const params = new URLSearchParams();
-    if (token) params.append("token", token);
-
-    const queryString = params.toString();
-    const finalUrl = queryString ? `${wsBaseUrl}${endpoint}?${queryString}` : `${wsBaseUrl}${endpoint}`;
-    console.log("🔧 [DEBUG] Final WebSocket URL:", finalUrl);
+    const finalUrl = buildScenarioWebSocketUrl(token);
+    debugLog("[Scenario WS] Final WebSocket URL:", finalUrl);
 
     return finalUrl;
   }, []);
@@ -77,7 +54,9 @@ export function useScenarioChatNew() {
   const startScenarioSessionRef = useRef<(() => void) | null>(null);
 
   // onMessage 구현 (base를 사용할 수 있도록 여기서 정의)
-  onMessageRef.current = (event: MessageEvent) => {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    onMessageRef.current = (event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
 
@@ -133,11 +112,12 @@ export function useScenarioChatNew() {
         case "scenario.completed":
           base.addLog(`✅ Scenario Completed: ${JSON.stringify(data.json)}`);
           base.addLog("ℹ️ Scenario has been automatically saved to the database.");
+          // 서버에서 snake_case 또는 camelCase로 올 수 있으므로 둘 다 처리
           setScenarioResult({
-            place: data.json?.place || null,
-            conversation_partner: data.json?.conversation_partner || null,
-            conversation_goal: data.json?.conversation_goal || null,
-            sessionId: data.json?.sessionId,
+            place: data.json?.place ?? null,
+            conversationPartner: data.json?.conversation_partner ?? data.json?.conversationPartner ?? null,
+            conversationGoal: data.json?.conversation_goal ?? data.json?.conversationGoal ?? null,
+            sessionId: data.json?.sessionId ?? data.json?.session_id,
           });
           break;
 
@@ -149,6 +129,7 @@ export function useScenarioChatNew() {
       base.addLog(`Parse Error: ${e}`);
     }
   };
+  });
 
   // 오디오 전송 콜백 (Scenario 메시지 타입 사용)
   const sendAudioCallback = useCallback((audioData: Float32Array) => {
@@ -192,27 +173,10 @@ export function useScenarioChatNew() {
   }, [base.wsRef, base.addLog]);
 
   // 시나리오 세션 초기화 및 대화 시작
+  // 서버에서 세션 설정 및 AI 응답을 자동으로 처리하므로 클라이언트에서는 별도 메시지를 보내지 않음
   const startScenarioSession = useCallback(() => {
     if (base.wsRef.current?.readyState === WebSocket.OPEN && base.isReady) {
-      // 초기 설정 - turn_detection을 활성화해야 마이크가 작동함
-      base.wsRef.current.send(JSON.stringify({
-        type: "session.update",
-        session: {
-          //instructions: "You are a scenario selector. Ask the user what situation they want to practice. Keep it brief and friendly.",
-          turn_detection: { type: "server_vad", threshold: 0.5, prefix_padding_ms: 300, silence_duration_ms: 1000 }
-        }
-      }));
-      base.addLog("Sent session.update");
-
-      // AI 발화 요청 (AI가 먼저 인사)
-      base.wsRef.current.send(JSON.stringify({
-        type: "response.create",
-        response: {
-          modalities: ["text", "audio"],
-         // instructions: "Greet the user and ask what kind of situation they want to practice."
-        }
-      }));
-      base.addLog("Sent response.create");
+      base.addLog("Scenario session started (server handles initialization)");
     }
   }, [base.wsRef, base.isReady, base.addLog]);
 

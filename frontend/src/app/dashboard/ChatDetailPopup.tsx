@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import type { ChatHistoryItem } from "@/shared/types/chat";
 import { ChatTranscriptPopup } from "./ChatTranscriptPopup";
 import { PopupLayout } from "@/shared/ui/PopupLayout";
 import { Button } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat";
-import { useRouter } from "next/navigation";
 
 interface ChatDetailPopupProps {
   session: ChatHistoryItem;
@@ -14,7 +14,6 @@ interface ChatDetailPopupProps {
 }
 
 export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClose }) => {
-  const router = useRouter();
   const [showTranscript, setShowTranscript] = useState(false);
 
   // 실제 API에서 세션 상세 정보 조회
@@ -90,12 +89,10 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
                     >
                       전문보기
                     </Button>
-                    <Button
-                      variant="outline-purple"
-                      size="sm"
-                      onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
-                    >
-                      다시 대화하기
+                    <Button asChild variant="outline-purple" size="sm">
+                      <Link href={`/chat/welcome-back?sessionId=${session.id}`}>
+                        다시 대화하기
+                      </Link>
                     </Button>
                   </div>
                 </div>
@@ -146,12 +143,10 @@ export const ChatDetailPopup: React.FC<ChatDetailPopupProps> = ({ session, onClo
                       >
                         전문보기
                       </Button>
-                      <Button
-                        variant="outline-purple"
-                        size="sm"
-                        onClick={() => router.push(`/chat/welcome-back?sessionId=${session.id}`)}
-                      >
-                        다시 대화하기
+                      <Button asChild variant="outline-purple" size="sm">
+                        <Link href={`/chat/welcome-back?sessionId=${session.id}`}>
+                          다시 대화하기
+                        </Link>
                       </Button>
                     </>
                   )}

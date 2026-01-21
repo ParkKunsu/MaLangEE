@@ -19,8 +19,14 @@ async function mockUserApi(page: Page) {
   });
 }
 
+interface MockChatSession {
+  session_id: string;
+  title?: string;
+  started_at: string;
+}
+
 // 채팅 세션 API 모킹 헬퍼
-async function mockChatSessionsApi(page: Page, sessions: any[] = []) {
+async function mockChatSessionsApi(page: Page, sessions: MockChatSession[] = []) {
   await page.route("**/api/v1/chat/sessions*", async (route) => {
     await route.fulfill({
       status: 200,
@@ -41,7 +47,7 @@ async function mockLoginApi(page: Page) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(MOCK_TOKEN),
+      body: JSON.stringify({ access_token: "mock-token", token_type: "bearer" }),
     });
   });
 }
@@ -86,8 +92,9 @@ test.describe("페이지 간 네비게이션", () => {
     page,
   }) => {
     await page.goto("/auth/login");
-    await page.getByRole("button", { name: "바로 체험해보기" }).click();
-    await expect(page).toHaveURL(/\/scenario-select/);
+    // Button asChild를 사용하므로 실제로는 링크로 렌더링됨
+    await page.getByRole("link", { name: "바로 체험해보기" }).click();
+    await expect(page).toHaveURL(/\/chat\/scenario-select/);
   });
 });
 
@@ -132,49 +139,42 @@ test.describe("인증 상태에 따른 라우팅", () => {
 
 test.describe("시나리오 선택 페이지 네비게이션", () => {
   test("시나리오 선택 페이지에 접근할 수 있어야 함", async ({ page }) => {
-    await page.goto("/scenario-select");
-    await expect(page).toHaveURL(/\/scenario-select/);
+    await page.goto("/chat/scenario-select");
+    // topic-suggestion으로 리다이렉트됨
+    await expect(page).toHaveURL(/\/chat\/scenario-select/);
   });
 
-  test("대화 종료하기 버튼이 표시되어야 함", async ({ page }) => {
-    await page.goto("/scenario-select");
-    await expect(page.getByText("대화 종료하기")).toBeVisible();
+  test("주제 선택 페이지가 정상적으로 로드되어야 함", async ({ page }) => {
+    // 시나리오 API 모킹
+    await page.route("**/api/v1/scenarios*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { id: 1, title: "공항에서 체크인하기", description: "테스트", level: 1, place: "Airport", partner: "Staff", goal: "Check-in" },
+        ]),
+      });
+    });
+
+    await page.goto("/chat/scenario-select/topic-suggestion");
+
+    // 페이지 제목 확인
+    await expect(page.getByText("이런 주제는 어때요?")).toBeVisible({ timeout: 10000 });
   });
 
-  test("대화 종료하기 클릭 시 확인 팝업이 표시되어야 함", async ({ page }) => {
-    await page.goto("/scenario-select");
-    await page.getByText("대화 종료하기").click();
-
-    // 종료 확인 팝업 표시
-    await expect(page.getByText("지금은 여기까지만 할까요?")).toBeVisible();
-    await expect(page.getByText("대화 그만하기")).toBeVisible();
-    await expect(page.getByText("이어 말하기")).toBeVisible();
+  test("직접 말하기 페이지에 접근할 수 있어야 함", async ({ page }) => {
+    await page.goto("/chat/scenario-select/direct-speech");
+    await expect(page).toHaveURL(/\/chat\/scenario-select\/direct-speech/);
   });
 
-  test("종료 팝업에서 대화 그만하기 클릭 시 로그인 페이지로 이동해야 함", async ({
-    page,
-  }) => {
-    await page.goto("/scenario-select");
-    await page.getByText("대화 종료하기").click();
-
-    // 종료 팝업에서 대화 그만하기 클릭
-    await page.getByRole("button", { name: "대화 그만하기" }).click();
-
-    // 로그인 페이지로 이동 확인
-    await expect(page).toHaveURL(/\/auth\/login/, { timeout: 10000 });
+  test("자막 설정 페이지에 접근할 수 있어야 함", async ({ page }) => {
+    await page.goto("/chat/scenario-select/subtitle-settings");
+    await expect(page.getByText("말랭이의 답변을 자막으로 볼까요?")).toBeVisible();
   });
 
-  test("종료 팝업에서 이어 말하기 클릭 시 팝업이 닫혀야 함", async ({
-    page,
-  }) => {
-    await page.goto("/scenario-select");
-    await page.getByText("대화 종료하기").click();
-
-    // 종료 팝업에서 이어 말하기 클릭
-    await page.getByRole("button", { name: "이어 말하기" }).click();
-
-    // 팝업이 닫힌 것 확인
-    await expect(page.getByText("지금은 여기까지만 할까요?")).not.toBeVisible();
+  test("목소리 선택 페이지에 접근할 수 있어야 함", async ({ page }) => {
+    await page.goto("/chat/scenario-select/voice-selection");
+    await expect(page.getByText("말랭이 목소리 톤을 선택해 주세요.")).toBeVisible();
   });
 });
 
@@ -225,9 +225,12 @@ test.describe("대시보드 네비게이션", () => {
     // 로그아웃 버튼 클릭
     await page.getByRole("button", { name: "로그아웃" }).click();
 
-    // 로그아웃 확인
-    const logoutButton = page.getByRole("button", { name: "로그아웃" }).last();
-    await logoutButton.click();
+    // 팝업이 완전히 표시될 때까지 대기
+    await expect(page.getByText("정말 로그아웃 하실건가요?")).toBeVisible({ timeout: 5000 });
+
+    // 팝업 내의 로그아웃 버튼 클릭 (팝업 내부에서 찾기)
+    const popup = page.locator('.fixed.inset-0').filter({ hasText: '정말 로그아웃 하실건가요?' });
+    await popup.getByRole("button", { name: "로그아웃" }).click();
 
     // 로그인 페이지로 이동 확인
     await expect(page).toHaveURL(/\/auth\/login/, { timeout: 10000 });
@@ -330,10 +333,10 @@ test.describe("모바일 네비게이션", () => {
   test("모바일에서 시나리오 선택 페이지가 정상적으로 표시되어야 함", async ({
     page,
   }) => {
-    await page.goto("/scenario-select");
+    await page.goto("/chat/scenario-select");
 
     // 페이지가 로드되어야 함
-    await expect(page).toHaveURL(/\/scenario-select/);
+    await expect(page).toHaveURL(/\/chat\/scenario-select/);
   });
 });
 

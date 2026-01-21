@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { FullLayout } from "@/shared/ui/FullLayout";
-import { Button, DebugStatus, MalangEE, PopupLayout } from "@/shared/ui";
+import { Button, DebugStatus, MalangEE, ConfirmPopup } from "@/shared/ui";
 import { History, LogOut, Volume2, VolumeX } from "lucide-react";
 import "@/shared/styles/scenario.css";
 import { useAuth } from "@/features/auth";
@@ -154,40 +154,37 @@ export default function ChatLayout({ children }: ChatLayoutProps) {
 
       {/* 대화 종료 확인 팝업 */}
       {showEndChatPopup && (
-        <PopupLayout onClose={handleEndChatCancel} showCloseButton={false} maxWidth="sm">
-          <div className="flex flex-col items-center gap-6 py-2">
-            <MalangEE status="humm" size={120} />
+        <ConfirmPopup
+          message={
             <div className="text-xl font-bold text-[#1F1C2B]">
-              지금은 여기까지만 할까요?<br/>
-              나중에 같은 주제로 다시 대화할 수 있어요.</div>
-            <div className="flex w-full gap-3">
-              <Button variant="outline-purple" size="md" fullWidth onClick={handleEndChatCancel}>
-                이어 말하기
-              </Button>
-              <Button variant="primary" size="md" fullWidth onClick={handleEndChatConfirm}>
-                대화 그만하기
-              </Button>
+              지금은 여기까지만 할까요?<br />
+              나중에 같은 주제로 다시 대화할 수 있어요.
             </div>
-          </div>
-        </PopupLayout>
+          }
+          confirmText="대화 그만하기"
+          cancelText="이어 말하기"
+          onConfirm={handleEndChatConfirm}
+          onCancel={handleEndChatCancel}
+          showMalangEE
+          malangEEStatus="humm"
+          maxWidth="sm"
+        />
       )}
 
       {/* 로그아웃 확인 팝업 */}
       {showLogoutPopup && (
-        <PopupLayout onClose={handleLogoutCancel} showCloseButton={false} maxWidth="sm">
-          <div className="flex flex-col items-center gap-6 py-2">
-            <MalangEE status="humm" size={120} />
+        <ConfirmPopup
+          message={
             <div className="text-xl font-bold text-[#1F1C2B]">정말 로그아웃 하실건가요?</div>
-            <div className="flex w-full gap-3">
-              <Button variant="outline-purple" size="md" fullWidth onClick={handleLogoutCancel}>
-                닫기
-              </Button>
-              <Button variant="primary" size="md" fullWidth onClick={handleLogoutConfirm}>
-                로그아웃
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
+          }
+          confirmText="로그아웃"
+          cancelText="닫기"
+          onConfirm={handleLogoutConfirm}
+          onCancel={handleLogoutCancel}
+          showMalangEE
+          malangEEStatus="humm"
+          maxWidth="sm"
+        />
       )}
     </>
   );

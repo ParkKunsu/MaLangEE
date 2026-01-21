@@ -1,35 +1,43 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 
 // Mock functions must be declared before vi.mock calls
 const mockPush = vi.fn();
-const mockReplace = vi.fn();
 const mockTokenExists = vi.fn();
 const mockTokenRemove = vi.fn();
-const mockRefetch = vi.fn();
-const mockUseCurrentUser = vi.fn();
+const mockUserStorageGet = vi.fn();
+const mockUserStorageSet = vi.fn();
+const mockUserStorageRemove = vi.fn();
+const mockGetCurrentUser = vi.fn();
+const mockQueryClientClear = vi.fn();
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
-    replace: mockReplace,
   }),
 }));
 
-// Mock tokenStorage
+// Mock tokenStorage and userStorage
 vi.mock("../model", () => ({
   tokenStorage: {
     exists: () => mockTokenExists(),
     remove: () => mockTokenRemove(),
   },
+  userStorage: {
+    get: () => mockUserStorageGet(),
+    set: (user: unknown) => mockUserStorageSet(user),
+    remove: () => mockUserStorageRemove(),
+  },
 }));
 
-// Mock useCurrentUser
-vi.mock("../api", () => ({
-  useCurrentUser: () => mockUseCurrentUser(),
+// Mock authApi
+vi.mock("../api/auth-api", () => ({
+  authApi: {
+    getCurrentUser: () => mockGetCurrentUser(),
+  },
 }));
 
 // Import after mocks
@@ -43,6 +51,9 @@ const createWrapper = () => {
     },
   });
 
+  // Mock the clear method
+  queryClient.clear = mockQueryClientClear;
+
   const Wrapper = ({ children }: { children: ReactNode }) =>
     createElement(QueryClientProvider, { client: queryClient }, children);
   Wrapper.displayName = "TestWrapper";
@@ -52,18 +63,17 @@ const createWrapper = () => {
 describe("useAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockRefetch.mockResolvedValue({ data: null });
+    mockTokenExists.mockReturnValue(false);
+    mockUserStorageGet.mockReturnValue(null);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("returns isAuthenticated false when no token exists", () => {
     mockTokenExists.mockReturnValue(false);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
-    });
+    mockUserStorageGet.mockReturnValue(null);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
@@ -71,35 +81,24 @@ describe("useAuth", () => {
 
     expect(result.current.isAuthenticated).toBe(false);
     expect(result.current.isLoading).toBe(false);
+    expect(result.current.user).toBeNull();
   });
 
-  it("returns isLoading true when token exists and loading", () => {
+  it("returns isAuthenticated false when token exists but no user", () => {
     mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: true,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
-    });
+    mockUserStorageGet.mockReturnValue(null);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
-    expect(result.current.isLoading).toBe(true);
     expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.user).toBeNull();
   });
 
   it("returns isAuthenticated true when token and user exist", () => {
     mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: { id: 1, login_id: "testuser" },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
-    });
+    mockUserStorageGet.mockReturnValue({ id: 1, login_id: "testuser" });
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
@@ -110,51 +109,9 @@ describe("useAuth", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("returns isAuthenticated false on 401 error", () => {
+  it("logout removes token and user, clears query client, and navigates to login", () => {
     mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: true,
-      error: { status: 401 },
-      refetch: mockRefetch,
-    });
-
-    const { result } = renderHook(() => useAuth(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.isError).toBe(true);
-  });
-
-  it("returns isAuthenticated false on 403 error", () => {
-    mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: true,
-      error: { status: 403 },
-      refetch: mockRefetch,
-    });
-
-    const { result } = renderHook(() => useAuth(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.isError).toBe(true);
-  });
-
-  it("logout removes token and navigates to login", async () => {
-    mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: { id: 1, login_id: "testuser" },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
-    });
+    mockUserStorageGet.mockReturnValue({ id: 1, login_id: "testuser" });
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
@@ -165,62 +122,75 @@ describe("useAuth", () => {
     });
 
     expect(mockTokenRemove).toHaveBeenCalled();
+    expect(mockUserStorageRemove).toHaveBeenCalled();
+    expect(mockQueryClientClear).toHaveBeenCalled();
     expect(mockPush).toHaveBeenCalledWith("/auth/login");
   });
 
-  it("refreshUser calls refetch", async () => {
+  it("refreshUser fetches and stores user data", async () => {
+    const mockUser = { id: 1, login_id: "testuser", nickname: "Test" };
     mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: { id: 1, login_id: "testuser" },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
+    mockUserStorageGet.mockReturnValue(mockUser);
+    mockGetCurrentUser.mockResolvedValue(mockUser);
+
+    const { result } = renderHook(() => useAuth(), {
+      wrapper: createWrapper(),
     });
+
+    let refreshResult;
+    await act(async () => {
+      refreshResult = await result.current.refreshUser();
+    });
+
+    expect(mockGetCurrentUser).toHaveBeenCalled();
+    expect(mockUserStorageSet).toHaveBeenCalledWith(mockUser);
+    expect(refreshResult).toEqual({ data: mockUser });
+  });
+
+  it("refreshUser removes token and user on error", async () => {
+    const mockError = new Error("Auth failed");
+    mockTokenExists.mockReturnValue(true);
+    mockUserStorageGet.mockReturnValue({ id: 1, login_id: "testuser" });
+    mockGetCurrentUser.mockRejectedValue(mockError);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
     await act(async () => {
-      await result.current.refreshUser();
+      try {
+        await result.current.refreshUser();
+      } catch (error) {
+        // Expected error
+        expect((error as Error).message).toBe("Auth failed");
+      }
     });
 
-    expect(mockRefetch).toHaveBeenCalled();
+    expect(mockTokenRemove).toHaveBeenCalled();
+    expect(mockUserStorageRemove).toHaveBeenCalled();
   });
 
-  it("returns isLoading false when no token even if query is loading", () => {
-    mockTokenExists.mockReturnValue(false);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: true,
-      isError: false,
-      error: null,
-      refetch: mockRefetch,
-    });
+  it("returns isLoading false always (localStorage based)", () => {
+    mockTokenExists.mockReturnValue(true);
+    mockUserStorageGet.mockReturnValue({ id: 1, login_id: "testuser" });
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
+    // localStorage 기반이므로 항상 isLoading은 false
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("returns isError false for non-auth errors", () => {
+  it("returns isError false always (no error state in localStorage)", () => {
     mockTokenExists.mockReturnValue(true);
-    mockUseCurrentUser.mockReturnValue({
-      data: null,
-      isLoading: false,
-      isError: true,
-      error: { status: 500 },
-      refetch: mockRefetch,
-    });
+    mockUserStorageGet.mockReturnValue({ id: 1, login_id: "testuser" });
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: createWrapper(),
     });
 
-    // 500 is not an auth error (401/403)
+    // localStorage 기반이므로 항상 isError는 false
     expect(result.current.isError).toBe(false);
   });
 });

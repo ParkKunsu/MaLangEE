@@ -24,12 +24,12 @@ export default defineConfig({
         "src/app/**",
       ],
       thresholds: {
-        // Phase 5 목표: 핵심 코드 테스트 완료
+        // 단위 테스트 커버리지 threshold
         // WebSocket, API 클라이언트 등 통합 테스트 필요 영역은 E2E로 커버
-        statements: 20,
-        branches: 60,
-        functions: 35,
-        lines: 20,
+        statements: 25,
+        branches: 75,
+        functions: 55,
+        lines: 25,
       },
     },
   },

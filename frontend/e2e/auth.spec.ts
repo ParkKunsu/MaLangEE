@@ -163,8 +163,9 @@ test.describe("로그인 페이지", () => {
   test("바로 체험해보기 버튼 클릭 시 시나리오 선택 페이지로 이동해야 함", async ({
     page,
   }) => {
-    await page.getByRole("button", { name: "바로 체험해보기" }).click();
-    await expect(page).toHaveURL(/\/scenario-select/);
+    // Button asChild를 사용하므로 실제로는 링크로 렌더링됨
+    await page.getByRole("link", { name: "바로 체험해보기" }).click();
+    await expect(page).toHaveURL(/\/chat\/scenario-select/);
   });
 
   test("이메일/비밀번호 찾기 클릭 시 준비중 모달이 표시되어야 함", async ({
@@ -369,10 +370,10 @@ test.describe("게스트 접근", () => {
     page,
   }) => {
     // 시나리오 선택 페이지는 게스트도 접근 가능
-    await page.goto("/scenario-select");
+    await page.goto("/chat/scenario-select");
 
-    // 페이지가 정상적으로 로드되어야 함
-    await expect(page).toHaveURL(/\/scenario-select/);
+    // 페이지가 정상적으로 로드되어야 함 (topic-suggestion으로 리다이렉트)
+    await expect(page).toHaveURL(/\/chat\/scenario-select/);
   });
 
   test("홈페이지 접근 시 로그인 페이지로 리다이렉트되어야 함", async ({
@@ -395,7 +396,7 @@ test.describe("로그아웃", () => {
   test("로그아웃 페이지 접근 시 토큰과 사용자 정보가 삭제되고 로그인 페이지로 이동해야 함", async ({
     page,
   }) => {
-    await page.goto("/logout");
+    await page.goto("/auth/logout");
 
     // 로그인 페이지로 리다이렉트 확인
     await expect(page).toHaveURL(/\/auth\/login/, { timeout: 10000 });

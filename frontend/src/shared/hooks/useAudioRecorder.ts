@@ -17,6 +17,30 @@ export function useAudioRecorder({
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
 
+  const stopRecording = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (processorRef.current && audioContextRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    setIsRecording(false);
+  }, []);
+
   const startRecording = useCallback(async () => {
     if (streamRef.current) return;
 
@@ -24,10 +48,17 @@ export function useAudioRecorder({
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         return navigator.mediaDevices.getUserMedia(constraints);
       }
+      type LegacyGetUserMedia = (
+        constraints: MediaStreamConstraints,
+        successCallback: (stream: MediaStream) => void,
+        errorCallback: (error: Error) => void
+      ) => void;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const legacyNav = navigator as unknown as Record<string, LegacyGetUserMedia | undefined>;
       const legacyApi =
-        (navigator as any).webkitGetUserMedia ||
-        (navigator as any).mozGetUserMedia ||
-        (navigator as any).msGetUserMedia;
+        legacyNav.webkitGetUserMedia ||
+        legacyNav.mozGetUserMedia ||
+        legacyNav.msGetUserMedia;
       if (legacyApi) {
         return new Promise((resolve, reject) => {
           legacyApi.call(navigator, constraints, resolve, reject);
@@ -56,7 +87,8 @@ export function useAudioRecorder({
 
       streamRef.current = stream;
 
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       audioContextRef.current = new AudioContextClass({ sampleRate });
 
       const source = audioContextRef.current.createMediaStreamSource(stream);
@@ -99,31 +131,7 @@ export function useAudioRecorder({
       }
       stopRecording();
     }
-  }, [onAudioData, onVolumeChange, sampleRate]);
-
-  const stopRecording = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    
-    if (processorRef.current && audioContextRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
-    
-    if (sourceRef.current) {
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    
-    setIsRecording(false);
-  }, []);
+  }, [onAudioData, onVolumeChange, sampleRate, stopRecording]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {

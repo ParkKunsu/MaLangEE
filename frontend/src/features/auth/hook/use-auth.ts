@@ -46,9 +46,15 @@ export function useAuth() {
   const isAuthenticated = hasToken && !!user;
 
   const logout = useCallback(() => {
+    // 모든 스토리지 데이터 제거
     tokenStorage.remove();
     userStorage.remove();
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // React Query 캐시 초기화
     queryClient.clear();
+
     router.push("/auth/login");
   }, [queryClient, router]);
 

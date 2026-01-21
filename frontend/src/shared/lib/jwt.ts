@@ -5,7 +5,7 @@
 interface JWTPayload {
   sub: string; // 사용자 ID
   exp: number; // 만료 시간 (Unix timestamp)
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

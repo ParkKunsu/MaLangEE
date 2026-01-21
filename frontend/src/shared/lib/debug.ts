@@ -13,7 +13,7 @@ export const isDev = (): boolean => {
 /**
  * 개발 환경에서만 console.log 출력
  */
-export const debugLog = (...args: any[]): void => {
+export const debugLog = (...args: unknown[]): void => {
   if (isDev()) {
     console.log(...args);
   }
@@ -22,7 +22,7 @@ export const debugLog = (...args: any[]): void => {
 /**
  * 개발 환경에서만 console.error 출력
  */
-export const debugError = (...args: any[]): void => {
+export const debugError = (...args: unknown[]): void => {
   if (isDev()) {
     console.error(...args);
   }
@@ -31,7 +31,7 @@ export const debugError = (...args: any[]): void => {
 /**
  * 개발 환경에서만 console.warn 출력
  */
-export const debugWarn = (...args: any[]): void => {
+export const debugWarn = (...args: unknown[]): void => {
   if (isDev()) {
     console.warn(...args);
   }
@@ -40,7 +40,7 @@ export const debugWarn = (...args: any[]): void => {
 /**
  * 개발 환경에서만 console.info 출력
  */
-export const debugInfo = (...args: any[]): void => {
+export const debugInfo = (...args: unknown[]): void => {
   if (isDev()) {
     console.info(...args);
   }
@@ -49,14 +49,14 @@ export const debugInfo = (...args: any[]): void => {
 /**
  * 프로덕션에서도 항상 출력 (중요한 에러나 경고)
  */
-export const prodLog = (...args: any[]): void => {
+export const prodLog = (...args: unknown[]): void => {
   console.log(...args);
 };
 
-export const prodError = (...args: any[]): void => {
+export const prodError = (...args: unknown[]): void => {
   console.error(...args);
 };
 
-export const prodWarn = (...args: any[]): void => {
+export const prodWarn = (...args: unknown[]): void => {
   console.warn(...args);
 };

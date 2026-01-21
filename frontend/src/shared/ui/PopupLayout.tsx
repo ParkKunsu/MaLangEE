@@ -34,6 +34,8 @@ export const PopupLayout: React.FC<PopupLayoutProps> = ({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // 클라이언트 사이드 마운트 확인 (createPortal을 위한 필수 패턴)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     // 팝업이 열릴 때 body 스크롤 방지
     document.body.style.overflow = "hidden";

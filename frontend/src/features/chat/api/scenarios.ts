@@ -30,7 +30,7 @@ export interface CreateScenarioRequest {
 // 시나리오 통계 타입
 export interface ScenarioAnalytics {
   // TODO: 실제 응답 구조에 맞춰 수정 필요 (예: 단어 TOP 20)
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // API 키

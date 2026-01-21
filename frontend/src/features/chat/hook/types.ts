@@ -80,6 +80,8 @@ export interface SessionReport {
   session_id: string;
   total_duration_sec: number;
   user_speech_duration_sec: number;
+  started_at?: string;
+  ended_at?: string;
   messages: Array<{
     role: string;
     content: string;
@@ -155,6 +157,7 @@ export interface BaseWebSocketOptions {
   autoConnect?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ScenarioWebSocketOptions extends BaseWebSocketOptions {
   // 주제 정하기는 추가 옵션 없음
 }
