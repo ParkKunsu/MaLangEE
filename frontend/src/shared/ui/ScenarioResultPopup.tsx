@@ -7,11 +7,11 @@ import { Button } from "./Button";
 
 export interface ScenarioResult {
   /** 대화 장소 */
-  place?: string;
+  place?: string | null;
   /** 대화 상대 */
-  conversationPartner?: string;
+  conversationPartner?: string | null;
   /** 대화 목표/미션 */
-  conversationGoal?: string;
+  conversationGoal?: string | null;
 }
 
 interface ScenarioResultPopupProps {

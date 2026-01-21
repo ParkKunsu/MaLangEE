@@ -60,10 +60,10 @@ describe("useAudioRecorder", () => {
     };
     mockAudioContext.createScriptProcessor.mockReturnValue(mockProcessor);
 
-    // @ts-ignore
-    global.AudioContext = vi.fn(() => mockAudioContext);
-    // @ts-ignore
-    global.window = {
+    // Mock AudioContext for testing
+    (global as Record<string, unknown>).AudioContext = vi.fn(() => mockAudioContext);
+    // Mock window for testing
+    (global as Record<string, unknown>).window = {
       AudioContext: vi.fn(() => mockAudioContext),
       alert: vi.fn(),
     };

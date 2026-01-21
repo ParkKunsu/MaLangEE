@@ -126,7 +126,6 @@ describe("useRegister", () => {
       login_id: "new@test.com",
       nickname: "NewUser",
       password: "Password1!",
-      confirmPassword: "Password1!",
     });
 
     await waitFor(() => {
@@ -243,7 +242,7 @@ describe("useUpdateNickname", () => {
       wrapper: createWrapper(),
     });
 
-    result.current.mutate({ new_nickname: "NewNickname" });
+    result.current.mutate({ current_nickname: "OldNickname", new_nickname: "NewNickname" });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);

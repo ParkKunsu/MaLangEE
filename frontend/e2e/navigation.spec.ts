@@ -19,8 +19,14 @@ async function mockUserApi(page: Page) {
   });
 }
 
+interface MockChatSession {
+  session_id: string;
+  title?: string;
+  started_at: string;
+}
+
 // 채팅 세션 API 모킹 헬퍼
-async function mockChatSessionsApi(page: Page, sessions: any[] = []) {
+async function mockChatSessionsApi(page: Page, sessions: MockChatSession[] = []) {
   await page.route("**/api/v1/chat/sessions*", async (route) => {
     await route.fulfill({
       status: 200,

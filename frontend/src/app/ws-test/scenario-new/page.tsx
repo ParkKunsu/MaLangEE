@@ -131,11 +131,11 @@ export default function ScenarioTestPage() {
                   </div>
                   <div>
                     <span className="font-semibold">상대:</span>{" "}
-                    {state.scenarioResult.conversation_partner || "-"}
+                    {state.scenarioResult.conversationPartner || "-"}
                   </div>
                   <div>
                     <span className="font-semibold">목표:</span>{" "}
-                    {state.scenarioResult.conversation_goal || "-"}
+                    {state.scenarioResult.conversationGoal || "-"}
                   </div>
                   <div>
                     <span className="font-semibold">세션ID:</span>{" "}

@@ -51,8 +51,8 @@ export default function ConversationPage() {
   const [selectedVoice, setSelectedVoice] = useState("shimmer");
   const [showSubtitle, setShowSubtitle] = useState(true);
 
-  // 연결 성공 여부 추적
-  const wasConnectedRef = useRef(false);
+  // 연결 성공 여부 추적 (ref 대신 state로 변경하여 렌더링 중 안전하게 접근)
+  const [wasConnected, setWasConnected] = useState(false);
 
   useEffect(() => {
     const voice = localStorage.getItem("selectedVoice");
@@ -78,10 +78,10 @@ export default function ConversationPage() {
   }, [disconnect]);
 
   useEffect(() => {
-    if (state.isConnected) {
-      wasConnectedRef.current = true;
+    if (state.isConnected && !wasConnected) {
+      setWasConnected(true);
     }
-  }, [state.isConnected]);
+  }, [state.isConnected, wasConnected]);
 
   // 힌트 관련 상태
   const [showHintPrompt, setShowHintPrompt] = useState(false);
@@ -245,7 +245,7 @@ export default function ConversationPage() {
   // 메시지 상태
   const messageStates = [
     {
-      condition: () => !state.isConnected && wasConnectedRef.current,
+      condition: () => !state.isConnected && wasConnected,
       title: "연결에 문제가 있어요",
       desc: "잠시 후 다시 시도해주세요",
     },
@@ -270,7 +270,7 @@ export default function ConversationPage() {
       desc: showSubtitle && state.aiMessageKR ? state.aiMessageKR : "말랭이가 듣고 있어요",
     },
     {
-      condition: () => !state.isConnected && !wasConnectedRef.current,
+      condition: () => !state.isConnected && !wasConnected,
       title: "말랭이와 연결하고 있어요",
       desc: "잠시만 기다려주세요",
     },

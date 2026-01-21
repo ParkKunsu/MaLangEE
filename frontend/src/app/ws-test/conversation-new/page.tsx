@@ -302,8 +302,8 @@ export default function ConversationTestPage() {
                 <h3 className="text-sm font-bold text-blue-700 mb-2">세션 정보</h3>
                 <div className="space-y-1 text-xs">
                   <div><span className="font-semibold">세션 ID:</span> {state.sessionReport.session_id?.substring(0, 8)}...</div>
-                  <div><span className="font-semibold">시작:</span> {new Date(state.sessionReport.started_at).toLocaleString()}</div>
-                  <div><span className="font-semibold">종료:</span> {new Date(state.sessionReport.ended_at).toLocaleString()}</div>
+                  {state.sessionReport.started_at && <div><span className="font-semibold">시작:</span> {new Date(state.sessionReport.started_at).toLocaleString()}</div>}
+                  {state.sessionReport.ended_at && <div><span className="font-semibold">종료:</span> {new Date(state.sessionReport.ended_at).toLocaleString()}</div>}
                   <div><span className="font-semibold">총 대화 시간:</span> {Math.floor(state.sessionReport.total_duration_sec || 0)}초</div>
                   <div><span className="font-semibold">발화 시간:</span> {Math.floor(state.sessionReport.user_speech_duration_sec || 0)}초</div>
                   <div><span className="font-semibold">메시지 수:</span> {state.sessionReport.messages?.length || 0}개</div>

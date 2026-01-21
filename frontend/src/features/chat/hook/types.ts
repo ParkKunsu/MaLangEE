@@ -80,6 +80,8 @@ export interface SessionReport {
   session_id: string;
   total_duration_sec: number;
   user_speech_duration_sec: number;
+  started_at?: string;
+  ended_at?: string;
   messages: Array<{
     role: string;
     content: string;

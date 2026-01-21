@@ -22,7 +22,7 @@ describe("Card Components", () => {
     });
 
     it("should forward ref", () => {
-      const ref = { current: null } as React.RefObject<HTMLDivElement>;
+      const ref = { current: null } as unknown as React.RefObject<HTMLDivElement>;
       render(<Card ref={ref}>Content</Card>);
       expect(ref.current).toBeInstanceOf(HTMLDivElement);
     });

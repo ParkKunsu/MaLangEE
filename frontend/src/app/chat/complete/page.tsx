@@ -1,37 +1,28 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Button, MalangEE } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat/api/use-chat-sessions";
 
+// 초기 sessionId를 가져오는 함수 (클라이언트 전용)
+function getInitialSessionId(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("chatSessionId");
+}
+
 export default function ChatCompletePage() {
   const router = useRouter();
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [totalDuration, setTotalDuration] = useState(0);
-  const [userSpeakDuration, setUserSpeakDuration] = useState(0);
 
-  // 로컬 스토리지에서 sessionId 가져오기
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedSessionId = localStorage.getItem("chatSessionId");
-      setSessionId(storedSessionId);
-    }
-  }, []);
+  // 컴포넌트 마운트 시점에 sessionId 결정 (effect 없이)
+  const sessionId = useMemo(() => getInitialSessionId(), []);
 
   // 세션 상세 정보 조회
-  const { data: sessionDetail, isLoading } = useGetChatSession(sessionId || "");
+  const { data: sessionDetail, isLoading } = useGetChatSession(sessionId);
 
-  // 세션 정보가 로드되면 상태 업데이트
-  useEffect(() => {
-    if (sessionDetail) {
-      // any 타입으로 캐스팅하여 API 응답 구조에 유연하게 대응
-      // 실제 API 응답 구조: { total_duration_sec, user_speech_duration_sec, ... }
-      const detail = sessionDetail as any;
-      setTotalDuration(detail.total_duration_sec || 0);
-      setUserSpeakDuration(detail.user_speech_duration_sec || 0);
-    }
-  }, [sessionDetail]);
+  // 세션 정보에서 직접 duration 값 추출 (상태 없이)
+  const totalDuration = sessionDetail?.total_duration_sec ?? 0;
+  const userSpeakDuration = sessionDetail?.user_speech_duration_sec ?? 0;
 
   useEffect(() => {
     // 페이지 진입 시 음소거 이벤트 발송

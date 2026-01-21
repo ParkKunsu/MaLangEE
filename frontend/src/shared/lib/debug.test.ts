@@ -11,7 +11,7 @@ import {
 } from "./debug";
 
 describe("debug utilities", () => {
-  const originalNodeEnv = process.env.NODE_ENV;
+  const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.spyOn(console, "log").mockImplementation(() => {});
@@ -22,35 +22,36 @@ describe("debug utilities", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-    process.env.NODE_ENV = originalNodeEnv;
+    vi.unstubAllEnvs();
+    process.env = { ...originalEnv };
   });
 
   describe("isDev", () => {
     it("should return true in development environment", () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       expect(isDev()).toBe(true);
     });
 
     it("should return false in production environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       expect(isDev()).toBe(false);
     });
 
     it("should return false in test environment", () => {
-      process.env.NODE_ENV = "test";
+      vi.stubEnv("NODE_ENV", "test");
       expect(isDev()).toBe(false);
     });
   });
 
   describe("debugLog", () => {
     it("should log in development environment", () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       debugLog("test message", { data: 123 });
       expect(console.log).toHaveBeenCalledWith("test message", { data: 123 });
     });
 
     it("should not log in production environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       debugLog("test message");
       expect(console.log).not.toHaveBeenCalled();
     });
@@ -58,7 +59,7 @@ describe("debug utilities", () => {
 
   describe("debugError", () => {
     it("should log error in development environment", () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       debugError("error message", new Error("test"));
       expect(console.error).toHaveBeenCalledWith(
         "error message",
@@ -67,7 +68,7 @@ describe("debug utilities", () => {
     });
 
     it("should not log error in production environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       debugError("error message");
       expect(console.error).not.toHaveBeenCalled();
     });
@@ -75,13 +76,13 @@ describe("debug utilities", () => {
 
   describe("debugWarn", () => {
     it("should log warning in development environment", () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       debugWarn("warning message");
       expect(console.warn).toHaveBeenCalledWith("warning message");
     });
 
     it("should not log warning in production environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       debugWarn("warning message");
       expect(console.warn).not.toHaveBeenCalled();
     });
@@ -89,13 +90,13 @@ describe("debug utilities", () => {
 
   describe("debugInfo", () => {
     it("should log info in development environment", () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       debugInfo("info message");
       expect(console.info).toHaveBeenCalledWith("info message");
     });
 
     it("should not log info in production environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       debugInfo("info message");
       expect(console.info).not.toHaveBeenCalled();
     });
@@ -103,11 +104,11 @@ describe("debug utilities", () => {
 
   describe("prodLog", () => {
     it("should always log regardless of environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       prodLog("important message");
       expect(console.log).toHaveBeenCalledWith("important message");
 
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       prodLog("dev message");
       expect(console.log).toHaveBeenCalledWith("dev message");
     });
@@ -115,7 +116,7 @@ describe("debug utilities", () => {
 
   describe("prodError", () => {
     it("should always log error regardless of environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       prodError("critical error");
       expect(console.error).toHaveBeenCalledWith("critical error");
     });
@@ -123,7 +124,7 @@ describe("debug utilities", () => {
 
   describe("prodWarn", () => {
     it("should always log warning regardless of environment", () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       prodWarn("important warning");
       expect(console.warn).toHaveBeenCalledWith("important warning");
     });
