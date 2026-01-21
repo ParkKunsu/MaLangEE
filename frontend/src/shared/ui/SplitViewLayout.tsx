@@ -67,13 +67,13 @@ export const SplitViewLayout = ({
             <>
               <div
                 id="sv-logo"
-                className="fixed left-0 top-0 z-50 flex h-[80px] w-full items-center  justify-center bg-white/50 backdrop-blur-sm md:static md:mb-4 md:block md:h-auto md:w-auto md:bg-transparent md:p-0 md:text-lg md:font-semibold md:text-[#5F51D9]"
+                className="fixed left-0 top-0 z-50 flex h-[50px] w-full items-center  justify-center bg-white/50 backdrop-blur-sm md:static md:mb-4 md:block md:h-auto md:w-auto md:bg-transparent md:p-0 md:text-lg md:font-semibold md:text-[#5F51D9]"
               >
                 <Link href={"/dashboard"} className="inline-block">
                   <Image src="/images/logo.png" alt="MalangEE Logo" width={100} height={50} />
                 </Link>
               </div>
-              <div className="flex w-full items-center justify-center md:justify-start p-0 sm:p-10 ">
+              <div className="flex w-full items-center justify-center md:justify-start md:p-0 sm:p-10  ">
                 <MalangEE size={120} />
               </div>
             </>
