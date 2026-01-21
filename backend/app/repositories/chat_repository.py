@@ -107,7 +107,20 @@ class ChatRepository:
                 db_session.messages.append(db_msg)
         
         await self.db.commit()
-        await self.db.refresh(db_session)
+        # [Fix] Async Refresh Issue: refresh() clears relationships.
+        # We must confirm relationships (especially messages) are loaded for Pydantic.
+        # Instead of refresh, we re-fetch with options.
+        stmt = (
+            select(ConversationSession)
+            .where(ConversationSession.session_id == db_session.session_id)
+            .options(
+                selectinload(ConversationSession.messages),
+                selectinload(ConversationSession.analytics)
+            )
+        )
+        result = await self.db.execute(stmt)
+        db_session = result.scalars().first()
+        
         return db_session
 
     async def get_recent_session_by_user(self, user_id: int) -> Optional[ConversationSession]:
