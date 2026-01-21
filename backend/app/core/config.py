@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-5"
 
+    # LangSmith (LLM Observability)
+    LANGCHAIN_TRACING_V2: bool = False  # True로 설정하면 트레이싱 활성화
+    LANGCHAIN_API_KEY: Optional[str] = None
+    LANGCHAIN_PROJECT: str = "malangee"
+
     # Session Cleanup Configuration
     SESSION_CLEANUP_ENABLED: bool = True  # 세션 자동 정리 활성화 여부
     SESSION_CLEANUP_INTERVAL_SECONDS: int = 3600  # 정리 주기 (기본 1시간)

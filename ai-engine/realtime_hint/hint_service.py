@@ -6,38 +6,66 @@ hint_service.py - 실시간 대화 힌트 생성 서비스
 
 [주요 기능]
 대화 맥락과 시나리오 컨텍스트를 받아 적절한 응답 힌트 3개 생성
+
+[변경 사항]
+- LangChain 제거, OpenAI SDK 직접 사용
+- LangSmith traceable 데코레이터로 트레이싱
+- 프롬프트는 hint_prompts.yaml에서 로드
 """
 
 import json
 import logging
+import os
+from pathlib import Path
+
+import yaml
+from openai import OpenAI
+from langsmith import traceable, wrappers
 
 from app.core.config import settings
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
+
+# LangSmith 트레이싱 설정
+if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_API_KEY"] = settings.LANGCHAIN_API_KEY
+    os.environ["LANGCHAIN_PROJECT"] = settings.LANGCHAIN_PROJECT
+    logging.getLogger(__name__).info(f"LangSmith 트레이싱 활성화: {settings.LANGCHAIN_PROJECT}")
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are an English conversation tutor helping a Korean learner practice English.
+# 프롬프트 파일 경로
+PROMPTS_PATH = Path(__file__).parent / "hint_prompts.yaml"
 
-Based on the conversation context, suggest 3 natural English responses the learner could say next.
+# OpenAI 클라이언트 (Lazy Initialization)
+_client = None
+_prompts = None
 
-Guidelines:
-- Suggestions should be appropriate for the conversation flow
-- Vary the difficulty: 1 simple, 1 intermediate, 1 advanced
-- Keep responses concise (1-2 sentences each)
-- Make them sound natural, not textbook-like
 
-{scenario_context}
+def _load_prompts() -> dict:
+    """YAML 파일에서 프롬프트를 로드합니다."""
+    global _prompts
+    if _prompts is None:
+        try:
+            with open(PROMPTS_PATH, "r", encoding="utf-8") as f:
+                _prompts = yaml.safe_load(f)
+                logger.info(f"프롬프트 파일 로드 완료: {PROMPTS_PATH}")
+        except FileNotFoundError:
+            logger.error(f"프롬프트 파일을 찾을 수 없음: {PROMPTS_PATH}")
+            _prompts = {}
+    return _prompts
 
-Output format (JSON array only, no explanation):
-["response 1", "response 2", "response 3"]
-"""
 
-USER_PROMPT = """Recent conversation:
-{conversation}
-
-Suggest 3 possible responses for the learner:"""
+def _get_client() -> OpenAI:
+    """OpenAI 클라이언트 Lazy Initialization (LangSmith 래핑)"""
+    global _client
+    if _client is None:
+        base_client = OpenAI(api_key=settings.OPENAI_API_KEY)
+        # LangSmith 트레이싱이 활성화된 경우 래핑
+        if settings.LANGCHAIN_TRACING_V2 and settings.LANGCHAIN_API_KEY:
+            _client = wrappers.wrap_openai(base_client)
+        else:
+            _client = base_client
+    return _client
 
 
 def _format_conversation(messages: list[dict]) -> str:
@@ -70,6 +98,7 @@ def _format_scenario_context(context: dict | None) -> str:
     return ""
 
 
+@traceable(name="generate_hints")
 def generate_hints(messages: list[dict], context: dict | None = None) -> list[str]:
     """
     대화 맥락을 받아 힌트 3개를 생성합니다.
@@ -88,17 +117,28 @@ def generate_hints(messages: list[dict], context: dict | None = None) -> list[st
         return []
 
     try:
-        llm = ChatOpenAI(model=settings.OPENAI_MODEL, temperature=0.7, api_key=settings.OPENAI_API_KEY)
-
-        prompt = ChatPromptTemplate.from_messages([("system", SYSTEM_PROMPT), ("user", USER_PROMPT)])
-
-        chain = prompt | llm | StrOutputParser()
+        prompts = _load_prompts()
+        client = _get_client()
 
         conversation_text = _format_conversation(messages)
         scenario_context = _format_scenario_context(context)
 
+        system_template = prompts.get("hint_system", "")
+        user_template = prompts.get("hint_user", "{conversation}")
+
+        system_prompt = system_template.format(scenario_context=scenario_context)
+        user_prompt = user_template.format(conversation=conversation_text)
+
         logger.info("LLM 호출 중...")
-        result = chain.invoke({"conversation": conversation_text, "scenario_context": scenario_context})
+        response = client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+
+        result = response.choices[0].message.content
 
         # JSON 파싱
         hints = json.loads(result)
