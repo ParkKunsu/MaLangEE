@@ -21,3 +21,5 @@ export { GlobalPopup } from "./GlobalPopup";
 export { ConfirmPopup } from "./ConfirmPopup";
 export { ScenarioResultPopup } from "./ScenarioResultPopup";
 export type { ScenarioResult } from "./ScenarioResultPopup";
+export { SettingsPopup, SettingsTrigger, VOICE_OPTIONS } from "./SettingsPopup";
+export type { SettingsPopupProps, VoiceOption } from "./SettingsPopup";

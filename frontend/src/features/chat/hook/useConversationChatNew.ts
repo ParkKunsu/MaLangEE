@@ -23,6 +23,8 @@ export interface ConversationChatStateNew {
   sessionReport: SessionReport | null;
   feedback?: string;
   scenarioSummary?: string;
+  /** AI 오디오 완료 시점 (힌트 타이머용) */
+  lastAiAudioDoneAt: number | null;
 }
 
 export function useConversationChatNew(sessionId: string, voice: string = "alloy") {
@@ -33,6 +35,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
   const [sessionReport, setSessionReport] = useState<SessionReport | null>(null);
   const [feedback, setFeedback] = useState<string | undefined>(undefined);
   const [scenarioSummary, setScenarioSummary] = useState<string | undefined>(undefined);
+  const [lastAiAudioDoneAt, setLastAiAudioDoneAt] = useState<number | null>(null);
 
   // WebSocket URL 생성
   const getWebSocketUrl = useCallback(() => {
@@ -101,6 +104,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
 
         case "audio.done":
           base.addLog("AI audio stream completed");
+          setLastAiAudioDoneAt(Date.now());
           break;
 
         case "transcript.done":
@@ -116,6 +120,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
           base.addLog("User speech started (VAD)");
           base.stopAudio();
           base.setIsUserSpeaking(true);
+          setLastAiAudioDoneAt(null); // 사용자 발화 시작 시 힌트 타이머 리셋
           break;
 
         case "speech.stopped":
@@ -294,6 +299,7 @@ export function useConversationChatNew(sessionId: string, voice: string = "alloy
       sessionReport,
       feedback,
       scenarioSummary,
+      lastAiAudioDoneAt,
     },
     connect: base.connect,
     disconnect,
