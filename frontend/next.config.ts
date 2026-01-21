@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://malangee.kro.kr";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://49.50.137.35:8080";
     return [
       {
         source: "/api/v1/:path*",
