@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Clock, Mic } from "lucide-react";
 import { Button, MalangEE } from "@/shared/ui";
 import { useGetChatSession } from "@/features/chat/api/use-chat-sessions";
 
@@ -47,18 +46,19 @@ export default function ChatCompletePage() {
   const handleGoHome = () => {
     // 리포트 데이터 정리 (필요하다면)
     localStorage.removeItem("chatReport");
-    // 세션 ID 정리 (선택 사항)
-    // localStorage.removeItem("chatSessionId");
+    // 세션 ID 정리
+    localStorage.removeItem("chatSessionId");
 
     // 대시보드로 이동
     router.push("/dashboard");
   };
 
-  // 초를 분:초 형식으로 변환 (반올림 적용)
+  // 초를 "00시간 00분 00초" 형식으로 변환
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60); // 초 단위 반올림
-    return `${mins}분 ${secs}초`;
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.round(seconds % 60);
+    return `${String(hours).padStart(2, "0")}시간 ${String(mins).padStart(2, "0")}분 ${String(secs).padStart(2, "0")}초`;
   };
 
   if (isLoading && sessionId) {
@@ -86,43 +86,30 @@ export default function ChatCompletePage() {
         <h1 className="scenario-title">오늘도 잘 말했어요!</h1>
       </div>
 
-      {/* Stats Card */}
-      <div className="mb-8 w-full max-w-md">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8 text-center">
-          {/* Total Duration */}
-          <div className="flex items-center gap-4 justify-center md:justify-start md:flex-col md:gap-4">
-            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
-              <Clock className="h-7 w-7 text-blue-600" strokeWidth={2} />
-            </div>
-            <div className="flex flex-col items-start md:items-center">
-              <p className="mb-1 text-sm font-medium text-gray-600">총 대화 시간</p>
-              <p className="text-2xl font-bold text-gray-900">{formatTime(totalDuration)}</p>
-            </div>
+      {/* Stats - 스크린샷에 맞는 단순한 레이아웃 */}
+      <div className="mb-8 w-full max-w-sm text-center">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-4">
+            <span className="text-sm font-medium text-gray-600">총 대화 시간</span>
+            <span className="text-sm font-semibold text-gray-900">{formatTime(totalDuration)}</span>
           </div>
-
-          {/* User Speak Duration */}
-          <div className="flex items-center gap-4 justify-center md:justify-start md:flex-col md:gap-4">
-            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
-              <Mic className="h-7 w-7 text-green-600" strokeWidth={2} />
-            </div>
-            <div className="flex flex-col items-start md:items-center">
-              <p className="mb-1 text-sm font-medium text-gray-600">내가 말한 시간</p>
-              <p className="text-2xl font-bold text-gray-900">{formatTime(userSpeakDuration)}</p>
-            </div>
+          <div className="flex items-center justify-between px-4">
+            <span className="text-sm font-medium text-gray-600">내가 말한 시간</span>
+            <span className="text-sm font-semibold text-gray-900">{formatTime(userSpeakDuration)}</span>
           </div>
         </div>
       </div>
 
       {/* Button */}
-      <div className="mt-4 w-full max-w-md">
-        <div className="flex w-full justify-center">
-          <Button
-            onClick={handleGoHome}
-            className="h-14 w-full rounded-full bg-[#7666f5] text-lg font-semibold text-white shadow-[0_10px_30px_rgba(118,102,245,0.35)] transition-all hover:bg-[#6758e8]"
-          >
-            처음으로 돌아가기
-          </Button>
-        </div>
+      <div className="mt-4 w-full max-w-sm">
+        <Button
+          onClick={handleGoHome}
+          variant="primary"
+          size="lg"
+          fullWidth
+        >
+          처음으로 돌아가기
+        </Button>
       </div>
     </>
   );
