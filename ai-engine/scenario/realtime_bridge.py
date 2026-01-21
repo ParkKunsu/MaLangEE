@@ -62,10 +62,19 @@ async def handle_client(client_ws, user_id: Optional[int] = None) -> None:
 
     use_server_vad = True
     session_config = {
+        "modalities": ["audio", "text"],
+        "voice": "alloy",
         "input_audio_format": "pcm16",
         "output_audio_format": "pcm16",
-        "turn_detection": {"type": "server_vad", "create_response": False, "threshold": 0.7},
+        "turn_detection": {
+            "type": "server_vad",
+            "create_response": False,
+            "threshold": 0.7,
+            "prefix_padding_ms": 300,
+            "silence_duration_ms": 1500,
+        },
         "input_audio_transcription": {"model": "whisper-1"},
+        "max_response_output_tokens": 500,
     }
 
     openai_client = RealtimeWebSocketClient(
