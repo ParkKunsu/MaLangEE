@@ -140,7 +140,7 @@ export default function DashboardPage() {
       // 대화 기록이 있으면 마지막 세션 ID 저장 후 welcome-back으로 이동
       const lastSession = allSessions[0]; // 최신순 정렬 가정
       localStorage.setItem("chatSessionId", lastSession.id);
-      router.push("/chat/welcome-back");
+      router.push("/chat/welcome-back?sessionId=" + lastSession.id);
     } else {
       // 대화 기록이 없으면 시나리오 선택으로 이동
       // 이전 세션 ID가 남아있을 수 있으므로 제거

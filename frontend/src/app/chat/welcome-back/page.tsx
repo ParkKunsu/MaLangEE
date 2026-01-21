@@ -33,14 +33,6 @@ function WelcomeBackPage() {
     }
   }, [currentUser]);
 
-  if (sessionId == null) {
-    sessionId = localStorage.getItem("chatSessionId");
-    // 2. 세션 ID가 없을 경우 최근 세션 조회
-    //const { data: sessionDetail, isLoading: isLoading } = useGetRecentSession();
-  }else{
-    localStorage.setItem("chatSessionId", sessionId);
-  }
-
   // 1. 특정 세션 ID가 있을 경우 해당 세션 조회
   const { data: sessionDetail, isLoading } = useGetChatSession(sessionId);
 
