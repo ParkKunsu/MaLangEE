@@ -40,6 +40,16 @@ export default function TopicSuggestionPage() {
   const [voiceIndex, setVoiceIndex] = useState(1);
 
   useEffect(() => {
+    // 페이지 로드 시 이전 세션 정보 초기화
+    localStorage.removeItem("chatSessionId");
+    localStorage.removeItem("conversationGoal");
+    localStorage.removeItem("conversationPartner");
+    localStorage.removeItem("place");
+    localStorage.removeItem("selectedVoice");
+    localStorage.removeItem("subtitleEnabled");
+  }, []);
+
+  useEffect(() => {
     if (scenarios && scenarios.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedScenarios(getRandomScenarios(scenarios));

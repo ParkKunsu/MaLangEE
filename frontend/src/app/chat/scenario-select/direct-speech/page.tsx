@@ -151,15 +151,16 @@ export default function DirectSpeechPage() {
       stopMicrophone();
 
       if (typeof window !== "undefined") {
-        const { conversationGoal, conversationPartner, place } = chatState.scenarioResult;
-        if (conversationGoal) localStorage.setItem("conversationGoal", conversationGoal);
-        if (conversationPartner) localStorage.setItem("conversationPartner", conversationPartner);
+        const { conversationGoal, conversationPartner, place, sessionId } = chatState.scenarioResult;
+        if (conversationGoal) localStorage.setItem("conversation_goal", conversationGoal);
+        if (conversationPartner) localStorage.setItem("conversation_partner", conversationPartner);
         if (place) localStorage.setItem("place", place);
-      }
+        if (sessionId) localStorage.setItem("chatSessionId", sessionId);
 
-      setShowScenarioResultPopup(true);
+        router.push("/chat/scenario-select/subtitle-settings");
+      }
     }
-  }, [chatState.scenarioResult, stopMicrophone, resetTimers]);
+  }, [chatState.scenarioResult, stopMicrophone, resetTimers, router]);
 
   // 팝업 표시 시 타이머 리셋
   useEffect(() => {

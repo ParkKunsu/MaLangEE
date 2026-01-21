@@ -112,13 +112,15 @@ export function useScenarioChatNew() {
         case "scenario.completed":
           base.addLog(`✅ Scenario Completed: ${JSON.stringify(data.json)}`);
           base.addLog("ℹ️ Scenario has been automatically saved to the database.");
-          // 서버에서 snake_case 또는 camelCase로 올 수 있으므로 둘 다 처리
-          setScenarioResult({
+          
+          const result = {
             place: data.json?.place ?? null,
             conversationPartner: data.json?.conversation_partner ?? data.json?.conversationPartner ?? null,
             conversationGoal: data.json?.conversation_goal ?? data.json?.conversationGoal ?? null,
             sessionId: data.json?.sessionId ?? data.json?.session_id,
-          });
+          };
+          
+          setScenarioResult(result);
           break;
 
         case "error":
