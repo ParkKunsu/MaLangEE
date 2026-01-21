@@ -1,4 +1,5 @@
 import sys
+import asyncio
 from typing import Any, Dict, List, Optional
 
 from app.core.config import settings
@@ -308,9 +309,10 @@ class ChatService:
                 "timestamp": msg.timestamp
             })
 
-        # 4. Feedback Service 호출 (Sync function)
+        # 4. Feedback Service 호출 (Sync function -> run in thread)
         # 이번 세션의 메시지만 전달하여 피드백과 요약 생성
-        feedback_result = generate_feedback(messages_for_feedback, session_id=session_id)
+        # OpenAI Sync Client를 사용하므로 메인 루프 차단을 방지하기 위해 스레드에서 실행
+        feedback_result = await asyncio.to_thread(generate_feedback, messages_for_feedback, session_id=session_id)
         
         if not feedback_result:
             print("No feedback generated.")
@@ -324,11 +326,17 @@ class ChatService:
                 session.scenario_summary = feedback_result.get("scenario_summary")
             
         # 6. Detailed Feedback 저장 (Message Level)
-        feedback_details = feedback_result.get("feedback_details", {})
+        feedback_details_list = feedback_result.get("feedback_details", [])
         
-        if feedback_details:
+        if feedback_details_list:
             update_count = 0
-            for msg_id, feedback_data in feedback_details.items():
+            for item in feedback_details_list:
+                msg_id = item.get("message_id")
+                feedback_data = {
+                    "reason": item.get("fb_content"),
+                    "feedback": item.get("fb_after")
+                }
+                
                 await repo.update_message_feedback(msg_id, feedback_data)
                 update_count += 1
             print(f"Feedback updated for {update_count} messages")
