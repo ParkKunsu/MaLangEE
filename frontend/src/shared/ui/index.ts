@@ -18,3 +18,6 @@ export { DebugStatus } from "./DebugStatus";
 export { ChatStatusBadge } from "./ChatStatusBadge";
 export { Toggle } from "./Toggle";
 export { GlobalPopup } from "./GlobalPopup";
+export { ConfirmPopup } from "./ConfirmPopup";
+export { ScenarioResultPopup } from "./ScenarioResultPopup";
+export type { ScenarioResult } from "./ScenarioResultPopup";

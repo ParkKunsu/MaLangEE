@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Button, ChatMicButton, MalangEE, MalangEEStatus } from "@/shared/ui";
-import { PopupLayout } from "@/shared/ui/PopupLayout";
+import { Button, ChatMicButton, MalangEE, MalangEEStatus, ConfirmPopup, PopupLayout } from "@/shared/ui";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useConversationChatNew } from "@/features/chat/hook/useConversationChatNew";
 import { Volume2, VolumeX } from "lucide-react";
@@ -410,56 +409,32 @@ export default function ConversationPage() {
 
       {/* Login Popup */}
       {showLoginPopup && (
-        <PopupLayout onClose={() => setShowLoginPopup(false)} maxWidth="md" showCloseButton={false}>
-          <div className="flex flex-col items-center gap-6 py-6">
-            <div className="text-center">
-              <p className="text-xl font-semibold leading-relaxed text-gray-800">
-                로그인을 하면 대화를 저장하고
-                <br />
-                이어 말할 수 있어요
-              </p>
-            </div>
-            <div className="flex w-full gap-3">
-              <Button
-                onClick={handleSignup}
-                variant="outline"
-                className="h-14 flex-1 rounded-full border-2 border-gray-300 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                회원가입
-              </Button>
-              <Button variant="primary" size="xl" onClick={handleLogin} className="flex-1">
-                로그인하기
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
+        <ConfirmPopup
+          message={
+            <p className="text-xl font-semibold leading-relaxed text-gray-800">
+              로그인을 하면 대화를 저장하고<br />이어 말할 수 있어요
+            </p>
+          }
+          confirmText="로그인하기"
+          cancelText="회원가입"
+          onConfirm={handleLogin}
+          onCancel={handleSignup}
+        />
       )}
 
       {/* Wait Popup */}
       {showWaitPopup && (
-        <PopupLayout onClose={() => setShowWaitPopup(false)} maxWidth="md" showCloseButton={false}>
-          <div className="flex flex-col items-center gap-6 py-6">
-            <div className="text-center">
-              <p className="text-xl font-semibold leading-relaxed text-gray-800">
-                대화가 잠시 멈췄어요.
-                <br />
-                계속 이야기 할까요?
-              </p>
-            </div>
-            <div className="flex w-full gap-3">
-              <Button
-                onClick={handleStopFromWait}
-                variant="outline"
-                className="h-14 flex-1 rounded-full border-2 border-gray-300 text-base font-semibold text-gray-700 transition hover:bg-gray-50"
-              >
-                대화 그만하기
-              </Button>
-              <Button variant="primary" size="xl" onClick={handleContinueChat} className="flex-1">
-                이어 말하기
-              </Button>
-            </div>
-          </div>
-        </PopupLayout>
+        <ConfirmPopup
+          message={
+            <p className="text-xl font-semibold leading-relaxed text-gray-800">
+              대화가 잠시 멈췄어요.<br />계속 이야기 할까요?
+            </p>
+          }
+          confirmText="이어 말하기"
+          cancelText="대화 그만하기"
+          onConfirm={handleContinueChat}
+          onCancel={handleStopFromWait}
+        />
       )}
 
       {/* SessionId 에러 팝업 */}
@@ -474,7 +449,7 @@ export default function ConversationPage() {
                 variant="primary"
                 size="md"
                 fullWidth
-                onClick={() => router.push("/scenario-select")}
+                onClick={() => router.push("/chat/scenario-select")}
               >
                 주제 선택하기
               </Button>

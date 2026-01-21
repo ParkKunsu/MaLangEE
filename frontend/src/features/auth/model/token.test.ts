@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { tokenStorage } from "./token";
+import { tokenStorage, userStorage } from "./token";
 
 describe("tokenStorage", () => {
   beforeEach(() => {
@@ -41,6 +41,67 @@ describe("tokenStorage", () => {
 
     it("should return false when no token exists", () => {
       expect(tokenStorage.exists()).toBe(false);
+    });
+  });
+});
+
+describe("userStorage", () => {
+  const testUser = {
+    id: 1,
+    login_id: "testuser",
+    nickname: "TestNickname",
+    email: "test@example.com",
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
+
+  describe("set", () => {
+    it("should store user object in localStorage as JSON", () => {
+      userStorage.set(testUser);
+      expect(localStorage.getItem("user")).toBe(JSON.stringify(testUser));
+    });
+  });
+
+  describe("get", () => {
+    it("should return user object from localStorage", () => {
+      localStorage.setItem("user", JSON.stringify(testUser));
+      expect(userStorage.get()).toEqual(testUser);
+    });
+
+    it("should return null when no user exists", () => {
+      expect(userStorage.get()).toBeNull();
+    });
+
+    it("should return null for invalid JSON", () => {
+      localStorage.setItem("user", "invalid-json");
+      expect(userStorage.get()).toBeNull();
+    });
+  });
+
+  describe("remove", () => {
+    it("should remove user from localStorage", () => {
+      localStorage.setItem("user", JSON.stringify(testUser));
+      userStorage.remove();
+      expect(localStorage.getItem("user")).toBeNull();
+    });
+  });
+
+  describe("exists", () => {
+    it("should return true when user exists", () => {
+      localStorage.setItem("user", JSON.stringify(testUser));
+      expect(userStorage.exists()).toBe(true);
+    });
+
+    it("should return false when no user exists", () => {
+      expect(userStorage.exists()).toBe(false);
+    });
+
+    it("should return false for invalid JSON (get returns null)", () => {
+      localStorage.setItem("user", "invalid-json");
+      expect(userStorage.exists()).toBe(false);
     });
   });
 });
